@@ -1,0 +1,80 @@
+@inject IDialogService DialogService
+@inject ConfigManager ConfigManager
+@inject Updater Updater
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+@using OpenShock.Desktop.Config
+@using OpenShock.Desktop.Services
+@implements IDisposable
+
+@code {
+    private readonly DialogOptions _dialogOptions = new() { NoHeader = true, BackdropClick = false };
+
+    private void OpenUpdateDialog()
+    {
+        DialogService.Show<UpdateDialog>("Update", _dialogOptions);
+    }
+
+    protected override void OnInitialized()
+    {
+        Updater.UpdateAvailable.OnValueChanged += UpdateAvailableOnValueChanged;
+        Updater.CheckingForUpdate.OnValueChanged += CheckingForUpdateOnValueChanged;
+
+        if (Updater.UpdateAvailable.Value && !Updater.IsPostponed) OpenUpdateDialog();
+    }
+
+    private void UpdateAvailableOnValueChanged(bool v)
+    {
+        InvokeAsync(StateHasChanged);
+        if (v && !Updater.IsPostponed) OpenUpdateDialog();
+    }
+
+    private void CheckingForUpdateOnValueChanged(bool v)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.Logout();
+
+        NavigationManager.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        Updater.CheckingForUpdate.OnValueChanged -= CheckingForUpdateOnValueChanged;
+        Updater.UpdateAvailable.OnValueChanged -= UpdateAvailableOnValueChanged;
+    }
+
+}
+
+<div class="d-flex">
+    <MudMenu>
+        <ActivatorContent>
+            <MudAvatar>
+                <MudImage Src="@AuthService.SelfResponse?.Image.ToString()" />
+            </MudAvatar>
+            <div class="d-flex align-center" style="margin-left: 15px">
+                <p>@AuthService.SelfResponse?.Name</p>
+            </div>
+        </ActivatorContent>
+        <ChildContent>
+            <MudMenuItem Icon="@Icons.Material.Filled.List" Href="/dash/logs">Logs</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/dash/settings">Settings</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="Logout">Logout</MudMenuItem>
+        </ChildContent>
+    </MudMenu>
+
+</div>
+
+<div class="d-flex flex-childs-full-width gap-5">
+
+
+</div>
+
+<style>
+    .flex-childs-full-width >* {
+        width:  100%;
+    }
+</style>

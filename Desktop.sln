@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Desktop", "Desktop\Desktop.csproj", "{37425B5F-C7F2-44FC-A1B0-351948344F06}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleBase", "ModuleBase\ModuleBase.csproj", "{51A4157F-5732-4E7E-A4C4-B4EB516686CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleModule", "ExampleModule\ExampleModule.csproj", "{5338C914-A153-4DFC-99EC-10D8E7F49C40}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{37425B5F-C7F2-44FC-A1B0-351948344F06}.Debug|Any CPU.ActiveCfg = Debug-Windows|Any CPU
+		{37425B5F-C7F2-44FC-A1B0-351948344F06}.Debug|Any CPU.Build.0 = Debug-Windows|Any CPU
+		{51A4157F-5732-4E7E-A4C4-B4EB516686CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51A4157F-5732-4E7E-A4C4-B4EB516686CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51A4157F-5732-4E7E-A4C4-B4EB516686CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51A4157F-5732-4E7E-A4C4-B4EB516686CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5338C914-A153-4DFC-99EC-10D8E7F49C40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5338C914-A153-4DFC-99EC-10D8E7F49C40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5338C914-A153-4DFC-99EC-10D8E7F49C40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5338C914-A153-4DFC-99EC-10D8E7F49C40}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

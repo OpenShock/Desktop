@@ -1,0 +1,18 @@
+{
+  "profiles": {
+    "OpenShockDesktop": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    },
+    "OpenShockDesktopHeadless": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "commandLineArgs": "--headless"
+    },
+    "OpenShockDesktopUriShow": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "commandLineArgs": "--uri=openshock:show"
+    }
+  }
+}

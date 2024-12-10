@@ -1,0 +1,93 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using OpenShock.Desktop.Backend
+@using OpenShock.Desktop.ModuleManager
+@using OpenShock.Desktop.Services
+@using OpenShock.Desktop.Ui.Utils
+@using OpenShock.SDK.CSharp.Hub
+@using OpenShock.Desktop.Ui.Pages.Dash.Components
+@using StatePart = OpenShock.Desktop.Ui.Pages.Dash.Components.StatePart
+@inject OpenShockApi Api
+@inject OpenShockHubClient ApiHubClient
+@inject ISnackbar Snackbar
+@inject LiveControlManager LiveControlManager
+@inject StatusHandler StatusHandler
+@inject ModuleManager ModuleManager
+
+<MudPaper Width="250px" Height="100%" Elevation="0" Class="flex-none">
+
+    <div class="d-flex childs-width-100" style="height: 100%; flex-direction: column">
+
+        <div class="flex-none" style="align-self: flex-start;">
+            <div class="d-flex" style="align-items: center">
+                <MudImage Src="images/NavbarLogoSpin.svg" Alt="Logo" Height="45" Width="218" Class="mx-4 my-2" Style="vertical-align: bottom;"/>
+            </div>
+            <MudDivider Style="margin-bottom: 5px" DividerType="DividerType.Middle"/>
+        </div>
+
+
+        <MudNavMenu style="align-self: flex-start; overflow-y: auto" Class="flex-auto flex-grow-1" Margin="Margin.Dense" Color="Color.Primary" Bordered="true">
+
+            @foreach (var modules in ModuleManager.Modules)
+            {
+                <ModuleNavLink IconImage="@modules.Value.Module.IconPath" Href="@("/dash/module/" + modules.Key)">@(modules.Value.Module.Name)</ModuleNavLink>
+            }
+        </MudNavMenu>
+
+        <div class="flex-none" style="align-self: flex-end">
+            <MudDivider DividerType="DividerType.Middle"/>
+            <div Class="pa-4">
+
+
+                <div class="d-flex gap-5" style="flex-wrap: wrap; margin-bottom: 10px;">
+
+                    <div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
+                        <MudText Style="font-size: 10pt; text-align: center">SignalR</MudText>
+                        <MudTooltip Arrow="true" Placement="Placement.Top" Text="@ApiHubClient.State.ToString()">
+                            <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@GetConnectionStateColor(ApiHubClient.State)"/>
+                        </MudTooltip>
+                    </div>
+
+                    @foreach (var device in Api.Devices)
+                    {
+                        if (LiveControlManager.LiveControlClients.TryGetValue(device.Id, out var client))
+                        {
+                            <StatePart Text="@device.Name.Truncate(13)" Client="client"/>
+                        }
+                        else
+                        {
+                            <div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
+                                <MudText Style="font-size: 10pt; text-align: center">@device.Name.Truncate(13)</MudText>
+                                <MudTooltip Arrow="true" Placement="Placement.Top" Text="Offline">
+                                    <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@Color.Dark"/>
+                                </MudTooltip>
+                            </div>
+                        }
+                    }
+
+                </div>
+                <UpdateLogout/>
+            </div>
+        </div>
+
+    </div>
+</MudPaper>
+
+@code {
+    
+    protected override void OnInitialized()
+    {
+        StatusHandler.OnWebsocketStatusChanged += () => InvokeAsync(StateHasChanged);
+    }
+
+    private static Color GetConnectionStateColor(HubConnectionState state) =>
+        state switch
+        {
+            HubConnectionState.Connected => Color.Success,
+            HubConnectionState.Reconnecting => Color.Warning,
+            HubConnectionState.Connecting => Color.Warning,
+            HubConnectionState.Disconnected => Color.Error,
+            _ => Color.Error
+        };
+
+}
+

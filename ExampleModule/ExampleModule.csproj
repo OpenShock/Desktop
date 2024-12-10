@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <OutputType>Library</OutputType>
+        <AssemblyName>OpenShock.Desktop.Modules.ExampleModule</AssemblyName>
+        <RootNamespace>OpenShock.Desktop.Modules.ExampleModule</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ModuleBase\ModuleBase.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Icon.svg" />
+      <EmbeddedResource Include="Icon.svg" />
+    </ItemGroup>
+    
+</Project>

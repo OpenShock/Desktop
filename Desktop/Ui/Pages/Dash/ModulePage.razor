@@ -1,0 +1,36 @@
+﻿@using OpenShock.Desktop.ModuleManager
+
+@inject ModuleManager ModuleManager
+@page "/dash/module/{module}"
+
+@if(ModuleType == null)
+{
+    <MudPaper Outlined="true" Class="mud-paper-padding">
+        <MudText Typo="Typo.h6">Module not found</MudText>
+    </MudPaper>
+}
+else
+{
+    <DynamicComponent Type="ModuleType"></DynamicComponent>
+}
+
+@code {
+    [Parameter]
+    public string? Module { get; set; }
+
+    public Type? ModuleType
+    {
+        get
+        {
+            if (Module == null)
+                return null;
+
+            if (!ModuleManager.Modules.TryGetValue(Module, out var value))
+            {
+                return null;
+            }
+
+            return value.Module.RootComponentType;
+        }
+    }
+}

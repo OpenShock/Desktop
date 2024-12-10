@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<controls:ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                     xmlns:ui="using:OpenShock.Desktop.Ui"
+                     xmlns:desktop="using:OpenShock.Desktop"
+                     xmlns:controls="using:Microsoft.Maui.Controls"
+                     x:Class="OpenShock.Desktop.Ui.MainPage"
+                     BackgroundColor="{DynamicResource PageBackgroundColor}">
+
+    <desktop:CustomFilesBlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
+        <BlazorWebView.RootComponents>
+            <RootComponent Selector="#app" ComponentType="{x:Type ui:Main}" />
+        </BlazorWebView.RootComponents>
+    </desktop:CustomFilesBlazorWebView>
+
+</controls:ContentPage>
