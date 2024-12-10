@@ -100,10 +100,6 @@
       <ProjectReference Include="..\ModuleBase\ModuleBase.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <EmbeddedResource Include="Utils\Test.svg" />
-    </ItemGroup>
-
     <PropertyGroup>
         <ServerGarbageCollection>false</ServerGarbageCollection>
     </PropertyGroup>
