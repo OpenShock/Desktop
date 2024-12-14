@@ -1,13 +1,18 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.Loader;
 using ModuleBase;
 
 namespace OpenShock.Desktop.ModuleManager;
 
 public sealed class ModuleManager
 {
+    private static readonly Type ModuleType = typeof(IModule);
+    
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ModuleManager> _logger;
+    
+    private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
     public ModuleManager(IServiceProvider serviceProvider, ILogger<ModuleManager> logger)
     {
@@ -17,15 +22,21 @@ public sealed class ModuleManager
     
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
 
-    private void LoadPlugin(string assemblyPath)
+    private void LoadModule(string moduleFolderPath)
     {
-        var assemblyAbsolutePath = Path.Combine(Directory.GetCurrentDirectory(), assemblyPath);
-        _logger.LogDebug("Attempting to load plugin: {Path}", assemblyAbsolutePath);
-        var assembly = Assembly.LoadFile(assemblyAbsolutePath);
+        _logger.LogTrace("Searching for module in {Path}", moduleFolderPath);
+        var moduleFile = Directory.GetFiles(moduleFolderPath, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+        if(moduleFile == null)
+        {
+            _logger.LogWarning("No DLLs found in root module folder!");
+            return;
+        }
+        _logger.LogDebug("Attempting to load module: {Path}", moduleFile);
 
-        var moduleType = typeof(IModule);
-        var typesInAssembly = assembly.GetTypes();
-        var pluginTypes = typesInAssembly.Where(t => t.IsAssignableTo(moduleType)).ToArray();
+        var assemblyLoadContext = new ModuleAssemblyLoadContext(moduleFolderPath);
+        var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleFile);
+        
+        var pluginTypes = assembly.GetTypes().Where(t => t.IsAssignableTo(ModuleType)).ToArray();
         switch (pluginTypes.Length)
         {
             case 0:
@@ -41,6 +52,7 @@ public sealed class ModuleManager
         
         var loadedModule = new LoadedModule
         {
+            LoadContext = assemblyLoadContext,
             Assembly = assembly,
             Module = module
         };
@@ -50,13 +62,17 @@ public sealed class ModuleManager
 
     internal void LoadAll()
     {
-        if (!Directory.Exists("Modules")) return;
+        if (!Directory.Exists(ModuleDirectory))
+        {
+            Directory.CreateDirectory(ModuleDirectory);
+            return; // We don't have any modules to load, we just created the directory
+        }
 
-        foreach (var pluginPath in Directory.GetFiles("Modules", "*.dll"))
+        foreach (var moduleFolders in Directory.GetDirectories(ModuleDirectory))
         {
             try
             {
-                LoadPlugin(pluginPath);
+                LoadModule(moduleFolders);
             }
             catch (Exception ex)
             {
