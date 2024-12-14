@@ -136,3 +136,8 @@ body {
         transform: rotateZ(360deg);
     }
 }
+
+.table-header-small th {
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
+}

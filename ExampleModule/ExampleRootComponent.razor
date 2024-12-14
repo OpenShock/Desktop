@@ -1,5 +1,12 @@
-﻿<h3>ExampleRootComponent</h3>
+﻿@using Newtonsoft.Json
+<h3>ExampleRootComponent</h3>
+<h3>@Aa</h3>
 
 @code {
-    
+
+    private string Aa => JsonConvert.SerializeObject(new
+    {
+        Name = "John"
+    });
+
 }

@@ -30,31 +30,73 @@
         </div>
 
         <div style="width: 250px">
-        @if (Updater.CheckingForUpdate.Value)
-        {
-            <MudButton Disabled="true" Color="Color.Primary" Variant="Variant.Filled" Class="mud-button-full-width">
-                <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"/>
-                <MudText Style="margin-left: 10px">Checking for updates</MudText>
-            </MudButton>
-        }
-        else
-        {
-            @if (Updater.UpdateAvailable.Value)
+            @if (Updater.CheckingForUpdate.Value)
             {
-                <MudButton Variant="Variant.Filled" Class="mud-button-full-width" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Update" OnClick="OpenUpdateDialog">Update available</MudButton>
+                <MudButton Disabled="true" Color="Color.Primary" Variant="Variant.Filled" Class="mud-button-full-width">
+                    <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"/>
+                    <MudText Style="margin-left: 10px">Checking for updates</MudText>
+                </MudButton>
             }
             else
             {
-                <MudButton Variant="Variant.Filled" Class="mud-button-full-width" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Refresh" OnClick="Updater.CheckUpdate">Check for update</MudButton>
+                @if (Updater.UpdateAvailable.Value)
+                {
+                    <MudButton Variant="Variant.Filled" Class="mud-button-full-width" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Update" OnClick="OpenUpdateDialog">Update available</MudButton>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Filled" Class="mud-button-full-width" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Refresh" OnClick="Updater.CheckUpdate">Check for update</MudButton>
+                }
             }
-        }
         </div>
     </div>
 </MudPaper>
 
+<MudPaper Outlined="true" Class="rounded-lg lg mud-paper-padding-margin">
+    <div class="d-flex justify-space-between">
+        <MudText>Module Repositories</MudText>
+        <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" OnClick="() => _addFieldOpen = true">Add Repository</MudButton>
+    </div>
+    <MudDivider/>
+
+    <br/>
+    @if (_addFieldOpen)
+    {
+        <div class="d-flex align-center gap-2">
+            <MudTextField Style="height: 37px" Placeholder="Repository URL" Variant="Variant.Outlined" @bind-Value="@_newUrl"></MudTextField>
+
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add" OnClick="AddNewModuleRepository">Add</MudButton>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="CancelAdd">Cancel</MudButton>
+
+        </div>
+    }
+
+    <br/>
+    
+    <MudTable HeaderClass="table-header-small" Dense="true" Items="ConfigManager.Config.Modules.ModuleRepositories" Hover="true" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>URL</MudTh>
+            <MudTh Style="width: 0"></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="URL">@context</MudTd>
+            <MudTd><MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.RemoveCircleOutline" OnClick="() => RemoveModuleRepository(context)"></MudIconButton></MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    <br/>
+
+
+
+</MudPaper>
+
 @code {
+
+    private bool _addFieldOpen = false;
+    
+    private string _newUrl = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -83,10 +125,30 @@
     {
         DialogService.Show<UpdateDialog>("Update", _dialogOptions);
     }
+    
+    private void AddNewModuleRepository()
+    {
+        if (string.IsNullOrWhiteSpace(_newUrl)) return;
+        ConfigManager.Config.Modules.ModuleRepositories.Add(_newUrl);
+        ConfigManager.Save();
+        _newUrl = string.Empty;
+    }
+    
+    private void RemoveModuleRepository(string url)
+    {
+        ConfigManager.Config.Modules.ModuleRepositories.Remove(url);
+        ConfigManager.Save();
+    }
 
     public void Dispose()
     {
         Updater.CheckingForUpdate.OnValueChanged -= OnCheckingForUpdateChange;
+    }
+
+    private void CancelAdd()
+    {
+        _addFieldOpen = false;
+        _newUrl = string.Empty;
     }
 
 }

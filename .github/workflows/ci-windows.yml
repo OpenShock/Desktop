@@ -43,7 +43,7 @@ jobs:
       - name: Publish OpenShock Desktop Windows
         run: dotnet publish Desktop/Desktop.csproj -c Release-Windows -o ./publish/Desktop
 
-      - name: Upload ShockOSC Windows artifacts
+      - name: Upload OpenShock Desktop Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OpenShock Desktop Windows

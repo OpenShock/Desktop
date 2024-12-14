@@ -7,8 +7,7 @@ namespace OpenShock.Desktop.Config;
 
 public sealed class ConfigManager
 {
-    private static readonly string Path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +
-                                          @"\OpenShock\Desktop\config.json";
+    private static readonly string ConfigPath = Path.Combine(Constants.AppdataFolder, "config.json");
 
     private readonly ILogger<ConfigManager> _logger;
     public OpenShockConfig Config { get; }
@@ -24,11 +23,11 @@ public sealed class ConfigManager
         // Load config
         OpenShockConfig? config = null;
 
-        _logger.LogInformation("Config file found, trying to load config from {Path}", Path);
-        if (File.Exists(Path))
+
+        if (File.Exists(ConfigPath))
         {
-            _logger.LogTrace("Config file exists");
-            var json = File.ReadAllText(Path);
+            _logger.LogInformation("Config file found, trying to load config from {Path}", ConfigPath);
+            var json = File.ReadAllText(ConfigPath);
             if (!string.IsNullOrWhiteSpace(json))
             {
                 _logger.LogTrace("Config file is not empty");
@@ -40,7 +39,7 @@ public sealed class ConfigManager
                 {
                     _logger.LogCritical(e, "Error during deserialization/loading of config");
                     _logger.LogWarning("Attempting to move old config and generate a new one");
-                    File.Move(Path, Path + ".old");
+                    File.Move(ConfigPath, ConfigPath + ".old");
                 }
             }
         }
@@ -53,7 +52,7 @@ public sealed class ConfigManager
         }
 
         _logger.LogInformation(
-            "No config file found (does not exist or empty or invalid), generating new one at {Path}", Path);
+            "No config file found (does not exist or empty or invalid), generating new one at {Path}", ConfigPath);
         Config = new OpenShockConfig();
         SaveInternally().Wait();
         _logger.LogInformation("New configuration file generated!");
@@ -73,11 +72,11 @@ public sealed class ConfigManager
         try
         {
             _logger.LogTrace("Saving config");
-            var directory = System.IO.Path.GetDirectoryName(Path);
+            var directory = System.IO.Path.GetDirectoryName(ConfigPath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            await File.WriteAllTextAsync(Path, JsonSerializer.Serialize(Config, Options)).ConfigureAwait(false);
+            await File.WriteAllTextAsync(ConfigPath, JsonSerializer.Serialize(Config, Options)).ConfigureAwait(false);
             _logger.LogInformation("Config saved");
         }
         catch (Exception e)

@@ -27,6 +27,10 @@
 
         <MudNavMenu style="align-self: flex-start; overflow-y: auto" Class="flex-auto flex-grow-1" Margin="Margin.Dense" Color="Color.Primary" Bordered="true">
 
+            <MudNavLink Icon="@Icons.Material.Filled.ViewModule" Href="/dash/modules">Manage Modules</MudNavLink>
+            
+            <MudDivider Style="margin-bottom: 5px; margin-top: 5px;" DividerType="DividerType.Middle"/>
+            
             @foreach (var modules in ModuleManager.Modules)
             {
                 <ModuleNavLink IconImage="@modules.Value.Module.IconPath" Href="@("/dash/module/" + modules.Key)">@(modules.Value.Module.Name)</ModuleNavLink>
