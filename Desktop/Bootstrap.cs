@@ -2,6 +2,7 @@
 using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Logging;
+using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Services.Pipes;
 using OpenShock.Desktop.Utils;
@@ -59,6 +60,7 @@ public static class Bootstrap
         
         services.AddSingleton<StatusHandler>();
 
+        services.AddSingleton<RepositoryManager>();
         services.AddSingleton<ModuleManager.ModuleManager>();
         // foreach (var plugin in ModuleManager.ModuleManager.Plugins)
         // {
@@ -76,6 +78,19 @@ public static class Bootstrap
     }
 
     public static void StartOpenShockDesktopServices(this IServiceProvider services, bool headless)
+    {
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Bootstrap");
+        try
+        {
+            StartOpenShockDesktopServicesInternal(services, headless);
+        } catch (Exception e)
+        {
+            logger.LogError(e, "Failed to start OpenShock Desktop services");
+            throw;
+        }
+    }
+
+    private static void StartOpenShockDesktopServicesInternal(this IServiceProvider services, bool headless)
     {
         #region SystemTray
 
@@ -101,6 +116,10 @@ public static class Bootstrap
 
         // <---- Warmup ---->
         services.GetRequiredService<PipeServerService>().StartServer();
+        
+        var repositoryManager = services.GetRequiredService<RepositoryManager>();
+        repositoryManager.FetchRepositories().ConfigureAwait(false).GetAwaiter().GetResult();
+        
         var moduleManager = services.GetRequiredService<ModuleManager.ModuleManager>();
         moduleManager.LoadAll();
         

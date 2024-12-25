@@ -1,9 +1,13 @@
 ﻿@inject ConfigManager ConfigManager
 @inject Updater Updater
+@using System.Reactive
 @using OpenShock.Desktop.Config
+@using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject RepositoryManager RepositoryManager
 @implements IDisposable
 
 @page "/dash/settings"
@@ -14,8 +18,10 @@
 
     <div class="d-flex gap-5" style="align-items: center">
 
-        <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.CloseToTray" Label="Close to Tray" @bind-Value:after="OnSettingsValueChange"/>
-        <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.DiscordPreview" Label="Discord Preview" @bind-Value:after="OnSettingsValueChange"/>
+        <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.CloseToTray"
+                     Label="Close to Tray" @bind-Value:after="OnSettingsValueChange"/>
+        <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.DiscordPreview"
+                     Label="Discord Preview" @bind-Value:after="OnSettingsValueChange"/>
 
         <div style="width: 200px">
             <MudSelect Disabled="Updater.CheckingForUpdate.Value" Variant="Variant.Outlined"
@@ -32,7 +38,7 @@
         <div style="width: 250px">
             @if (Updater.CheckingForUpdate.Value)
             {
-                <MudButton Disabled="true" Color="Color.Primary" Variant="Variant.Filled" Class="mud-button-full-width">
+                <MudButton Disabled="true" Variant="Variant.Outlined" Class="mud-button-full-width">
                     <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"/>
                     <MudText Style="margin-left: 10px">Checking for updates</MudText>
                 </MudButton>
@@ -42,12 +48,14 @@
                 @if (Updater.UpdateAvailable.Value)
                 {
                     <MudButton Variant="Variant.Filled" Class="mud-button-full-width" Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Update" OnClick="OpenUpdateDialog">Update available</MudButton>
+                               StartIcon="@Icons.Material.Filled.Update" OnClick="OpenUpdateDialog">Update available
+                    </MudButton>
                 }
                 else
                 {
-                    <MudButton Variant="Variant.Filled" Class="mud-button-full-width" Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Refresh" OnClick="Updater.CheckUpdate">Check for update</MudButton>
+                    <MudButton Variant="Variant.Outlined" Class="mud-button-full-width"
+                               StartIcon="@Icons.Material.Filled.Refresh" OnClick="Updater.CheckUpdate">Check for update
+                    </MudButton>
                 }
             }
         </div>
@@ -57,54 +65,193 @@
 <MudPaper Outlined="true" Class="rounded-lg lg mud-paper-padding-margin">
     <div class="d-flex justify-space-between">
         <MudText>Module Repositories</MudText>
-        <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" OnClick="() => _addFieldOpen = true">Add Repository</MudButton>
+        <span>
+            <span>
+                @if (RepositoryManager.FetcherState.Value == FetcherState.Idle)
+                {
+                    <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.Refresh"
+                               OnClick="RepositoryManager.FetchRepositories">Refresh</MudButton>
+                }
+                else
+                {
+                    <MudButton Size="Size.Small"><MudProgressCircular Size="Size.Small" Color="Color.Primary"
+                                                                      Indeterminate="true"
+                                                                      Style="margin-right: 10px; width: 22px; height:  22px"/> Refresh</MudButton>
+                }
+            </span>
+            <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" OnClick="() => _addFieldOpen = true">Add Repository</MudButton>
+        </span>
     </div>
     <MudDivider/>
 
     <br/>
     @if (_addFieldOpen)
     {
-        <div class="d-flex align-center gap-2">
-            <MudTextField Style="height: 37px" Placeholder="Repository URL" Variant="Variant.Outlined" @bind-Value="@_newUrl"></MudTextField>
+        <div class="d-flex align-center gap-2 mb-3">
+            <MudTextField Style="height: 37px" Placeholder="Repository URL" Variant="Variant.Outlined"
+                          @bind-Value="@_newUrl"></MudTextField>
 
-                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add" OnClick="AddNewModuleRepository">Add</MudButton>
-                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="CancelAdd">Cancel</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="AddNewModuleRepository">Add
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="CancelAdd">Cancel
+            </MudButton>
 
         </div>
     }
 
-    <br/>
-    
-    <MudTable HeaderClass="table-header-small" Dense="true" Items="ConfigManager.Config.Modules.ModuleRepositories" Hover="true" Breakpoint="Breakpoint.Sm">
+    <MudTable HeaderClass="repo-table-headers" Dense="true" Items="_uiRepoData"
+              Hover="true" Breakpoint="Breakpoint.Sm" GroupBy="@_groupDefinition" GroupHeaderClass="repo-table-headers"
+              FixedHeader="true" Height="400px">
         <HeaderContent>
-            <MudTh>URL</MudTh>
+            <MudTh Style="font-weight: 1000">URL</MudTh>
+            <MudTh Style="width: 0"></MudTh>
             <MudTh Style="width: 0"></MudTh>
         </HeaderContent>
+        <GroupHeaderTemplate>
+            <MudTh Class="mud-table-cell-custom-group"
+                   colspan="5">@((bool)context.Key! ? "Built-In Repositories" : "Custom Repositories")</MudTh>
+        </GroupHeaderTemplate>
+
         <RowTemplate>
-            <MudTd DataLabel="URL">@context</MudTd>
-            <MudTd><MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.RemoveCircleOutline" OnClick="() => RemoveModuleRepository(context)"></MudIconButton></MudTd>
+            <MudTd DataLabel="URL">@context.Url</MudTd>
+
+            @if (context.Context == null)
+            {
+                <MudTd>
+                    <MudTooltip RootClass="d-flex" Text="This repository has not been fetched yet">
+                        <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Warning"></MudIcon>
+                    </MudTooltip>
+
+                </MudTd>
+            }
+            else
+            {
+                @switch (context.Context.State.Value)
+                {
+                    case RepositoryLoadContextState.Queued:
+                        <MudTd>
+                            <MudTooltip RootClass="d-flex" Text="Queued for fetching...">
+                                <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Info"></MudIcon>
+                            </MudTooltip>
+                        </MudTd>
+                        break;
+                    case RepositoryLoadContextState.Loading:
+                        <MudTd>
+                            <MudTooltip RootClass="d-flex" Text="Fetching...">
+                                <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"
+                                                     Style="width: 24px; height: 24px;"/>
+                            </MudTooltip>
+                        </MudTd>
+                        break;
+                    case RepositoryLoadContextState.Loaded:
+                        <MudTd>
+                            <MudTooltip RootClass="d-flex"
+                                        Text="@(context.Context.Repository!.Modules.Count + " Module(s) fetched")">
+                                <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Success"></MudIcon>
+                            </MudTooltip>
+                        </MudTd>
+                        break;
+                    case RepositoryLoadContextState.Failed:
+                        <MudTd>
+                            <MudTooltip RootClass="d-flex"
+                                        Text="There was an error fetching the repository, click for more info">
+                                <MudIconButton Icon="@Icons.Material.Filled.Adjust" Color="Color.Error"
+                                               OnClick="() => ToggleErrorPopover(context)" Style="padding: 0"/>
+                            </MudTooltip>
+                            <ErrorPopover ErrorPopoverOpen="@context.ErrorPopoverOpen"
+                                          Error="@context.Context.LastError"/>
+                        </MudTd>
+                        break;
+                }
+            }
+
+            <MudTd>
+                <MudTooltip RootClass="d-flex"
+                            Text="@(context.IsBuiltIn ? "This is a built-in repository, it cant be removed" : "Remove repository")">
+                    <MudIconButton Disabled="@context.IsBuiltIn" Size="Size.Small"
+                                   OnClick="() => RemoveModuleRepository(context.Url)"
+                                   Icon="@Icons.Material.Filled.RemoveCircleOutline"></MudIconButton>
+                </MudTooltip>
+            </MudTd>
         </RowTemplate>
     </MudTable>
 
-    <br/>
-
-
-
 </MudPaper>
+
+<style>
+
+    .mud-table-cell-custom-group {
+        font-weight: 800;
+    }
+
+    .repo-table-headers {
+        background-color: var(--mud-palette-dark-lighten);
+    }
+
+    .repo-table-headers:hover {
+        background-color: var(--mud-palette-dark-lighten) !important;
+    }
+
+</style>
 
 @code {
 
     private bool _addFieldOpen = false;
-    
+
     private string _newUrl = string.Empty;
+
+    private readonly TableGroupDefinition<RepoTableElement> _groupDefinition = new()
+    {
+        GroupName = "Group",
+        Indentation = true,
+        Expandable = false,
+        Selector = e => e.IsBuiltIn
+    };
+
+    private void ToggleErrorPopover(RepoTableElement element)
+    {
+        element.ErrorPopoverOpen = !element.ErrorPopoverOpen;
+        InvokeAsync(StateHasChanged);
+    }
 
     protected override void OnInitialized()
     {
         Updater.CheckingForUpdate.OnValueChanged += OnCheckingForUpdateChange;
+
+        RepositoryManager.FetcherState.OnValueChanged += FetcherStateOnOnValueChanged;
+        RepositoryManager.FetchedRepositories.OnValueChanged += FetchedRepositoriesOnOnValueChanged;
+        RepositoryManager.RepositoriesStateChanged += RepositoryManagerOnRepositoriesStateChanged;
+
+        UpdateRepositoriesWithFetchedData();
     }
+
+    #region Event Handlers 
+
+    private void RepositoryManagerOnRepositoriesStateChanged()
+    {
+        UpdateRepositoriesWithFetchedData();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private Task FetchedRepositoriesOnOnValueChanged(uint arg)
+    {
+        UpdateRepositoriesWithFetchedData();
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task FetcherStateOnOnValueChanged(FetcherState arg)
+    {
+        UpdateRepositoriesWithFetchedData();
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
 
     private void OnCheckingForUpdateChange(bool value)
     {
+        UpdateRepositoriesWithFetchedData();
         InvokeAsync(StateHasChanged);
     }
 
@@ -118,31 +265,90 @@
         OnSettingsValueChange();
         await Updater.CheckUpdate();
     }
-    
+
+    #endregion
+
+    private List<RepoTableElement> _uiRepoData = new();
+
+    public class RepoTableElement
+    {
+        public required Uri Url { get; set; }
+        public required bool IsBuiltIn { get; set; }
+        public required RepositoryLoadContext? Context { get; set; }
+        public bool ErrorPopoverOpen { get; set; } = false;
+    }
+
+    private void UpdateRepositoriesWithFetchedData()
+    {
+        var dic = new List<RepoTableElement>();
+
+        foreach (var uri in Constants.BuiltInModuleRepositories)
+        {
+            dic.Add(new RepoTableElement
+            {
+                Url = uri,
+                IsBuiltIn = true,
+                Context = RepositoryManager.Repositories.GetValueOrDefault(uri)
+            });
+        }
+
+        foreach (var uri in ConfigManager.Config.Modules.ModuleRepositories)
+        {
+            dic.Add(new RepoTableElement
+            {
+                Url = uri,
+                IsBuiltIn = false,
+                Context = RepositoryManager.Repositories.GetValueOrDefault(uri)
+            });
+        }
+
+        _uiRepoData = dic;
+    }
+
     private readonly DialogOptions _dialogOptions = new() { NoHeader = true, BackdropClick = false };
-    
+
     private void OpenUpdateDialog()
     {
         DialogService.Show<UpdateDialog>("Update", _dialogOptions);
     }
-    
+
     private void AddNewModuleRepository()
     {
         if (string.IsNullOrWhiteSpace(_newUrl)) return;
-        ConfigManager.Config.Modules.ModuleRepositories.Add(_newUrl);
+        if (!Uri.TryCreate(_newUrl, UriKind.Absolute, out var newUri))
+        {
+            Snackbar.Add("The URL is not valid", Severity.Error);
+            return;
+        }
+
+        if (Constants.BuiltInModuleRepositories.Contains(newUri))
+        {
+            Snackbar.Add("This repository is built-in and cannot be added", Severity.Error);
+            return;
+        }
+
+        ConfigManager.Config.Modules.ModuleRepositories.Add(newUri);
         ConfigManager.Save();
         _newUrl = string.Empty;
+        _addFieldOpen = false;
+
+        UpdateRepositoriesWithFetchedData();
     }
-    
-    private void RemoveModuleRepository(string url)
+
+    private void RemoveModuleRepository(Uri url)
     {
         ConfigManager.Config.Modules.ModuleRepositories.Remove(url);
         ConfigManager.Save();
+
+        UpdateRepositoriesWithFetchedData();
     }
 
     public void Dispose()
     {
         Updater.CheckingForUpdate.OnValueChanged -= OnCheckingForUpdateChange;
+        RepositoryManager.FetcherState.OnValueChanged -= FetcherStateOnOnValueChanged;
+        RepositoryManager.FetchedRepositories.OnValueChanged -= FetchedRepositoriesOnOnValueChanged;
+        RepositoryManager.RepositoriesStateChanged -= RepositoryManagerOnRepositoriesStateChanged;
     }
 
     private void CancelAdd()

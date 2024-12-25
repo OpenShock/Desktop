@@ -2,5 +2,5 @@
 
 public sealed class ModulesConfig
 {
-    public IList<string> ModuleRepositories { get; set; } = new List<string>();
+    public IList<Uri> ModuleRepositories { get; set; } = new List<Uri>();
 }

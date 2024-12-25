@@ -15,9 +15,20 @@ public static class MauiProgram
 {
     private static OpenShockConfig? _config;
     private static PipeServerService? _pipeServerService;
-    
-    
+
     public static Microsoft.Maui.Hosting.MauiApp CreateMauiApp()
+    {
+        try
+        {
+            return CreateMauiAppInternal();
+        } catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+    
+    private static Microsoft.Maui.Hosting.MauiApp CreateMauiAppInternal()
     {
         var builder = Microsoft.Maui.Hosting.MauiApp.CreateBuilder();
 
@@ -87,7 +98,7 @@ public static class MauiProgram
 
         _config = app.Services.GetRequiredService<ConfigManager>().Config;
         _pipeServerService = app.Services.GetRequiredService<PipeServerService>();
-
+        
         app.Services.StartOpenShockDesktopServices(false);
 
         return app;

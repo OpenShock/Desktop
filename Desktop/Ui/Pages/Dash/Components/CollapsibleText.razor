@@ -1,0 +1,54 @@
+﻿<div class="@("collapsible-container " + Class ?? string.Empty)">
+    <span class="collapsible-content">@(IsCollapsed ? FirstLine : Text)</span>
+    <MudIconButton Size="Size.Small" OnClick="ToggleCollapse" Icon="@Icons.Material.Filled.ExpandMore"
+                   Class="@(IsCollapsed ? "collapse-icon transform" : "collapse-icon")"/>
+</div>
+
+<style>
+    .collapsible-container {
+        padding: 8px;
+        margin: 8px 0;
+        position: relative;
+        padding-right: 30px;
+    }
+
+    .collapsible-content {
+        overflow: auto;
+        white-space: pre-line;
+        display: block;
+        width: 100%;
+        user-select: text;
+    }
+
+    .collapse-icon {
+        padding: 0;
+        position: absolute;
+        top: 8px;
+        right: 8px;
+
+        transition: .3s cubic-bezier(.25, .8, .5, 1), visibility 0s;
+    }
+
+    .collapse-icon.transform {
+        transform: rotate(-180deg);
+    }
+
+</style>
+
+@code {
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter] public string Text { get; set; } = string.Empty;
+
+    private bool IsCollapsed { get; set; } = true;
+
+    private string FirstLine => Text.Split('\n')
+        .FirstOrDefault() ?? string.Empty;
+
+    private void ToggleCollapse()
+    {
+        IsCollapsed = !IsCollapsed;
+    }
+
+}

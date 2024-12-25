@@ -1,0 +1,51 @@
+﻿@using OpenShock.Desktop.ModuleManager.Repository
+
+<MudPopover Open="@ErrorPopoverOpen">
+    <div Class="error-popover">
+    @if (Error != null)
+    {
+        var error = Error.Value;
+
+        if (error.Exception != null)
+        {
+            <CollapsibleText Class="collapsable-text-element" Text="@error.Exception.ToString()"></CollapsibleText>
+        }
+
+        if (error.Response != null)
+        {
+            <CollapsibleText Class="collapsable-text-element" Text="@error.Response"></CollapsibleText>
+        }
+
+        if (error.HttpStatusCode != null)
+        {
+            <MudText>@error.HttpStatusCode</MudText>
+        }
+
+    }
+    else
+    {
+        <MudText>No error information available</MudText>
+    }
+    </div>
+</MudPopover>
+
+<style>
+    .error-popover {
+        border: solid 1px var(--mud-palette-lines-default);
+        width: 50vw;
+        max-height: 500px;
+        overflow: hidden;
+    }
+    
+    .collapsable-text-element .collapsible-content {
+        max-height: 300px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public required RepositoryLoadContext.LoadError? Error { get; set; }
+    
+    [Parameter]
+    public required bool ErrorPopoverOpen { get; set; }
+}

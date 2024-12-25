@@ -14,6 +14,9 @@ public static class ThemeDefinition
             AppbarBackground = MudBlazor.Colors.Red.Default,
             Background = "#2f2f2f",
             Surface = "#1f1f1f",
+            Dark = "#272727",
+            DarkLighten = "#292929",
+            GrayDefault = "#333333"
         },
         LayoutProperties = new LayoutProperties
         {

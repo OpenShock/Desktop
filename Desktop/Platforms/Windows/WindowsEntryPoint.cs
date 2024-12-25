@@ -36,7 +36,14 @@ public static class WindowsEntryPoint
     [STAThread]
     private static void Main(string[] args)
     {
-        ParseHelper.Parse<MauiCliOptions>(args, Start);
+        try
+        {
+            ParseHelper.Parse<MauiCliOptions>(args, Start);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 
     private static void Start(MauiCliOptions config)
@@ -55,7 +62,7 @@ public static class WindowsEntryPoint
         {
             using var pipeClientStream = new NamedPipeClientStream(".", "OpenShock.Desktop", PipeDirection.Out);
             pipeClientStream.Connect(500);
-            
+
             using var writer = new StreamWriter(pipeClientStream);
             writer.AutoFlush = true;
 
@@ -76,7 +83,7 @@ public static class WindowsEntryPoint
 
                 return;
             }
-            
+
             // Send show message
             writer.WriteLine(JsonSerializer.Serialize(new PipeMessage { Type = PipeMessageType.Show }));
 
@@ -98,7 +105,7 @@ public static class WindowsEntryPoint
 
         XamlCheckProcessRequirements();
         ComWrappersSupport.InitializeComWrappers();
-        Application.Start(delegate
+        Application.Start(_ =>
         {
             var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
             SynchronizationContext.SetSynchronizationContext(context);
