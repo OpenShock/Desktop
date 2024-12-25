@@ -1,0 +1,5 @@
+﻿{
+  "SourceFolder": "Ui/Styles/OpenShock.scss",
+  "Target": "wwwroot/OpenShock.min.css",
+  "Arguments": "--style=compressed"
+}

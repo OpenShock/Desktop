@@ -1,6 +1,18 @@
 ﻿@page "/dash/modules"
+@using OpenShock.Desktop.ModuleManager.Repository
+@using OpenShock.Desktop.Ui.Pages.Dash.Components
+@inject RepositoryManager RepositoryManager
 
-<h3>ModuleManagerTab</h3>
+<div class="d-flex gap-3 flex-column">
+    @foreach (var (repoUri, repoContext) in RepositoryManager.Repositories.Where(x => x.Value.Repository != null))
+    {
+        foreach (var (moduleId, module) in repoContext.Repository!.Modules)
+        {
+            <ModuleManagerItem Module="module"/>
+        }
+    }
+    
+</div>
 
 @code {
     

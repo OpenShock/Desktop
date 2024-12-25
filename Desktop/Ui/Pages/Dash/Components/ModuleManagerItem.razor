@@ -1,0 +1,12 @@
+﻿@using OpenShock.Desktop.ModuleManager.Repository
+<MudPaper Class="d-flex module-manager-item-root rounded-lg" Outlined="true">
+    <img src="@Module.IconUrl?.ToString()" alt="@Module.Name" class="icon"/>
+    <div class="d-flex">
+        <MudText>@Module.Name</MudText>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public required Module Module { get; set; }
+}
