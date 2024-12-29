@@ -1,8 +1,13 @@
 ﻿@using OpenShock.Desktop.ModuleManager.Repository
-<MudPaper Class="d-flex module-manager-item-root rounded-lg" Outlined="true">
-    <img src="@Module.IconUrl?.ToString()" alt="@Module.Name" class="icon"/>
-    <div class="d-flex">
-        <MudText>@Module.Name</MudText>
+<MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10" Outlined="true">
+    <img src="@Module.IconUrl?.ToString()" alt="@Module.Name" class="icon rounded-lg"/>
+    <div class="d-flex flex-column justify-space-evenly">
+        <MudText Typo="Typo.h4">@Module.Name</MudText>
+        <MudText Typo="Typo.body1">@Module.Description</MudText>
+    </div>
+    
+    <div class="ml-auto">
+        <MudButton>Install</MudButton>
     </div>
 </MudPaper>
 
