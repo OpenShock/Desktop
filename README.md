@@ -2,7 +2,7 @@
 
 <img alt="OpenShock Logo" height="150px" width="150px" src="https://openshock.org/IconSlowSpin.svg" />
 
-<h1><b>OpenShock Desktop</b></h1>
+<h1><b>OpenShock Desktop (WIP)</b></h1>
 
 [![Release Version](https://img.shields.io/github/v/release/OpenShock/Desktop?style=for-the-badge&color=e14a6d)](https://github.com/OpenShock/Desktop/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/OpenShock/Desktop/total?style=for-the-badge&color=e14a6d)](https://github.com/OpenShock/Desktop/releases/latest)
