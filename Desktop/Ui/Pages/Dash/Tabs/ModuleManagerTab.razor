@@ -1,19 +1,66 @@
 ﻿@page "/dash/modules"
+@using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
 @inject RepositoryManager RepositoryManager
+@inject ModuleManager ModuleManager
 
 <div class="d-flex gap-3 flex-column">
-    @foreach (var (repoUri, repoContext) in RepositoryManager.Repositories.Where(x => x.Value.Repository != null))
+
+    <MudText Typo="Typo.h1">Installed</MudText>
+    
+    @foreach (var module in InstalledModules)
     {
-        foreach (var module in repoContext.Repository!.Modules)
-        {
-            <ModuleManagerItem ModulePair="module"/>
-        }
+        <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.Key"  LoadedModule="@module.Value.Value"/>
+    }
+
+    <MudText Typo="Typo.h1">Unknown Loaded Modules</MudText>
+    
+    @foreach (var module in UnknownModules)
+    {
+        <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
     }
     
+    <MudText Typo="Typo.h1">Installable Modules</MudText>
+    
+    @foreach (var module in InstallableModules)
+    {
+        <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
+    }
+
 </div>
 
 @code {
+
+    private IEnumerable<KeyValuePair<string, LoadedModule>> UnknownModules;
+    private IEnumerable<KeyValuePair<string, Module>> InstallableModules;
+    private Dictionary<string, KeyValuePair<Module, LoadedModule>> InstalledModules;
+
+    protected override void OnInitialized()
+    {
+        PopulateModuleLists();
+    }
     
+    private void PopulateModuleLists()
+    {
+        var loadedModules = ModuleManager.Modules;
+        
+        var modulesFromRepos = RepositoryManager.Repositories
+            .Where(x => x.Value.Repository != null)
+            .SelectMany(x => x.Value.Repository!.Modules).ToDictionary();
+        
+        UnknownModules = loadedModules.Where(x => modulesFromRepos.All(y => y.Key != x.Key));
+        InstallableModules = modulesFromRepos.Where(x => !loadedModules.Keys.Contains(x.Key));
+
+        var installedModules = new Dictionary<string, KeyValuePair<Module, LoadedModule>>();
+        
+        foreach (var loadedModule in loadedModules)
+        {
+            if (!modulesFromRepos.TryGetValue(loadedModule.Key, out var repoModule)) continue;
+            
+            installedModules.Add(loadedModule.Key, new KeyValuePair<Module, LoadedModule>(repoModule, loadedModule.Value));
+        }
+
+        InstalledModules = installedModules;
+    }
 }
