@@ -1,4 +1,8 @@
-﻿@using OpenShock.Desktop.ModuleManager.Repository
+﻿@using OpenShock.Desktop.ModuleManager
+@using OpenShock.Desktop.ModuleManager.Repository
+@using Semver
+
+@inject ModuleManager ModuleManager
 
 <MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10" Outlined="true">
     <img src="@Module.IconUrl?.ToString()" alt="@Module.Name" class="icon rounded-lg"/>
@@ -7,12 +11,22 @@
         <MudText Typo="Typo.body1">@Module.Description</MudText>
     </div>
     
-    <div class="ml-auto">
-        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.InstallDesktop">Install</MudButton>
+    <div class="ml-auto flex-shrink-0">
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.InstallDesktop">Install @LatestVersion</MudButton>
     </div>
 </MudPaper>
 
 @code {
     [Parameter]
-    public required Module Module { get; set; }
+    public required KeyValuePair<string, Module> ModulePair { get; set; }
+    
+    public Module Module => ModulePair.Value;
+    
+    private SemVersion? LatestVersion => Module.Versions.Keys.OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
+    
+    private async Task Install(SemVersion version)
+    {
+        
+        await ModuleManager.DownloadModule(ModulePair, LatestVersion);
+    }
 }

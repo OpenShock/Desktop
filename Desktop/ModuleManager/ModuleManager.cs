@@ -4,6 +4,10 @@ using System.Net.Mime;
 using System.Reflection;
 using System.Runtime.Loader;
 using ModuleBase;
+using OneOf;
+using OneOf.Types;
+using Semver;
+using Module = OpenShock.Desktop.ModuleManager.Repository.Module;
 
 namespace OpenShock.Desktop.ModuleManager;
 
@@ -29,7 +33,19 @@ public sealed class ModuleManager
 
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
 
-    private async Task DownloadModule(string moduleId, Uri moduleUrl)
+    public async Task<OneOf<Success, Error, NotFound>> DownloadModule(KeyValuePair<string, Module> modulePair, SemVersion version)
+    {
+        if (!modulePair.Value.Versions.TryGetValue(version, out var moduleVersion))
+        {
+            return new NotFound();
+        }
+
+        var moduleDownload = await DownloadModule(modulePair.Key, moduleVersion.Url);
+        if (moduleDownload.IsT0) return new Success();
+        return new Error();
+    }
+    
+    private async Task<OneOf<Success, Error>> DownloadModule(string moduleId, Uri moduleUrl)
     {
         using var downloadResponse = await HttpClient.GetAsync(moduleUrl, HttpCompletionOption.ResponseHeadersRead);
 
@@ -37,14 +53,14 @@ public sealed class ModuleManager
         {
             _logger.LogError("Failed to download module {ModuleId} from {ModuleUrl} with status code {StatusCode}",
                 moduleId, moduleUrl, downloadResponse.StatusCode);
-            return;
+            return new Error();
         }
 
         if (downloadResponse.Content.Headers.ContentType?.MediaType != MediaTypeNames.Application.Zip)
         {
             _logger.LogError("Failed to download module {ModuleId} from {ModuleUrl} as it is not a ZIP file (Content-Type: {ContentType})",
                 moduleId, moduleUrl, downloadResponse.Content.Headers.ContentType?.MediaType);
-            return;
+            return new Error();
         }
 
         var moduleFolderPath = Path.Combine(ModuleDirectory, moduleId);
@@ -53,6 +69,8 @@ public sealed class ModuleManager
         
         Directory.CreateDirectory(moduleFolderPath);
         ZipFile.ExtractToDirectory(await downloadResponse.Content.ReadAsStreamAsync(), moduleFolderPath, true);
+        
+        return new Success();
     }
 
     private void LoadModule(string moduleFolderPath)

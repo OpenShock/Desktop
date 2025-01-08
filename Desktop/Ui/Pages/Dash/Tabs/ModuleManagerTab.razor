@@ -6,9 +6,9 @@
 <div class="d-flex gap-3 flex-column">
     @foreach (var (repoUri, repoContext) in RepositoryManager.Repositories.Where(x => x.Value.Repository != null))
     {
-        foreach (var (moduleId, module) in repoContext.Repository!.Modules)
+        foreach (var module in repoContext.Repository!.Modules)
         {
-            <ModuleManagerItem Module="module"/>
+            <ModuleManagerItem ModulePair="module"/>
         }
     }
     
