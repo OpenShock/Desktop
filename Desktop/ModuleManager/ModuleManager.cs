@@ -6,6 +6,7 @@ using System.Runtime.Loader;
 using ModuleBase;
 using OneOf;
 using OneOf.Types;
+using OpenShock.Desktop.ModuleManager.Repository;
 using Semver;
 using Module = OpenShock.Desktop.ModuleManager.Repository.Module;
 
@@ -17,6 +18,7 @@ public sealed class ModuleManager
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ModuleManager> _logger;
+    private readonly RepositoryManager _repositoryManager;
 
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
@@ -25,23 +27,34 @@ public sealed class ModuleManager
         Timeout = TimeSpan.FromMinutes(5)
     };
 
-    public ModuleManager(IServiceProvider serviceProvider, ILogger<ModuleManager> logger)
+    public ModuleManager(IServiceProvider serviceProvider, ILogger<ModuleManager> logger, RepositoryManager repositoryManager)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _repositoryManager = repositoryManager;
     }
 
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
 
-    public async Task<OneOf<Success, Error, NotFound>> DownloadModule(KeyValuePair<string, Module> modulePair, SemVersion version)
+    public async Task<OneOf<Success, Error, NotFound>> DownloadModule(string moduleId, SemVersion version)
     {
-        if (!modulePair.Value.Versions.TryGetValue(version, out var moduleVersion))
+        var module = _repositoryManager.Repositories
+            .Where(x => x.Value.Repository != null)
+            .SelectMany(x => x.Value.Repository!.Modules)
+            .Where( x => x.Key == moduleId).Select(x => x.Value).FirstOrDefault();
+        
+        if(module is null) return new NotFound();
+        
+        if (!module.Versions.TryGetValue(version, out var moduleVersion))
         {
             return new NotFound();
         }
 
-        var moduleDownload = await DownloadModule(modulePair.Key, moduleVersion.Url);
-        if (moduleDownload.IsT0) return new Success();
+        var moduleDownload = await DownloadModule(moduleId, moduleVersion.Url);
+        if (moduleDownload.IsT0)
+        {
+            return new Success();
+        }
         return new Error();
     }
     
@@ -108,6 +121,14 @@ public sealed class ModuleManager
             Assembly = assembly,
             Module = module
         };
+
+        var moduleFolder = Path.GetFileName(moduleFolderPath); // now this seems odd, but this gives me the modules folder name
+
+        if (moduleFolder != loadedModule.Module.Id)
+        {
+            _logger.LogWarning("Module folder name does not match module ID! [{FolderName} != {ModuleName}]. This might cause issues and is not expected. Updating for sure wont work properly :3 Please fix this", moduleFolder, loadedModule.Module.Id);
+            return;
+        }
 
         if (!Modules.TryAdd(module.Id, loadedModule)) throw new Exception("Module already loaded!");
     }

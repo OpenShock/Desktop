@@ -7,21 +7,21 @@
 
 <div class="d-flex gap-3 flex-column">
 
-    <MudText Typo="Typo.h1">Installed</MudText>
+    <MudText Typo="Typo.h6">Installed</MudText>
     
     @foreach (var module in InstalledModules)
     {
         <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.Key"  LoadedModule="@module.Value.Value"/>
     }
 
-    <MudText Typo="Typo.h1">Unknown Loaded Modules</MudText>
+    <MudText Typo="Typo.h6">Unknown Loaded Modules</MudText>
     
     @foreach (var module in UnknownModules)
     {
         <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
     }
     
-    <MudText Typo="Typo.h1">Installable Modules</MudText>
+    <MudText Typo="Typo.h6">Installable Modules</MudText>
     
     @foreach (var module in InstallableModules)
     {

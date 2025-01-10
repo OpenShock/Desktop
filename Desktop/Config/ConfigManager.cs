@@ -61,7 +61,7 @@ public sealed class ConfigManager
     private static readonly JsonSerializerOptions Options = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(), new SemVersionJsonConverter() }
+        Converters = { new JsonStringEnumConverter(), new SemVersionJsonConverter(), new OneOfConverterFactory() }
     };
 
     private readonly SemaphoreSlim _saveLock = new(1, 1);
