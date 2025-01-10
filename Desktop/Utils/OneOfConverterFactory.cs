@@ -114,9 +114,10 @@ public class OneOfConverterFactory : JsonConverterFactory
     private class OneOf2JsonConverter<T0, T1> : JsonConverter<OneOfBase<T0, T1>>
     {
         private static readonly Type OneOfType = typeof(OneOf<,>).MakeGenericType(typeof(T0), typeof(T1));
-        private static readonly Type[] Types = { typeof(T0), typeof(T1) };
+        private static readonly Type[] Types = [typeof(T0), typeof(T1)];
 
         // These are needed
+        // ReSharper disable once UnusedParameter.Local
         public OneOf2JsonConverter(JsonSerializerOptions _)
         {
         }
@@ -160,9 +161,10 @@ public class OneOfConverterFactory : JsonConverterFactory
     private class OneOf3JsonConverter<T0, T1, T2> : JsonConverter<OneOfBase<T0, T1, T2>>
     {
         private static readonly Type OneOfType = typeof(OneOf<,,>).MakeGenericType(typeof(T0), typeof(T1), typeof(T2));
-        private static readonly Type[] Types = { typeof(T0), typeof(T1), typeof(T2) };
+        private static readonly Type[] Types = [typeof(T0), typeof(T1), typeof(T2)];
 
         // These are needed
+        // ReSharper disable once UnusedParameter.Local
         public OneOf3JsonConverter(JsonSerializerOptions _)
         {
         }
