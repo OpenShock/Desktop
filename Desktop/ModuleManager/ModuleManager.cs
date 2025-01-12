@@ -36,6 +36,11 @@ public sealed class ModuleManager
 
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
 
+    public async Task ProcessTaskList()
+    {
+        
+    }
+    
     public async Task<OneOf<Success, Error, NotFound>> DownloadModule(string moduleId, SemVersion version)
     {
         var module = _repositoryManager.Repositories
