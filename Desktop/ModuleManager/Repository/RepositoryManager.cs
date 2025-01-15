@@ -6,11 +6,11 @@ namespace OpenShock.Desktop.ModuleManager.Repository;
 
 public sealed class RepositoryManager
 {
-    public IAsyncUpdatable<uint> FetchedRepositories => _fetchedRepositories;
-    private readonly AsyncUpdatableVariable<uint> _fetchedRepositories = new(0);
+    public IUpdatable<uint> FetchedRepositories => _fetchedRepositories;
+    private readonly UpdatableVariable<uint> _fetchedRepositories = new(0);
     
-    public IAsyncUpdatable<FetcherState> FetcherState => _fetcherState;
-    private readonly AsyncUpdatableVariable<FetcherState> _fetcherState = new(Desktop.ModuleManager.Repository.FetcherState.Idle);
+    public IUpdatable<FetcherState> FetcherState => _fetcherState;
+    private readonly UpdatableVariable<FetcherState> _fetcherState = new(Desktop.ModuleManager.Repository.FetcherState.Idle);
     
     public event Action? RepositoriesStateChanged;
     
@@ -19,8 +19,6 @@ public sealed class RepositoryManager
     
     private readonly ConfigManager _config;
     private readonly ILogger<RepositoryManager> _logger;
-
-    
     
     public RepositoryManager(ConfigManager config, ILogger<RepositoryManager> logger)
     {

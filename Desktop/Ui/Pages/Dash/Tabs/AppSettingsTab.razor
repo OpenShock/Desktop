@@ -234,18 +234,16 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private Task FetchedRepositoriesOnOnValueChanged(uint arg)
+    private void FetchedRepositoriesOnOnValueChanged(uint arg)
     {
         UpdateRepositoriesWithFetchedData();
         InvokeAsync(StateHasChanged);
-        return Task.CompletedTask;
     }
 
-    private Task FetcherStateOnOnValueChanged(FetcherState arg)
+    private void FetcherStateOnOnValueChanged(FetcherState arg)
     {
         UpdateRepositoriesWithFetchedData();
         InvokeAsync(StateHasChanged);
-        return Task.CompletedTask;
     }
 
 

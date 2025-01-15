@@ -121,14 +121,7 @@ public static class Bootstrap
         repositoryManager.FetchRepositories().ConfigureAwait(false).GetAwaiter().GetResult();
         
         var moduleManager = services.GetRequiredService<ModuleManager.ModuleManager>();
+        
         moduleManager.LoadAll();
-        
-        // foreach (var plugin in ModuleManager.ModuleManager.Plugins)
-        // {
-        //     plugin.StartServices(services);
-        // }
-        
-        var updater = services.GetRequiredService<Updater>();
-        OsTask.Run(updater.CheckUpdate);
     }
 }

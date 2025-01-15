@@ -1,14 +1,12 @@
 ﻿using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Net.Mime;
-using System.Reflection;
-using System.Runtime.Loader;
 using ModuleBase;
 using OneOf;
 using OneOf.Types;
+using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleManager.Repository;
 using Semver;
-using Module = OpenShock.Desktop.ModuleManager.Repository.Module;
 
 namespace OpenShock.Desktop.ModuleManager;
 
@@ -19,6 +17,7 @@ public sealed class ModuleManager
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ModuleManager> _logger;
     private readonly RepositoryManager _repositoryManager;
+    private readonly ConfigManager _configManager;
 
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
@@ -27,29 +26,48 @@ public sealed class ModuleManager
         Timeout = TimeSpan.FromMinutes(5)
     };
 
-    public ModuleManager(IServiceProvider serviceProvider, ILogger<ModuleManager> logger, RepositoryManager repositoryManager)
+    public ModuleManager(IServiceProvider serviceProvider, ILogger<ModuleManager> logger,
+        RepositoryManager repositoryManager, ConfigManager configManager)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
         _repositoryManager = repositoryManager;
+        _configManager = configManager;
     }
 
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
 
     public async Task ProcessTaskList()
     {
-        
+        foreach (var moduleTask in _configManager.Config.Modules.ModuleTasks)
+        {
+            await moduleTask.Value.Match(async install =>
+                {
+                    await DownloadModule(moduleTask.Key, install.Version); 
+                },
+                remove =>
+                {
+                    RemoveModule(moduleTask.Key);
+                    return Task.FromResult(Task.CompletedTask);
+                });
+        }
     }
-    
-    public async Task<OneOf<Success, Error, NotFound>> DownloadModule(string moduleId, SemVersion version)
+
+    private void RemoveModule(string moduleId)
+    {
+        var moduleFolderPath = Path.Combine(ModuleDirectory, moduleId);
+        if (Directory.Exists(moduleFolderPath)) Directory.Delete(moduleFolderPath, true);
+    }
+
+    private async Task<OneOf<Success, Error, NotFound>> DownloadModule(string moduleId, SemVersion version)
     {
         var module = _repositoryManager.Repositories
             .Where(x => x.Value.Repository != null)
             .SelectMany(x => x.Value.Repository!.Modules)
-            .Where( x => x.Key == moduleId).Select(x => x.Value).FirstOrDefault();
-        
-        if(module is null) return new NotFound();
-        
+            .Where(x => x.Key == moduleId).Select(x => x.Value).FirstOrDefault();
+
+        if (module is null) return new NotFound();
+
         if (!module.Versions.TryGetValue(version, out var moduleVersion))
         {
             return new NotFound();
@@ -60,9 +78,10 @@ public sealed class ModuleManager
         {
             return new Success();
         }
+
         return new Error();
     }
-    
+
     private async Task<OneOf<Success, Error>> DownloadModule(string moduleId, Uri moduleUrl)
     {
         using var downloadResponse = await HttpClient.GetAsync(moduleUrl, HttpCompletionOption.ResponseHeadersRead);
@@ -76,7 +95,8 @@ public sealed class ModuleManager
 
         if (downloadResponse.Content.Headers.ContentType?.MediaType != MediaTypeNames.Application.Zip)
         {
-            _logger.LogError("Failed to download module {ModuleId} from {ModuleUrl} as it is not a ZIP file (Content-Type: {ContentType})",
+            _logger.LogError(
+                "Failed to download module {ModuleId} from {ModuleUrl} as it is not a ZIP file (Content-Type: {ContentType})",
                 moduleId, moduleUrl, downloadResponse.Content.Headers.ContentType?.MediaType);
             return new Error();
         }
@@ -84,10 +104,10 @@ public sealed class ModuleManager
         var moduleFolderPath = Path.Combine(ModuleDirectory, moduleId);
 
         if (Directory.Exists(moduleFolderPath)) Directory.Delete(moduleFolderPath, true);
-        
+
         Directory.CreateDirectory(moduleFolderPath);
         ZipFile.ExtractToDirectory(await downloadResponse.Content.ReadAsStreamAsync(), moduleFolderPath, true);
-        
+
         return new Success();
     }
 
@@ -127,11 +147,14 @@ public sealed class ModuleManager
             Module = module
         };
 
-        var moduleFolder = Path.GetFileName(moduleFolderPath); // now this seems odd, but this gives me the modules folder name
+        var moduleFolder =
+            Path.GetFileName(moduleFolderPath); // now this seems odd, but this gives me the modules folder name
 
         if (moduleFolder != loadedModule.Module.Id)
         {
-            _logger.LogWarning("Module folder name does not match module ID! [{FolderName} != {ModuleName}]. This might cause issues and is not expected. Updating for sure wont work properly :3 Please fix this", moduleFolder, loadedModule.Module.Id);
+            _logger.LogWarning(
+                "Module folder name does not match module ID! [{FolderName} != {ModuleName}]. This might cause issues and is not expected. Updating for sure wont work properly :3 Please fix this",
+                moduleFolder, loadedModule.Module.Id);
             return;
         }
 
