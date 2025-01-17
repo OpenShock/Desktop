@@ -1,9 +1,9 @@
 ﻿#if WEB
-using OpenShock.ShockOsc.Cli;
-using OpenShock.ShockOsc.Services;
-using OpenShock.ShockOsc.Utils;
+using OpenShock.Desktop.Cli;
+using OpenShock.Desktop.Services;
+using OpenShock.Desktop.Utils;
 
-namespace OpenShock.ShockOsc.Platforms.Web;
+namespace OpenShock.Desktop.Platforms.Web;
 
 public static class WebEntryPoint
 {
@@ -30,7 +30,7 @@ public static class WebEntryPoint
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        builder.Services.AddShockOscServices();
+        builder.Services.AddOpenShockDesktopServices();
         builder.Services.AddCommonBlazorServices();
         
 #if WINDOWS
@@ -47,7 +47,7 @@ public static class WebEntryPoint
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
         
-        app.Services.StartShockOscServices(true);
+        app.Services.StartOpenShockDesktopServices(true);
         
         OsTask.Run(app.Services.GetRequiredService<AuthService>().Authenticate);
         
