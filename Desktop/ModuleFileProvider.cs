@@ -6,14 +6,14 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.FileProviders.Embedded;
 using Microsoft.Extensions.Primitives;
 
 namespace OpenShock.Desktop;
 
+// TODO: Make a reverse function for the MakeValidEverettIdentifier method and reverse the lookup in GetFileInfo, also make it not case-sensitive
 /// <summary>
 /// Looks up files using embedded resources in the specified assembly.
-/// This file provider is case sensitive.
+/// This file provider is case-sensitive.
 /// </summary>
 public class ModuleFileProvider : IFileProvider, IDisposable
 {
@@ -227,7 +227,7 @@ public class ModuleFileProvider : IFileProvider, IDisposable
     /// <summary>
     /// Make a folder name into an Everett-compatible identifier
     /// </summary>
-    internal static void MakeValidEverettFolderIdentifier(StringBuilder builder, string name)
+    private static void MakeValidEverettFolderIdentifier(StringBuilder builder, string name)
     {
         if (string.IsNullOrEmpty(name)) { return; }
 
