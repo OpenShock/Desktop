@@ -1,19 +1,18 @@
-﻿using Microsoft.AspNetCore.Components.WebView.Maui;
+﻿#if PHOTINO || MAUI
+using Microsoft.AspNetCore.Components.WebView.Maui;
 using Microsoft.Extensions.FileProviders;
 
 namespace OpenShock.Desktop;
 
-public class CustomFilesBlazorWebView : BlazorWebView
+/// <summary>
+/// BlazorWebView that uses our custom ModuleFuleProvider.
+/// </summary>
+public partial class CustomFilesBlazorWebView : BlazorWebView
 {
     public override IFileProvider CreateFileProvider(string contentRootDir)
     {
         var moduleManager = Handler!.MauiContext!.Services.GetRequiredService<ModuleManager.ModuleManager>();
-
-        List<IFileProvider> fileProviders = new();
-        fileProviders.Add(base.CreateFileProvider(contentRootDir));
-        fileProviders.AddRange(moduleManager.Modules.Select(x => x.Value.Assembly).Distinct()
-            .Select(x => new EmbeddedFileProvider(x, string.Empty)));
-        
-        return new CompositeFileProvider(fileProviders);
+        return new CompositeFileProvider(base.CreateFileProvider(contentRootDir), new ModuleFileProvider(moduleManager));
     }
 }
+#endif

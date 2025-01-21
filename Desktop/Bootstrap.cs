@@ -66,11 +66,13 @@ public static class Bootstrap
         // {
         //     plugin.RegisterServices(services);
         // }
+
+        services.AddSingleton<StartupService>();
     }
 
     public static void AddCommonBlazorServices(this IServiceCollection services)
     {
-#if DEBUG_WINDOWS || DEBUG_PHOTINO || DEBUG_WEB
+#if DEBUG_WINDOWS || DEBUG_PHOTINO
         services.AddBlazorWebViewDeveloperTools();
 #endif
 
@@ -116,12 +118,8 @@ public static class Bootstrap
 
         // <---- Warmup ---->
         services.GetRequiredService<PipeServerService>().StartServer();
-        
-        var repositoryManager = services.GetRequiredService<RepositoryManager>();
-        repositoryManager.FetchRepositories().ConfigureAwait(false).GetAwaiter().GetResult();
-        
-        var moduleManager = services.GetRequiredService<ModuleManager.ModuleManager>();
-        
-        moduleManager.LoadAll();
+
+        var startupService = services.GetRequiredService<StartupService>();
+        var startupTask = OsTask.Run(startupService.StartupApp);
     }
 }

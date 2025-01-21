@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Net.Mime;
+using Microsoft.Extensions.FileProviders;
 using ModuleBase;
 using OneOf;
 using OneOf.Types;
@@ -19,6 +20,8 @@ public sealed class ModuleManager
     private readonly RepositoryManager _repositoryManager;
     private readonly ConfigManager _configManager;
 
+    public event Action? ModulesLoaded;
+    
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
     private static readonly HttpClient HttpClient = new()
@@ -43,10 +46,12 @@ public sealed class ModuleManager
         {
             await moduleTask.Value.Match(async install =>
                 {
+                    _logger.LogInformation("Installing module {ModuleId} version {Version}", moduleTask.Key, install.Version);
                     await DownloadModule(moduleTask.Key, install.Version); 
                 },
                 remove =>
                 {
+                    _logger.LogInformation("Removing module {ModuleId}", moduleTask.Key);
                     RemoveModule(moduleTask.Key);
                     return Task.FromResult(Task.CompletedTask);
                 });
@@ -180,5 +185,7 @@ public sealed class ModuleManager
                 _logger.LogError(ex, "Failed to load plugin");
             }
         }
+        
+        ModulesLoaded?.Invoke();
     }
 }

@@ -27,11 +27,12 @@ public sealed class StartupService
         if (_isStarted) return;
         _isStarted = true;
         
+        _logger.LogDebug("Checking for updates");
         Status.Update("Checking for updates");
         
         try
         {
-            await _updater.CheckUpdate();
+            await _updater.CheckUpdate().ConfigureAwait(false);
             // TODO: Check if auto update is enabled and update if so, probably want to shutdown the startup after this if so
         }
         catch (Exception e)
@@ -39,6 +40,7 @@ public sealed class StartupService
             _logger.LogError(e, "Error while checking for updates");
         }
         
+        _logger.LogDebug("Fetching repositories");
         Status.Update("Fetching repositories");
 
         _repositoryManager.FetcherState.OnValueChanged += FetcherStateOnOnValueChanged;
@@ -47,7 +49,7 @@ public sealed class StartupService
         
         try
         {
-            await _repositoryManager.FetchRepositories();
+            await _repositoryManager.FetchRepositories().ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -58,16 +60,18 @@ public sealed class StartupService
         _repositoryManager.FetchedRepositories.OnValueChanged -= FetchedRepositoriesOnOnValueChanged;
         _repositoryManager.RepositoriesStateChanged -= RepositoryManagerOnRepositoriesStateChanged;
 
+        _logger.LogDebug("Processing module updates");
         Status.Update("Processing module updates");
         
         try
         {
-            await _moduleManager.ProcessTaskList();
+            await _moduleManager.ProcessTaskList().ConfigureAwait(false);
         } catch (Exception e)
         {
             _logger.LogError(e, "Error while processing module tasks");
         }
         
+        _logger.LogDebug("Loading modules");
         Status.Update("Loading modules");
         
         try
