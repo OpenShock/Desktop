@@ -94,8 +94,9 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private void Restart()
+    private async Task Restart()
     {
+        await ConfigManager.SaveNow();
 #if WINDOWS
         WindowsRestartHelper.RestartApp();
 #endif

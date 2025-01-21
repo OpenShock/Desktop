@@ -9,7 +9,6 @@ public static class WindowsRestartHelper
     
     public static void RestartApp()
     {
-        
         var currentExePath = Environment.ProcessPath;
         var processId = Environment.ProcessId;
         
@@ -64,8 +63,6 @@ public static class WindowsRestartHelper
         }
         
         Environment.Exit(0);
-
-        
     } 
 }
 #endif

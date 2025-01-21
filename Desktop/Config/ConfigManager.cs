@@ -18,7 +18,7 @@ public sealed class ConfigManager
     {
         _logger = logger;
 
-        _saveTimer = new Timer(_ => { OsTask.Run(SaveInternally); });
+        _saveTimer = new Timer(_ => { OsTask.Run(SaveNow); });
 
         // Load config
         OpenShockConfig? config = null;
@@ -54,7 +54,7 @@ public sealed class ConfigManager
         _logger.LogInformation(
             "No config file found (does not exist or empty or invalid), generating new one at {Path}", ConfigPath);
         Config = new OpenShockConfig();
-        SaveInternally().Wait();
+        SaveNow().Wait();
         _logger.LogInformation("New configuration file generated!");
     }
 
@@ -66,7 +66,7 @@ public sealed class ConfigManager
 
     private readonly SemaphoreSlim _saveLock = new(1, 1);
 
-    private async Task SaveInternally()
+    public async Task SaveNow()
     {
         await _saveLock.WaitAsync().ConfigureAwait(false);
         try
