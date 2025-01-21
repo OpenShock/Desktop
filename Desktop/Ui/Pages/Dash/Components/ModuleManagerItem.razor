@@ -1,7 +1,10 @@
-﻿@using OpenShock.Desktop.Config
+﻿@using System.Diagnostics
+@using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific
+@using OpenShock.Desktop.Config
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Utils
+@using Application = Microsoft.Maui.Controls.Application
 @using Semver
 
 @inject ModuleManager ModuleManager
@@ -16,16 +19,13 @@
     </div>
 
     <div class="ml-auto flex-shrink-0">
-        @* @if (ModuleManager.PendingRestart.ContainsKey(ModuleId)) // Pending restart for this module *@
-        @* { *@
-        @*     <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RestartAlt">Pending Restart</MudButton> *@
-        @* } *@
-        @* else  *@
-        
-        
-        @if (LoadedModule != null)
+        @if (ConfigManager.Config.Modules.ModuleTasks.ContainsKey(ModuleId)) // Pending restart for this module
         {
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RemoveFromQueue">Remove</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="Restart">Pending Restart</MudButton>
+        }
+        else if (LoadedModule != null)
+        {
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RemoveFromQueue" OnClick="Remove">Remove</MudButton>
         }
         else
         {
@@ -66,29 +66,38 @@
         }
     }
     
-    private async Task InstallLatest()
+    private void InstallLatest()
     {
         if (LatestVersion == null)
         {
             return;
         }
         
-        await Install(LatestVersion);
+        Install(LatestVersion);
     }
 
-    private async Task Install(SemVersion version)
+    private void Install(SemVersion version)
     {
         ConfigManager.Config.Modules.ModuleTasks[ModuleId] = new InstallModuleTask
         {
             Version = version
         };
-
-        ConfigManager.Config.Modules.ModuleTasks["deez"] = new RemoveModuleTask();
         
         ConfigManager.Save();
-        
-#pragma warning disable CS4014
-        OsTask.Run(() => InvokeAsync(StateHasChanged));
-#pragma warning restore CS4014
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Remove()
+    {
+        ConfigManager.Config.Modules.ModuleTasks[ModuleId] = new RemoveModuleTask();
+        ConfigManager.Save();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Restart()
+    {
+#if WINDOWS
+        WindowsRestartHelper.RestartApp();
+#endif
     }
 }
