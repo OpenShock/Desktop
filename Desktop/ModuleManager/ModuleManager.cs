@@ -40,23 +40,41 @@ public sealed class ModuleManager
 
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
 
+    #region Tasks
+    
     public async Task ProcessTaskList()
     {
         foreach (var moduleTask in _configManager.Config.Modules.ModuleTasks)
         {
-            await moduleTask.Value.Match(async install =>
-                {
-                    _logger.LogInformation("Installing module {ModuleId} version {Version}", moduleTask.Key, install.Version);
-                    await DownloadModule(moduleTask.Key, install.Version); 
-                },
-                remove =>
-                {
-                    _logger.LogInformation("Removing module {ModuleId}", moduleTask.Key);
-                    RemoveModule(moduleTask.Key);
-                    return Task.FromResult(Task.CompletedTask);
-                });
+            try
+            {
+                await ProcessTask(moduleTask);
+            } catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process task for module {ModuleId}", moduleTask.Key);
+            }
         }
+        
+        _configManager.Config.Modules.ModuleTasks.Clear();
+        _configManager.Save();
     }
+
+    private async Task ProcessTask(KeyValuePair<string, ModuleTask> moduleTask)
+    {
+        await moduleTask.Value.Match(async install =>
+            {
+                _logger.LogInformation("Installing module {ModuleId} version {Version}", moduleTask.Key, install.Version);
+                await DownloadModule(moduleTask.Key, install.Version); 
+            },
+            remove =>
+            {
+                _logger.LogInformation("Removing module {ModuleId}", moduleTask.Key);
+                RemoveModule(moduleTask.Key);
+                return Task.FromResult(Task.CompletedTask);
+            });
+    }
+    
+    #endregion
 
     private void RemoveModule(string moduleId)
     {

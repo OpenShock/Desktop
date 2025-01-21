@@ -22,9 +22,9 @@ public class ModuleFileProvider : IFileProvider, IDisposable
     private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars()
         .Where(c => c != '/' && c != '\\').ToArray();
     
-    private Assembly[] _assemblies;
+    private Assembly[] _assemblies = [];
 
-    private FrozenDictionary<string, EmbeddedResourceFileInfo> _files;
+    private FrozenDictionary<string, EmbeddedResourceFileInfo> _files = FrozenDictionary<string, EmbeddedResourceFileInfo>.Empty;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ModuleFileProvider" />

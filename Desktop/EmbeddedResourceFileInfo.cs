@@ -2,6 +2,7 @@
 
 using System.Reflection;
 using Microsoft.Extensions.FileProviders;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace OpenShock.Desktop;
 
@@ -79,10 +80,7 @@ public class EmbeddedResourceFileInfo : IFileInfo
     public Stream CreateReadStream()
     {
         var stream = GetManifestResourceStream();
-        if (!_length.HasValue)
-        {
-            _length = stream.Length;
-        }
+        _length ??= stream.Length;
 
         return stream;
     }
