@@ -81,6 +81,11 @@ public sealed class StartupService
         {
             _logger.LogError(e, "Error while loading modules");
         }
+        
+        foreach (var moduleManagerModule in _moduleManager.Modules)
+        {
+            moduleManagerModule.Value.Module.Start();
+        }
     }
     
     private void RepositoryManagerOnRepositoriesStateChanged()

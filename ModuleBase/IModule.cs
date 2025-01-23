@@ -8,4 +8,7 @@ public interface IModule
     
     public string? IconPath { get; }
     
+    public void Start()
+    {
+    }
 }
