@@ -25,9 +25,9 @@ public static class ThemeDefinition
         },
         Typography = new Typography
         {
-            Default = new Default
+            Default = new DefaultTypography
             {
-                FontFamily = new string[] { "'Poppins', Roboto, Helvetica, Arial, sans-serif" }
+                FontFamily = ["'Poppins', Roboto, Helvetica, Arial, sans-serif"]
             },
         }
     };
