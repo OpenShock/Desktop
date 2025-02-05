@@ -1,36 +1,33 @@
 ﻿@using OpenShock.Desktop.ModuleManager
 
 @inject ModuleManager ModuleManager
-@page "/dash/module/{module}"
+@page "/dash/module/{module}/{component}"
 
-@if(ModuleType == null)
+@if (LoadedModule == null)
 {
     <MudPaper Outlined="true" Class="mud-paper-padding">
-        <MudText Typo="Typo.h6">Module not found</MudText>
+        <MudText Typo="Typo.h6">Module not found [@Module]</MudText>
+    </MudPaper>
+}
+else if (ComponentType == null)
+{
+    <MudPaper Outlined="true" Class="mud-paper-padding">
+        <MudText Typo="Typo.h6">Sub Component not found [@Module] [@Component]</MudText>
     </MudPaper>
 }
 else
 {
-    <DynamicComponent Type="ModuleType"></DynamicComponent>
+    <DynamicComponent Type="ComponentType"></DynamicComponent>
 }
 
 @code {
-    [Parameter]
-    public string? Module { get; set; }
+    [Parameter] public string? Module { get; set; }
 
-    public Type? ModuleType
-    {
-        get
-        {
-            if (Module == null)
-                return null;
+    [Parameter] public string? Component { get; set; }
 
-            if (!ModuleManager.Modules.TryGetValue(Module, out var value))
-            {
-                return null;
-            }
+    private LoadedModule? LoadedModule => string.IsNullOrWhiteSpace(Module) ? null : ModuleManager.Modules.GetValueOrDefault(Module);
 
-            return value.Module.RootComponentType;
-        }
-    }
+    private Type? ComponentType => LoadedModule?.Module.NavigationComponents.FirstOrDefault(x => x.Name.Equals(Component, StringComparison.InvariantCultureIgnoreCase))
+        ?.ComponentType;
+
 }

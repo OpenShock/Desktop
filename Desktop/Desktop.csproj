@@ -70,7 +70,7 @@
         <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.1" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.1" />
-        <PackageReference Include="MudBlazor" Version="8.1.0" />
+        <PackageReference Include="MudBlazor" Version="8.2.0" />
         <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.29" />
         <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.29" />
         <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.29" />

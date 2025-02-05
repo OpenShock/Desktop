@@ -33,7 +33,7 @@
             
             @foreach (var modules in ModuleManager.Modules)
             {
-                <ModuleNavLink IconImage="@modules.Value.Module.IconPath" Href="@("/dash/module/" + modules.Key)">@(modules.Value.Module.Name)</ModuleNavLink>
+                <ModuleNavComponent LoadedModule="@modules.Value"></ModuleNavComponent>
             }
         </MudNavMenu>
 

@@ -2,20 +2,26 @@
 
 <div @attributes="UserAttributes" class="@Classname" disabled="@Disabled" style="@Style">
     @{
-            <NavLink @onclick="() => InvokeAsync(HandleNavigation)"
-                     class="@LinkClassname"
-                     @attributes="@Attributes"
-                     tabindex="@TabIndex"
-                     Match="@Match"
-                     ActiveClass="@ActiveClass">
-                @if (!string.IsNullOrEmpty(IconImage))
-                {
-                    <img src="@IconImage" alt="Module Icon" style="width: 24px; height: 24px">
-                }
-                <div class="mud-nav-link-text">
-                    @ChildContent
-                </div>
-            </NavLink>
+        <NavLink @onclick="() => InvokeAsync(HandleNavigation)"
+                 class="@LinkClassname"
+                 @attributes="@Attributes"
+                 tabindex="@TabIndex"
+                 Match="@Match"
+                 ActiveClass="@ActiveClass">
 
+            @switch (Icon?.Index)
+            {
+                case 0:
+                    <img src="@Icon.AsT0" alt="Component Icon" style="width: 24px; height: 24px">
+                    break;
+                case 1:
+                    <MudIcon Icon="@Icon.AsT1"/>
+                    break;
+            }
+
+            <div class="mud-nav-link-text">
+                @ChildContent
+            </div>
+        </NavLink>
     }
 </div>

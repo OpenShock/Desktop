@@ -1,19 +1,15 @@
-﻿// Copyright (c) MudBlazor 2021
-// MudBlazor licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 using MudBlazor.Interfaces;
 using MudBlazor.Utilities;
 using System.ComponentModel;
+using OpenShock.Desktop.ModuleBase;
 using Color = MudBlazor.Color;
 using NavigationContext = MudBlazor.NavigationContext;
 
 namespace OpenShock.Desktop.Ui.Pages.Dash.Components;
-#nullable enable
 
 /// <summary>
 /// A navigation link as part of a <see cref="MudBlazor.MudNavMenu"/>.
@@ -62,9 +58,7 @@ public partial class ModuleNavLink : MudComponentBase
     /// </remarks>
     [Parameter]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-    public string? IconImage { get; set; }
-
-
+    public IconOneOf? Icon { get; set; }
 
     /// <summary>
     /// Controls when this link is highlighted.
@@ -120,16 +114,6 @@ public partial class ModuleNavLink : MudComponentBase
     [Parameter]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     public string? Href { get; set; }
-
-    /// <summary>
-    /// Performs a full page load during navigation.
-    /// </summary>
-    /// <remarks>
-    /// Defaults to <c>false</c>. When <c>true</c>, client-side routing is bypassed and the browser is forced to load the new page from the server.
-    /// </remarks>
-    [Parameter]
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-    public bool ForceLoad { get; set; }
 
     /// <summary>
     /// The content within this link.

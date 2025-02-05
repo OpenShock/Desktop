@@ -2,10 +2,10 @@
 using System.IO.Compression;
 using System.Net.Mime;
 using Microsoft.Extensions.FileProviders;
-using ModuleBase;
 using OneOf;
 using OneOf.Types;
 using OpenShock.Desktop.Config;
+using OpenShock.Desktop.ModuleBase;
 using OpenShock.Desktop.ModuleManager.Repository;
 using Semver;
 
@@ -13,7 +13,7 @@ namespace OpenShock.Desktop.ModuleManager;
 
 public sealed class ModuleManager
 {
-    private static readonly Type ModuleType = typeof(IModule);
+    private static readonly Type ModuleBaseType = typeof(DesktopModuleBase);
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ModuleManager> _logger;
@@ -149,7 +149,7 @@ public sealed class ModuleManager
         var assemblyLoadContext = new ModuleAssemblyLoadContext(moduleFolderPath);
         var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleFile);
 
-        var pluginTypes = assembly.GetTypes().Where(t => t.IsAssignableTo(ModuleType)).ToArray();
+        var pluginTypes = assembly.GetTypes().Where(t => t.IsAssignableTo(ModuleBaseType)).ToArray();
         switch (pluginTypes.Length)
         {
             case 0:
@@ -160,7 +160,7 @@ public sealed class ModuleManager
                 return;
         }
 
-        var module = (IModule?)ActivatorUtilities.CreateInstance(_serviceProvider, pluginTypes[0]);
+        var module = (DesktopModuleBase?)ActivatorUtilities.CreateInstance(_serviceProvider, pluginTypes[0]);
         if (module is null) throw new Exception("Failed to instantiate module!");
 
         var loadedModule = new LoadedModule
