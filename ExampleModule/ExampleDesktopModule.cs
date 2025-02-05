@@ -22,7 +22,7 @@ public class ExampleDesktopModule : DesktopModuleBase
         {
             Name = "Subcomponent 2",
             ComponentType = typeof(SubComponent2),
-            Icon = IconOneOf.FromBase64(Icons.Material.Filled.Refresh)
+            Icon = IconOneOf.FromSvg(Icons.Material.Filled.Refresh)
         }
     ];
 

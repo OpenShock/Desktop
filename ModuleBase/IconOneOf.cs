@@ -13,5 +13,5 @@ public class IconOneOf : OneOfBase<string, string>
     }
     
     public static IconOneOf FromPath(string path) => new IconOneOf(OneOf<string, string>.FromT0(path));
-    public static IconOneOf FromBase64(string base64) => new IconOneOf(OneOf<string, string>.FromT1(base64));
+    public static IconOneOf FromSvg(string base64) => new IconOneOf(OneOf<string, string>.FromT1(base64));
 }
