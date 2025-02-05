@@ -8,7 +8,7 @@ public abstract class DesktopModuleBase
     public abstract string Name { get; }
     public virtual string? IconPath { get; } = null;
 
-    public virtual IReadOnlyCollection<NavigationItem> NavigationComponents { get; } = Array.Empty<NavigationItem>();
+    public abstract IReadOnlyCollection<NavigationItem> NavigationComponents { get; }
 
     public virtual void Start()
     {
