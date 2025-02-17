@@ -26,8 +26,10 @@ public class ExampleDesktopModule : DesktopModuleBase
         }
     ];
 
-    public ExampleDesktopModule()
+    public override async Task Start()
     {
+        var config = await ModuleInstanceManager.GetModuleConfig<ExampleModuleConfig>();
         
+        Console.WriteLine(config.Config.SomeConfigOption);
     }
 }

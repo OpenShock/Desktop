@@ -8,6 +8,7 @@ public static class Constants
     public static readonly string AppdataFolder =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"OpenShock\Desktop");
     public static readonly string LogsFolder = Path.Combine(AppdataFolder, "logs");
+    public static readonly string ModuleData = Path.Combine(AppdataFolder, "moduleData");
     
     public static readonly SemVersion Version = SemVersion.Parse(typeof(Constants).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, SemVersionStyles.Strict);
     public static readonly SemVersion VersionWithoutMetadata = Version.WithoutMetadata();

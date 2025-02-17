@@ -21,7 +21,7 @@ public sealed class ModuleManager
     private readonly ConfigManager _configManager;
 
     public event Action? ModulesLoaded;
-    
+
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
     private static readonly HttpClient HttpClient = new()
@@ -41,7 +41,7 @@ public sealed class ModuleManager
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
 
     #region Tasks
-    
+
     public async Task ProcessTaskList()
     {
         foreach (var moduleTask in _configManager.Config.Modules.ModuleTasks)
@@ -49,12 +49,13 @@ public sealed class ModuleManager
             try
             {
                 await ProcessTask(moduleTask);
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process task for module {ModuleId}", moduleTask.Key);
             }
         }
-        
+
         _configManager.Config.Modules.ModuleTasks.Clear();
         _configManager.Save();
     }
@@ -63,8 +64,9 @@ public sealed class ModuleManager
     {
         await moduleTask.Value.Match(async install =>
             {
-                _logger.LogInformation("Installing module {ModuleId} version {Version}", moduleTask.Key, install.Version);
-                await DownloadModule(moduleTask.Key, install.Version); 
+                _logger.LogInformation("Installing module {ModuleId} version {Version}", moduleTask.Key,
+                    install.Version);
+                await DownloadModule(moduleTask.Key, install.Version);
             },
             remove =>
             {
@@ -73,7 +75,7 @@ public sealed class ModuleManager
                 return Task.FromResult(Task.CompletedTask);
             });
     }
-    
+
     #endregion
 
     private void RemoveModule(string moduleId)
@@ -170,6 +172,11 @@ public sealed class ModuleManager
             Module = module
         };
 
+        module.SetContext(new ModuleInstanceManager(loadedModule, _serviceProvider.GetRequiredService<ILoggerFactory>())
+        {
+            ServiceProvider = _serviceProvider
+        });
+
         var moduleFolder =
             Path.GetFileName(moduleFolderPath); // now this seems odd, but this gives me the modules folder name
 
@@ -203,7 +210,7 @@ public sealed class ModuleManager
                 _logger.LogError(ex, "Failed to load plugin");
             }
         }
-        
+
         ModulesLoaded?.Invoke();
     }
 }

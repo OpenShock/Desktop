@@ -82,9 +82,20 @@ public sealed class StartupService
             _logger.LogError(e, "Error while loading modules");
         }
         
+        _logger.LogDebug("Setting up modules");
+        Status.Update("Setting up modules");
+        
         foreach (var moduleManagerModule in _moduleManager.Modules)
         {
-            moduleManagerModule.Value.Module.Start();
+            await moduleManagerModule.Value.Module.Setup();
+        }
+        
+        _logger.LogDebug("Starting modules");
+        Status.Update("Starting modules");
+        
+        foreach (var moduleManagerModule in _moduleManager.Modules)
+        {
+            await moduleManagerModule.Value.Module.Start();
         }
     }
     
