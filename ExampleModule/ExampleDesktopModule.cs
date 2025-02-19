@@ -1,4 +1,5 @@
-﻿using MudBlazor;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MudBlazor;
 using OpenShock.Desktop.ModuleBase;
 using OpenShock.Desktop.ModuleBase.Navigation;
 
@@ -9,8 +10,19 @@ public class ExampleDesktopModule : DesktopModuleBase
     public override string Id => "OpenShock.Desktop.Modules.ExampleModule";
     public override string Name => "Example Module";
     public override string IconPath => "OpenShock/Desktop/Modules/ExampleModule/Icon.svg";
+
+    public override IServiceProvider ModuleServiceProvider { get; }
+
+    public ExampleDesktopModule()
+    {
+        var services = new ServiceCollection();
+
+        services.AddSingleton<ExampleService>();
+        
+        ModuleServiceProvider = services.BuildServiceProvider();
+    }
     
-    public override IReadOnlyCollection<NavigationItem> NavigationComponents =>
+    public override IReadOnlyCollection<NavigationItem> NavigationComponents { get; } =
     [
         new NavigationItem
         {

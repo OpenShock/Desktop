@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Net.Mime;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.FileProviders;
 using OneOf;
 using OneOf.Types;
@@ -14,6 +16,7 @@ namespace OpenShock.Desktop.ModuleManager;
 public sealed class ModuleManager
 {
     private static readonly Type ModuleBaseType = typeof(DesktopModuleBase);
+    private static readonly Type AspNetIComponentType = typeof(IComponent);
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ModuleManager> _logger;
@@ -151,7 +154,8 @@ public sealed class ModuleManager
         var assemblyLoadContext = new ModuleAssemblyLoadContext(moduleFolderPath);
         var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleFile);
 
-        var pluginTypes = assembly.GetTypes().Where(t => t.IsAssignableTo(ModuleBaseType)).ToArray();
+        var moduleTypes = assembly.GetTypes();
+        var pluginTypes = moduleTypes.Where(t => t.IsAssignableTo(ModuleBaseType)).ToImmutableArray();
         switch (pluginTypes.Length)
         {
             case 0:
@@ -164,14 +168,14 @@ public sealed class ModuleManager
 
         var module = (DesktopModuleBase?)ActivatorUtilities.CreateInstance(_serviceProvider, pluginTypes[0]);
         if (module is null) throw new Exception("Failed to instantiate module!");
-
+        
         var loadedModule = new LoadedModule
         {
             LoadContext = assemblyLoadContext,
             Assembly = assembly,
             Module = module
         };
-
+        
         module.SetContext(new ModuleInstanceManager(loadedModule, _serviceProvider.GetRequiredService<ILoggerFactory>())
         {
             ServiceProvider = _serviceProvider

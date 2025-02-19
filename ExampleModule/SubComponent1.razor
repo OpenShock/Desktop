@@ -1,5 +1,11 @@
-﻿<h3>SubComponent1</h3>
+﻿@using OpenShock.Desktop.ModuleBase
+
+<h3>SubComponent1</h3>
+<p>@ExampleService.GetExampleString()</p>
 
 @code {
-    
+
+    [ModuleInject]
+    private ExampleService ExampleService { get; set; } = null!;
+
 }
