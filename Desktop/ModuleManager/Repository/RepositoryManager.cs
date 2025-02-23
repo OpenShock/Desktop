@@ -1,18 +1,20 @@
-﻿using System.Text.Json;
+﻿using System.Reactive.Subjects;
 using OpenShock.Desktop.Config;
-using OpenShock.SDK.CSharp.Updatables;
+using OpenShock.Desktop.ModuleBase.Utils;
+using OpenShock.Desktop.Utils;
 
 namespace OpenShock.Desktop.ModuleManager.Repository;
 
 public sealed class RepositoryManager
 {
-    public IUpdatable<uint> FetchedRepositories => _fetchedRepositories;
-    private readonly UpdatableVariable<uint> _fetchedRepositories = new(0);
+    public IObservableVariable<uint> FetchedRepositories => _fetchedRepositories;
+    private readonly ObservableVariable<uint> _fetchedRepositories = new(0);
     
-    public IUpdatable<FetcherState> FetcherState => _fetcherState;
-    private readonly UpdatableVariable<FetcherState> _fetcherState = new(Desktop.ModuleManager.Repository.FetcherState.Idle);
+    public IObservableVariable<FetcherState> FetcherState => _fetcherState;
+    private readonly ObservableVariable<FetcherState> _fetcherState = new(Desktop.ModuleManager.Repository.FetcherState.Idle);
     
-    public event Action? RepositoriesStateChanged;
+    public IAsyncObservable<Uri> RepositoriesStateChanged => _repositoriesStateChanged;
+    private readonly ConcurrentSimpleAsyncSubject<Uri> _repositoriesStateChanged = new ConcurrentSimpleAsyncSubject<Uri>();
     
     public IReadOnlyDictionary<Uri, RepositoryLoadContext> Repositories => _repositories;
     private readonly Dictionary<Uri, RepositoryLoadContext> _repositories = new Dictionary<Uri, RepositoryLoadContext>();
@@ -34,11 +36,6 @@ public sealed class RepositoryManager
             return;
         }
         
-        foreach (var repositoryLoadContext in _repositories)
-        {
-            repositoryLoadContext.Value.State.OnValueChanged -= ReposOnStateChange;
-        }
-        
         _repositories.Clear();
         _fetchedRepositories.Value = 0;
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.SettingUp;
@@ -57,7 +54,8 @@ public sealed class RepositoryManager
         
         foreach (var repoLoadContext in _repositories)
         {
-            repoLoadContext.Value.State.OnValueChanged += ReposOnStateChange;
+            await repoLoadContext.Value.State.ValueUpdated.SubscribeAsync(_ => ReposOnStateChange(repoLoadContext.Key));
+            // We dont need to care about disposing this, we will just let it be garbage collected when we clear the repositories
             
             try
             {
@@ -74,9 +72,9 @@ public sealed class RepositoryManager
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.Idle;
     }
 
-    private void ReposOnStateChange(RepositoryLoadContextState arg)
+    private ValueTask ReposOnStateChange(Uri repoUri)
     {
-        RepositoriesStateChanged?.Invoke();
+        return _repositoriesStateChanged.OnNextAsync(repoUri);
     }
 }
 

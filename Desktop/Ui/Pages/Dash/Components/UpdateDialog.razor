@@ -3,17 +3,18 @@
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Utils
-@implements IDisposable
+@implements IAsyncDisposable
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
 
     private bool _isDownloading = false;
 
-    protected override void OnInitialized()
+    private IAsyncDisposable? _downloadProgressSubscription;
+
+    protected override async Task OnInitializedAsync()
     {
-        Updater.DownloadProgress.OnValueChanged += OnDownloadProgressChanged;
-        base.OnInitialized();
+        _downloadProgressSubscription = await Updater.DownloadProgress.ValueUpdated.SubscribeAsync(OnDownloadProgressChanged);
     }
 
     private void OnDownloadProgressChanged(double progress)
@@ -39,9 +40,9 @@
         OsTask.Run(Updater.DoUpdate);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        Updater.DownloadProgress.OnValueChanged -= OnDownloadProgressChanged;
+        if (_downloadProgressSubscription != null) await _downloadProgressSubscription.DisposeAsync();
     }
 
 }

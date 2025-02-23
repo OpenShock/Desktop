@@ -11,8 +11,6 @@ public class ExampleDesktopModule : DesktopModuleBase
     public override string Name => "Example Module";
     public override string IconPath => "OpenShock/Desktop/Modules/ExampleModule/Icon.svg";
 
-    public override IServiceProvider ModuleServiceProvider { get; }
-
     public ExampleDesktopModule()
     {
         var services = new ServiceCollection();

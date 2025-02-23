@@ -6,9 +6,12 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.FileProviders;
 using OneOf;
 using OneOf.Types;
+using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleBase;
+using OpenShock.Desktop.ModuleManager.Implementation;
 using OpenShock.Desktop.ModuleManager.Repository;
+using OpenShock.Desktop.Services;
 using Semver;
 
 namespace OpenShock.Desktop.ModuleManager;
@@ -176,9 +179,14 @@ public sealed class ModuleManager
             Module = module
         };
         
-        module.SetContext(new ModuleInstanceManager(loadedModule, _serviceProvider.GetRequiredService<ILoggerFactory>())
+        module.SetContext(new ModuleInstanceManager(loadedModule, 
+            _serviceProvider.GetRequiredService<ILoggerFactory>(), 
+            _serviceProvider.GetRequiredService<BackendHubManager>(), 
+            _serviceProvider.GetRequiredService<LiveControlManager>(),
+                            _serviceProvider.GetRequiredService<OpenShockApi>()
+            )
         {
-            ServiceProvider = _serviceProvider
+            AppServiceProvider = _serviceProvider
         });
 
         var moduleFolder =

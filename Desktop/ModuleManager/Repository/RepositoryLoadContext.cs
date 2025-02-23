@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using OneOf;
 using OneOf.Types;
+using OpenShock.Desktop.ModuleBase.Utils;
 using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Updatables;
 using Serilog;
@@ -27,9 +28,9 @@ public sealed class RepositoryLoadContext
 
     public required Uri RepositoryUrl { get; init; }
 
-    public IUpdatable<RepositoryLoadContextState> State => _state;
+    public IObservableVariable<RepositoryLoadContextState> State => _state;
     
-    private readonly UpdatableVariable<RepositoryLoadContextState> _state =
+    private readonly ObservableVariable<RepositoryLoadContextState> _state =
         new(RepositoryLoadContextState.Queued);
     
     public Repository? Repository { get; private set; } = null;

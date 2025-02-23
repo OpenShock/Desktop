@@ -5,28 +5,30 @@
 @inject AuthService AuthService
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.Services
-@implements IDisposable
+@implements IAsyncDisposable
 
 @code {
     private readonly DialogOptions _dialogOptions = new() { NoHeader = true, BackdropClick = false };
 
-    private void OpenUpdateDialog()
+    private async Task OpenUpdateDialog()
     {
-        DialogService.Show<UpdateDialog>("Update", _dialogOptions);
+        await DialogService.ShowAsync<UpdateDialog>("Update", _dialogOptions);
     }
 
-    protected override void OnInitialized()
+    private List<IAsyncDisposable> _disposables = new();
+    
+    protected override async Task OnInitializedAsync()
     {
-        Updater.UpdateAvailable.OnValueChanged += UpdateAvailableOnValueChanged;
-        Updater.CheckingForUpdate.OnValueChanged += CheckingForUpdateOnValueChanged;
-
-        if (Updater.UpdateAvailable.Value && !Updater.IsPostponed) OpenUpdateDialog();
+        _disposables.Add(await Updater.UpdateAvailable.ValueUpdated.SubscribeAsync(UpdateAvailableOnValueChanged));
+        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(CheckingForUpdateOnValueChanged));
+        
+        if (Updater.UpdateAvailable.Value && !Updater.IsPostponed) await OpenUpdateDialog();
     }
 
-    private void UpdateAvailableOnValueChanged(bool v)
+    private async ValueTask UpdateAvailableOnValueChanged(bool v)
     {
-        InvokeAsync(StateHasChanged);
-        if (v && !Updater.IsPostponed) OpenUpdateDialog();
+        await InvokeAsync(StateHasChanged);
+        if (v && !Updater.IsPostponed) await OpenUpdateDialog();
     }
 
     private void CheckingForUpdateOnValueChanged(bool v)
@@ -40,11 +42,20 @@
 
         NavigationManager.NavigateTo("/");
     }
+    
+    private bool _disposed = false;
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        Updater.CheckingForUpdate.OnValueChanged -= CheckingForUpdateOnValueChanged;
-        Updater.UpdateAvailable.OnValueChanged -= UpdateAvailableOnValueChanged;
+        if (_disposed) return;
+        _disposed = true;
+        
+        foreach (var asyncDisposable in _disposables)
+        {
+            await asyncDisposable.DisposeAsync();
+        }
+        
+        _disposables.Clear();
     }
 
 }

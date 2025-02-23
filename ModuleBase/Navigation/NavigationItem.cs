@@ -1,6 +1,4 @@
-﻿using OneOf;
-
-namespace OpenShock.Desktop.ModuleBase.Navigation;
+﻿namespace OpenShock.Desktop.ModuleBase.Navigation;
 
 public sealed class NavigationItem
 {

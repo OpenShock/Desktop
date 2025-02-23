@@ -76,12 +76,12 @@ public sealed class LiveControlManager
         // Remove devices that dont exist anymore
         foreach (var liveControlClient in LiveControlClients)
         {
-            if (_api.Devices.Any(x => x.Id == liveControlClient.Key)) continue;
+            if (_api.Hubs.Value.Any(x => x.Id == liveControlClient.Key)) continue;
             if (!LiveControlClients.Remove(liveControlClient.Key, out var removedClient))
                 await removedClient!.DisposeAsync();
         }
 
-        foreach (var device in _api.Devices)
+        foreach (var device in _api.Hubs.Value)
         {
             if (LiveControlClients.ContainsKey(device.Id)) continue;
 
@@ -90,42 +90,16 @@ public sealed class LiveControlManager
             _logger.LogTrace("Getting device gateway for device [{DeviceId}]", device.Id);
             var deviceGateway = await _apiClient.GetDeviceGateway(device.Id);
 
+            if (deviceGateway.IsT0)
+            {
+                var gateway = deviceGateway.AsT0.Value;
+                await SetupLiveControlClient(device.Id, gateway);
+
+                continue;
+            }
+            
             deviceGateway.Switch(success =>
                 {
-                    var gateway = success.Value;
-                    _logger.LogTrace("Got device gateway for device [{DeviceId}] [{Gateway}]", device.Id,
-                        gateway.Gateway);
-
-                    var client = new OpenShockLiveControlClient(gateway.Gateway, device.Id,
-                        _configManager.Config.OpenShock.Token, _liveControlLogger);
-                    LiveControlClients.Add(device.Id, client);
-
-                    client.State.OnValueChanged += async state =>
-                    {
-                        _logger.LogTrace("Live control client for device [{DeviceId}] status updated {Status}",
-                            device.Id, state);
-                        await OnStateUpdated.Raise();
-                    };
-                    
-                    client.OnDeviceNotConnected += async () =>
-                    {
-                        _logger.LogInformation("Live control client for device [{DeviceId}] ending, device disconnected", device.Id);
-                        // Dispose the client so it gets removed from the list and co
-                        await client.DisposeAsync();
-                    };
-
-                    // When the client shuts down, remove it from the list
-                    client.OnDispose += async () =>
-                    {
-                        _logger.LogTrace("Live control client for device [{DeviceId}] disposed, removing from list",
-                            device.Id);
-                        if (!LiveControlClients.Remove(device.Id, out var removedClient)) return;
-                        await removedClient.DisposeAsync(); // Dispose incase it was not disposed
-
-                        await OnStateUpdated.Raise();
-                    };
-
-                    client.InitializeAsync();
                 },
                 found =>
                 {
@@ -157,6 +131,74 @@ public sealed class LiveControlManager
         await OnStateUpdated.Raise();
     }
 
+    private async Task SetupLiveControlClient(Guid deviceId, LcgResponse gateway)
+    {
+        _logger.LogTrace("Got device gateway for device [{DeviceId}] [{Gateway}]", deviceId,
+            gateway.Gateway);
+
+        var client = new OpenShockLiveControlClient(gateway.Gateway, deviceId,
+            _configManager.Config.OpenShock.Token, _liveControlLogger);
+        LiveControlClients.Add(deviceId, client);
+
+        client.State.OnValueChanged += async state =>
+        {
+            _logger.LogTrace("Live control client for device [{DeviceId}] status updated {Status}",
+                deviceId, state);
+            await OnStateUpdated.Raise();
+        };
+                    
+        await client.OnHubNotConnected.SubscribeAsync(async _ =>
+        {
+            _logger.LogInformation("Live control client for device [{DeviceId}] ending, device disconnected", deviceId);
+            // Dispose the client so it gets removed from the list and co
+            await client.DisposeAsync();
+        });
+
+        // When the client shuts down, remove it from the list
+        await client.OnDispose.SubscribeAsync(async _ =>
+        {
+            _logger.LogTrace("Live control client for device [{DeviceId}] disposed, removing from list",
+                deviceId);
+            if (!LiveControlClients.Remove(deviceId, out var removedClient)) return;
+            await removedClient.DisposeAsync(); // Dispose incase it was not disposed
+
+            await OnStateUpdated.Raise();
+        });
+
+        await client.InitializeAsync();
+    }
+
+    public void ControlShockers(IEnumerable<Guid> shockers, byte intensity, ControlType type)
+    {
+        var enabledShockers = shockers.Where(x =>
+            _configManager.Config.OpenShock.Shockers.Any(y => y.Key == x && y.Value.Enabled));
+        
+        var shockersByDevice = enabledShockers.GroupBy(
+            x => _apiClient.Hubs.Value.FirstOrDefault(y => y.Shockers.Any(z => z.Id == x))?.Id);
+
+        foreach (var device in shockersByDevice)
+        {
+            if (device.Key == null) continue;
+            if (!LiveControlClients.TryGetValue(device.Key.Value, out var client)) continue;
+
+            ControlFrame(device.Select(x => x), client, intensity, type);
+        }
+    }
+
+    public void ControlAllShockers(byte intensity, ControlType type)
+    {
+        foreach (var (deviceId, liveControlClient) in LiveControlClients)
+        {
+            var apiDevice = _apiClient.Hubs.Value
+                .FirstOrDefault(x => x.Id == deviceId);
+            if (apiDevice == null) continue;
+                
+            ControlFrame(apiDevice.Shockers
+                .Where(x => _configManager.Config.OpenShock.Shockers.Any(y => y.Key == x.Id && y.Value.Enabled))
+                .Select(x => x.Id), liveControlClient, intensity, type);
+        }
+    } 
+    
     private void ControlFrame(IEnumerable<Guid> shockers, IOpenShockLiveControlClient client,
         byte vibrationIntensity, ControlType type)
     {

@@ -1,6 +1,8 @@
-﻿using OneOf;
+﻿using System.Collections.Immutable;
+using OneOf;
 using OneOf.Types;
 using OpenShock.Desktop.Config;
+using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp;
 using OpenShock.SDK.CSharp.Models;
 using OpenShock.SDK.CSharp.Utils;
@@ -34,11 +36,8 @@ public sealed class OpenShockApi
         });
     }
     
-    public event Func<IReadOnlyCollection<ShockerResponse>, Task>? OnShockersUpdated; 
-
-    public IReadOnlyCollection<ResponseDeviceWithShockers> Devices = Array.Empty<ResponseDeviceWithShockers>(); 
-    public IReadOnlyCollection<ShockerResponse> Shockers = Array.Empty<ShockerResponse>();
-
+    public ObservableVariable<ImmutableArray<ResponseDeviceWithShockers>> Hubs { get; } = new(ImmutableArray<ResponseDeviceWithShockers>.Empty);
+    
     public async Task RefreshShockers()
     {
         if (Client == null)
@@ -50,12 +49,11 @@ public sealed class OpenShockApi
         
         response.Switch(success =>
             {
-                Devices = success.Value;
-                Shockers = success.Value.SelectMany(x => x.Shockers).ToArray();
+                Hubs.Value = success.Value;
                 
                 // re-populate config with previous data if present, this also deletes any shockers that are no longer present
                 var shockerList = new Dictionary<Guid, OpenShockConf.ShockerConf>();
-                foreach (var shocker in Shockers)
+                foreach (var shocker in success.Value.SelectMany(x => x.Shockers))
                 {
                     var enabled = true;
                 
@@ -71,7 +69,6 @@ public sealed class OpenShockApi
                 }
                 _configManager.Config.OpenShock.Shockers = shockerList;
                 _configManager.Save();
-                OnShockersUpdated.Raise(Shockers);
             },
         error =>
         {
@@ -82,10 +79,7 @@ public sealed class OpenShockApi
 
     public void Logout()
     {
-        Devices = Array.Empty<ResponseDeviceWithShockers>();
-        Shockers = Array.Empty<ShockerResponse>();
-        
-        OnShockersUpdated.Raise(Shockers);
+        Hubs.Value = ImmutableArray<ResponseDeviceWithShockers>.Empty;
     }
 
     public

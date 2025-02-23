@@ -59,5 +59,17 @@ public sealed class BackendHubManager
             return;
         }
     }
+
+    /// <summary>
+    /// Control command via signalr
+    /// </summary>
+    /// <param name="shocks"></param>
+    /// <param name="customName"></param>
+    /// <returns></returns>
+    public Task Control(IEnumerable<Control> shocks, string? customName = null)
+    {
+        var enabledShockers = _configManager.Config.OpenShock.Shockers.Where(y => y.Value.Enabled).Select(x => x.Key).ToHashSet();
+        return _openShockHubClient.Control(shocks.Where(x => enabledShockers.Contains(x.Id)), customName);
+    }
     
 }

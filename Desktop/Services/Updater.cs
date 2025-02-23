@@ -28,11 +28,11 @@ public sealed class Updater
     private readonly ILogger<Updater> _logger;
     private readonly ConfigManager _configManager;
 
-    public UpdatableVariable<bool> CheckingForUpdate { get; } = new(false);
-    public UpdatableVariable<bool> UpdateAvailable { get; } = new(false);
+    public ObservableVariable<bool> CheckingForUpdate { get; } = new(false);
+    public ObservableVariable<bool> UpdateAvailable { get; } = new(false);
     public bool IsPostponed { get; private set; }
     public SemVersion? LatestVersion { get; private set; }
-    public UpdatableVariable<double> DownloadProgress { get; } = new(0);
+    public ObservableVariable<double> DownloadProgress { get; } = new(0);
 
 
     public Updater(ILogger<Updater> logger, ConfigManager configManager)

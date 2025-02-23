@@ -8,7 +8,7 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject RepositoryManager RepositoryManager
-@implements IDisposable
+@implements IAsyncDisposable
 
 @page "/dash/settings"
 
@@ -215,42 +215,25 @@
         InvokeAsync(StateHasChanged);
     }
 
-    protected override void OnInitialized()
-    {
-        Updater.CheckingForUpdate.OnValueChanged += OnCheckingForUpdateChange;
+    private List<IAsyncDisposable> _disposables = new();
 
-        RepositoryManager.FetcherState.OnValueChanged += FetcherStateOnOnValueChanged;
-        RepositoryManager.FetchedRepositories.OnValueChanged += FetchedRepositoriesOnOnValueChanged;
-        RepositoryManager.RepositoriesStateChanged += RepositoryManagerOnRepositoriesStateChanged;
+    protected override async Task OnInitializedAsync()
+    {
+        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(_ => UpdateView())); 
+        _disposables.Add(await RepositoryManager.FetcherState.ValueUpdated.SubscribeAsync(_ => UpdateView()));
+        _disposables.Add(await RepositoryManager.FetchedRepositories.ValueUpdated.SubscribeAsync(_ => UpdateView()));
+        _disposables.Add(await RepositoryManager.RepositoriesStateChanged.SubscribeAsync(_ => UpdateView()));
 
         UpdateRepositoriesWithFetchedData();
     }
 
     #region Event Handlers 
-
-    private void RepositoryManagerOnRepositoriesStateChanged()
+    
+    
+    private async ValueTask UpdateView()
     {
         UpdateRepositoriesWithFetchedData();
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void FetchedRepositoriesOnOnValueChanged(uint arg)
-    {
-        UpdateRepositoriesWithFetchedData();
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void FetcherStateOnOnValueChanged(FetcherState arg)
-    {
-        UpdateRepositoriesWithFetchedData();
-        InvokeAsync(StateHasChanged);
-    }
-
-
-    private void OnCheckingForUpdateChange(bool value)
-    {
-        UpdateRepositoriesWithFetchedData();
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OnSettingsValueChange()
@@ -341,18 +324,23 @@
         UpdateRepositoriesWithFetchedData();
     }
 
-    public void Dispose()
-    {
-        Updater.CheckingForUpdate.OnValueChanged -= OnCheckingForUpdateChange;
-        RepositoryManager.FetcherState.OnValueChanged -= FetcherStateOnOnValueChanged;
-        RepositoryManager.FetchedRepositories.OnValueChanged -= FetchedRepositoriesOnOnValueChanged;
-        RepositoryManager.RepositoriesStateChanged -= RepositoryManagerOnRepositoriesStateChanged;
-    }
-
     private void CancelAdd()
     {
         _addFieldOpen = false;
         _newUrl = string.Empty;
+    }
+
+    private bool _disposed;
+    
+    public async ValueTask DisposeAsync()
+    {
+        if(_disposed) return;
+        _disposed = true;
+        
+        foreach (var disposable in _disposables)
+        {
+            await disposable.DisposeAsync();
+        }
     }
 
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using OpenShock.Desktop.ModuleBase.Api;
 using OpenShock.Desktop.ModuleBase.Navigation;
 
 namespace OpenShock.Desktop.ModuleBase;
@@ -27,5 +28,5 @@ public abstract class DesktopModuleBase
         return Task.CompletedTask;
     }
 
-    public virtual IServiceProvider ModuleServiceProvider { get; } = new ServiceCollection().BuildServiceProvider();
+    public IServiceProvider ModuleServiceProvider { get; protected set; } = new ServiceCollection().BuildServiceProvider();
 }

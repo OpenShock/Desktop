@@ -41,7 +41,7 @@
                 </MudTooltip>
             </div>
 
-            @foreach (var device in Api.Devices)
+            @foreach (var device in Api.Hubs.Value)
             {
                 if (LiveControlManager.LiveControlClients.TryGetValue(device.Id, out var client))
                 {

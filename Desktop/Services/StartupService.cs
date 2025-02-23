@@ -43,22 +43,20 @@ public sealed class StartupService
         _logger.LogDebug("Fetching repositories");
         Status.Update("Fetching repositories");
 
-        _repositoryManager.FetcherState.OnValueChanged += FetcherStateOnOnValueChanged;
-        _repositoryManager.FetchedRepositories.OnValueChanged += FetchedRepositoriesOnOnValueChanged;
-        _repositoryManager.RepositoriesStateChanged += RepositoryManagerOnRepositoriesStateChanged;
-        
-        try
+        await using (await _repositoryManager.FetcherState.ValueUpdated.SubscribeAsync(FetcherStateOnOnValueChanged))
+        await using (await _repositoryManager.FetchedRepositories.ValueUpdated.SubscribeAsync(FetchedRepositoriesOnOnValueChanged))
+        await using (await _repositoryManager.RepositoriesStateChanged.SubscribeAsync(RepositoryManagerOnRepositoriesStateChanged))
         {
-            await _repositoryManager.FetchRepositories().ConfigureAwait(false);
+            try
+            {
+                await _repositoryManager.FetchRepositories().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error while fetching repositories");
+            }
+
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Error while fetching repositories");
-        }
-        
-        _repositoryManager.FetcherState.OnValueChanged -= FetcherStateOnOnValueChanged;
-        _repositoryManager.FetchedRepositories.OnValueChanged -= FetchedRepositoriesOnOnValueChanged;
-        _repositoryManager.RepositoriesStateChanged -= RepositoryManagerOnRepositoriesStateChanged;
 
         _logger.LogDebug("Processing module updates");
         Status.Update("Processing module updates");
@@ -99,7 +97,7 @@ public sealed class StartupService
         }
     }
     
-    private void RepositoryManagerOnRepositoriesStateChanged()
+    private void RepositoryManagerOnRepositoriesStateChanged(Uri repo)
     {
         UpdateStateForRepositories();
     }
