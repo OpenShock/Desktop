@@ -3,4 +3,5 @@
 public interface IOpenShockService
 {
     public IOpenShockControl Control { get; }
+    public IOpenShockData Data { get; }
 }

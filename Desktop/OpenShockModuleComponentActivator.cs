@@ -20,19 +20,26 @@ public class OpenShockModuleComponentActivator : IComponentActivator
 
     public IComponent CreateInstance(Type componentType)
     {
-        
-        var module = _moduleManager.Modules.Where(x => x.Value.Assembly == componentType.Assembly).Select(x => x.Value).FirstOrDefault();
-        if (module != null)
+        try
         {
-            var componentObject = ActivatorUtilities.CreateInstance(_defaultProvider, componentType);
-            var component = (IComponent)componentObject;
-            
-            InjectModuleDependencies(componentObject, componentType, module);
-            
-            return component;
+            var module = _moduleManager.Modules.Where(x => x.Value.Assembly == componentType.Assembly)
+                .Select(x => x.Value).FirstOrDefault();
+            if (module != null)
+            {
+                var componentObject = ActivatorUtilities.CreateInstance(_defaultProvider, componentType);
+                var component = (IComponent)componentObject;
+
+                InjectModuleDependencies(componentObject, componentType, module);
+
+                return component;
+            }
+
+            return (IComponent)ActivatorUtilities.CreateInstance(_defaultProvider, componentType);
+        } catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to create component {ComponentType}", componentType.Name);
+            throw;
         }
-        
-        return (IComponent)ActivatorUtilities.CreateInstance(_defaultProvider, componentType);
     }
 
     private void InjectModuleDependencies(object instance, Type componentType, LoadedModule module)
