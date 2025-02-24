@@ -1,0 +1,65 @@
+﻿@using OpenShock.Desktop.Backend
+@using OpenShock.Desktop.Config
+@using OpenShock.SDK.CSharp.Hub.Models
+@using ControlType = OpenShock.SDK.CSharp.Models.ControlType
+@inject OpenShockApi OpenShockApi
+@inject BackendHubManager BackendHubManager
+@implements IAsyncDisposable
+
+@page "/dash/shockers"
+
+<MudPaper Height="100%" Outlined="true" Class="rounded-lg mud-paper-padding d-flex" Style="position: relative; flex-direction: column">
+    <MudButton OnClick="TestShockers"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.Send"
+               Color="Color.Primary"
+               Style="margin-right: 10px;">Test Shockers (Vibrate 10% 1s)</MudButton>
+    <br/>
+    <br/>
+    <div style="height: 100%; overflow-y: scroll;">
+        <MudTable Elevation="0" Items="OpenShockApi.Hubs.Value.SelectMany(x => x.Shockers)">
+            <HeaderContent>
+                <MudTh>Enabled</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Name</MudTh>
+                <MudTh>Guid</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <ShockerComponent Shocker="@context"></ShockerComponent>
+            </RowTemplate>
+        </MudTable>
+    </div>
+
+</MudPaper>
+
+@code {
+    private IAsyncDisposable? _hubsUpdateSubscription;
+
+    private async Task TestShockers()
+    {
+        var controlCommandsAll = OpenShockApi.Hubs.Value.SelectMany(x => x.Shockers)
+            .Select(x => new Control
+            {
+                Id = x.Id,
+                Duration = 1000,
+                Intensity = 50,
+                Type = ControlType.Vibrate,
+                Exclusive = true
+            });
+        await BackendHubManager.Control(controlCommandsAll);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubsUpdateSubscription = await OpenShockApi.Hubs.ValueUpdated.SubscribeAsync(list =>
+        {
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubsUpdateSubscription != null) await _hubsUpdateSubscription.DisposeAsync();
+    }
+
+}

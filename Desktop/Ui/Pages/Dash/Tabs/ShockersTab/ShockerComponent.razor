@@ -1,0 +1,73 @@
+﻿@using OpenShock.Desktop.Backend
+@using OpenShock.Desktop.Config
+@using OpenShock.Desktop.Utils
+@using OpenShock.SDK.CSharp.Models
+@inject ConfigManager ConfigManager
+@inject OpenShockApi OpenShockApi
+
+@if (_configShocker != null)
+{
+    <MudTd>
+        <MudCheckBox Class="option-width option-checkbox-height"
+                     Style="margin-left:10px;"
+                     @bind-Value="_configShocker.Enabled"
+                     @bind-Value:after="OnShockerConfigUpdate"/>
+    </MudTd>
+    <MudTd>
+        @if (!_wasChanged)
+        {
+            <MudTooltip>
+                <ChildContent>
+                    <MudToggleIconButton Toggled="Shocker.IsPaused" ToggledChanged="PauseShocker"
+                                         Icon="@Icons.Material.Filled.PlayArrow"
+                                         ToggledIcon="@Icons.Material.Filled.Pause"></MudToggleIconButton>
+                </ChildContent>
+                <TooltipContent>
+                    @(Shocker.IsPaused ? "Shocker Paused" : "Shocker Not Paused")
+                </TooltipContent>
+            </MudTooltip>
+        }
+        else
+        {
+            <span style="width: 48px; height: 48px; display: block">
+                <MudProgressCircular Color="Color.Default" Indeterminate="true"/>
+            </span>
+        }
+    </MudTd>
+}
+else
+{
+    <MudTd>
+        <MudText Color="Color.Error">Error loading shocker's local settings</MudText>
+    </MudTd>
+    <MudTd></MudTd>
+}
+<MudTd>@Shocker.Name</MudTd>
+<MudTd>@Shocker.Id</MudTd>
+
+
+@code {
+    private OpenShockConf.ShockerConf? _configShocker;
+
+    [Parameter] public required ShockerResponse Shocker { get; set; }
+
+    private bool _wasChanged = false;
+
+    private async Task PauseShocker()
+    {
+        if (OpenShockApi.Client == null || _wasChanged) return;
+        _wasChanged = true;
+        await OpenShockApi.Client.PauseShocker(Shocker.Id, !Shocker.IsPaused);
+    }
+
+    protected override void OnInitialized()
+    {
+        _configShocker = ConfigManager.Config.OpenShock.Shockers[Shocker.Id];
+    }
+
+    private void OnShockerConfigUpdate()
+    {
+        ConfigManager.Save();
+    }
+
+}

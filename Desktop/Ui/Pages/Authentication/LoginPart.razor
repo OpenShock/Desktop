@@ -189,7 +189,7 @@
         
         Logger.LogTrace("Open browser for token");
 
-        var requestUri = new Uri(root.Data!.ShortLinkUrl, "/t/?name=OpenShock%20Desktop&redirect_uri=openshock:token/%&permissions=shockers.use");
+        var requestUri = new Uri(root.Data!.ShortLinkUrl, "/t/?name=OpenShock%20Desktop&redirect_uri=openshock:token/%&permissions=shockers.use,shockers.pause");
         UiUtils.OpenUrl(requestUri.ToString());
     }
     

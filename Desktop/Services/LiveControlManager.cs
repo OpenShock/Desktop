@@ -43,8 +43,7 @@ public sealed class LiveControlManager
     private async Task HubClientOnDeviceUpdate(Guid device, DeviceUpdateType type)
     {
         _logger.LogDebug("Device update received, updating shockers and refreshing connections");
-        
-        await _apiClient.RefreshShockers();
+
         await RefreshConnections();
     }
 
@@ -174,7 +173,7 @@ public sealed class LiveControlManager
             _configManager.Config.OpenShock.Shockers.Any(y => y.Key == x && y.Value.Enabled));
         
         var shockersByDevice = enabledShockers.GroupBy(
-            x => _apiClient.Hubs.Value.FirstOrDefault(y => y.Shockers.Any(z => z.Id == x))?.Id);
+            x => _apiClient.Hubs.Value.FirstOrDefault(y => y.Shockers.Any(z => z.Id == x && !z.IsPaused))?.Id);
 
         foreach (var device in shockersByDevice)
         {
@@ -194,7 +193,9 @@ public sealed class LiveControlManager
             if (apiDevice == null) continue;
                 
             ControlFrame(apiDevice.Shockers
-                .Where(x => _configManager.Config.OpenShock.Shockers.Any(y => y.Key == x.Id && y.Value.Enabled))
+                .Where(x => !x.IsPaused &&
+                    _configManager.Config.OpenShock.Shockers.Any(y => 
+                        y.Key == x.Id && y.Value.Enabled))
                 .Select(x => x.Id), liveControlClient, intensity, type);
         }
     } 

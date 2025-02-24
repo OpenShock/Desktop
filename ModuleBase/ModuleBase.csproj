@@ -13,7 +13,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.2" />
         <PackageReference Include="OneOf" Version="3.0.271" />
-        <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.30" />
+        <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.31" />
         <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.30" />
         <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.30" />
         <PackageReference Include="System.Reactive" Version="6.0.1" />

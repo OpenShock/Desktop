@@ -15,16 +15,18 @@ public sealed class BackendHubManager
     private readonly ILogger<BackendHubManager> _logger;
     private readonly ConfigManager _configManager;
     private readonly OpenShockHubClient _openShockHubClient;
+    private readonly OpenShockApi _openShockApi;
 
     private string _liveConnectionId = string.Empty;
 
     public BackendHubManager(ILogger<BackendHubManager> logger,
         ConfigManager configManager,
-        OpenShockHubClient openShockHubClient)
+        OpenShockHubClient openShockHubClient, OpenShockApi openShockApi)
     {
         _logger = logger;
         _configManager = configManager;
         _openShockHubClient = openShockHubClient;
+        _openShockApi = openShockApi;
 
         _openShockHubClient.OnWelcome += s =>
         {
@@ -33,6 +35,14 @@ public sealed class BackendHubManager
         };
 
         _openShockHubClient.OnLog += RemoteActivateShockers;
+        _openShockHubClient.OnDeviceUpdate += DeviceUpdate;
+    }
+
+    private async Task DeviceUpdate(Guid deviceId, DeviceUpdateType updateType)
+    {
+        _logger.LogDebug("Device update received {DeviceId} {UpdateType}", deviceId, updateType);
+                
+        await _openShockApi.RefreshShockers();
     }
 
 
@@ -68,8 +78,15 @@ public sealed class BackendHubManager
     /// <returns></returns>
     public Task Control(IEnumerable<Control> shocks, string? customName = null)
     {
-        var enabledShockers = _configManager.Config.OpenShock.Shockers.Where(y => y.Value.Enabled).Select(x => x.Key).ToHashSet();
-        return _openShockHubClient.Control(shocks.Where(x => enabledShockers.Contains(x.Id)), customName);
+        var enabledShockers = _configManager.Config.OpenShock.Shockers
+            .Where(y => y.Value.Enabled && 
+                        _openShockApi.Hubs.Value.Any(x=> 
+                            x.Shockers.Any(z => z.Id == y.Key && !z.IsPaused)))
+            .Select(x => x.Key)
+            .ToHashSet();
+        
+        var shocksToSend = shocks.Where(x => enabledShockers.Contains(x.Id));
+        return _openShockHubClient.Control(shocksToSend, customName);
     }
     
 }
