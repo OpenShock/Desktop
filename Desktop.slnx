@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug-Web" />
+    <BuildType Name="Debug-Windows" />
+    <BuildType Name="Release-Windows" />
+  </Configurations>
+  <Project Path="Desktop/Desktop.csproj" />
+  <Project Path="ExampleModule/ExampleModule.csproj" />
+  <Project Path="ModuleBase/ModuleBase.csproj">
+    <BuildType Solution="Debug-Web|*" Project="Debug" />
+    <BuildType Solution="Debug-Windows|*" Project="Debug" />
+    <BuildType Solution="Release-Windows|*" Project="Release" />
+  </Project>
+</Solution>
