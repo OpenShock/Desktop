@@ -12,67 +12,101 @@
 
 <MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10" Outlined="true">
     <img src="@ModuleIcon" alt="@ModuleName" class="icon rounded-lg"/>
-    
+
     <div class="d-flex flex-column justify-space-evenly overflow-hidden">
         <MudText Typo="Typo.h4">@ModuleName</MudText>
         <MudText Typo="Typo.body1">@(RepoModule?.Description ?? "Description unavailable")</MudText>
     </div>
 
-    <div class="ml-auto flex-shrink-0">
+    <div class="ml-auto flex-shrink-0 d-flex flex-column gap-2">
         @if (ConfigManager.Config.Modules.ModuleTasks.ContainsKey(ModuleId)) // Pending restart for this module
         {
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="Restart">Pending Restart</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="Restart">
+                Pending Restart
+            </MudButton>
         }
         else if (LoadedModule != null)
         {
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RemoveFromQueue" OnClick="Remove">Remove</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RemoveFromQueue" OnClick="Remove">
+                Uninstall
+            </MudButton>
         }
         else
         {
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.InstallDesktop" OnClick="InstallLatest">Install @LatestVersion</MudButton>
+            <MudButtonGroup Variant="Variant.Outlined">
+                <MudButton StartIcon="@Icons.Material.Filled.InstallDesktop"
+                           OnClick="InstallLatest">Install @LatestVersion</MudButton>
+                <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto" Class="slim-split-button">
+                    <MudMenuItem>Reply</MudMenuItem>
+                    <MudMenuItem>Reply All</MudMenuItem>
+                    <MudMenuItem>Forward</MudMenuItem>
+                    <MudMenuItem>Reply & Delete</MudMenuItem>
+                </MudMenu>
+            </MudButtonGroup>
         }
+        <div style="text-align: right">
+            @if (LoadedModule != null)
+            {
+                <MudTooltip>
+                    <ChildContent>
+                        <MudText Typo="Typo.body2">Installed: <MudChip Size="Size.Small" T="string">@LoadedModule.Version.WithoutMetadata().ToString()</MudChip></MudText>
+                    </ChildContent>
+                    <TooltipContent>
+                        <MudText Typo="Typo.body2">@LoadedModule.Version.ToString()</MudText>
+                    </TooltipContent>
+                </MudTooltip>
+
+            }
+        </div>
     </div>
 </MudPaper>
 
-@code {
+<style>
+    .slim-split-button button {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
     
+</style>
+
+@code {
+
     /// <summary>
     /// The module information provided by a repository
     /// If null, the module is not known in any registry
     /// </summary>
     [Parameter]
     public Module? RepoModule { get; init; }
-    
+
     /// <summary>
     /// The loaded module
     /// If null the module is not loaded
     /// </summary>
     [Parameter]
     public LoadedModule? LoadedModule { get; init; }
-    
-    [Parameter]
-    public required string ModuleId { get; init; }
+
+    [Parameter] public required string ModuleId { get; init; }
 
     private string ModuleName => RepoModule?.Name ?? (LoadedModule?.Module.Name ?? "error");
     private string? ModuleIcon => RepoModule?.IconUrl?.ToString() ?? LoadedModule!.Module.IconPath;
-    
+
     private SemVersion? LatestVersion => RepoModule?.Versions.Keys.OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
 
     protected override void OnInitialized()
     {
-        if(RepoModule == null && LoadedModule == null)
+        if (RepoModule == null && LoadedModule == null)
         {
             throw new ArgumentException("RepoModule and LoadedModule cannot both be null");
         }
     }
-    
+
     private void InstallLatest()
     {
         if (LatestVersion == null)
         {
             return;
         }
-        
+
         Install(LatestVersion);
     }
 
@@ -82,7 +116,7 @@
         {
             Version = version
         };
-        
+
         ConfigManager.Save();
         InvokeAsync(StateHasChanged);
     }
@@ -101,4 +135,5 @@
         WindowsRestartHelper.RestartApp();
 #endif
     }
+
 }

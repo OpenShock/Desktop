@@ -2,6 +2,7 @@
 using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Net.Mime;
+using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.FileProviders;
 using OneOf;
@@ -148,7 +149,7 @@ public sealed class ModuleManager
         var moduleFile = Directory.GetFiles(moduleFolderPath, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
         if (moduleFile == null)
         {
-            _logger.LogWarning("No DLLs found in root module folder!");
+            _logger.LogError("No DLLs found in root module folder!");
             return;
         }
 
@@ -156,18 +157,34 @@ public sealed class ModuleManager
 
         var assemblyLoadContext = new ModuleAssemblyLoadContext(moduleFolderPath);
         var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleFile);
-
+        
         var moduleTypes = assembly.GetTypes();
         var pluginTypes = moduleTypes.Where(t => t.IsAssignableTo(ModuleBaseType)).ToImmutableArray();
         switch (pluginTypes.Length)
         {
             case 0:
-                _logger.LogWarning("No modules found in DLL!");
+                _logger.LogError("No modules found in DLL!");
                 return;
             case > 1:
-                _logger.LogWarning("Expected 1 module, found {NumberOfModules}", pluginTypes.Length);
+                _logger.LogError("Expected 1 module, found {NumberOfModules}", pluginTypes.Length);
                 return;
         }
+
+        var assemblyVersion =
+            assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        if (string.IsNullOrWhiteSpace(assemblyVersion))
+        {
+            _logger.LogError("The module assembly does not have a version attribute! Please make sure you have added a <Version></Version> tag to your .csproj file");
+            return;
+        }
+
+        if (!SemVersion.TryParse(assemblyVersion, SemVersionStyles.Strict, out var loadedModuleVersion))
+        {
+            _logger.LogError("Failed to parse sem-version {Version} for module {ModuleId}. It needs to be a valid semantic version.", assemblyVersion, pluginTypes[0].FullName);
+            return;
+        }
+
 
         var module = (DesktopModuleBase?)ActivatorUtilities.CreateInstance(_serviceProvider, pluginTypes[0]);
         if (module is null) throw new Exception("Failed to instantiate module!");
@@ -176,7 +193,8 @@ public sealed class ModuleManager
         {
             LoadContext = assemblyLoadContext,
             Assembly = assembly,
-            Module = module
+            Module = module,
+            Version = loadedModuleVersion
         };
         
         module.SetContext(new ModuleInstanceManager(loadedModule, 
@@ -194,7 +212,7 @@ public sealed class ModuleManager
 
         if (moduleFolder != loadedModule.Module.Id)
         {
-            _logger.LogWarning(
+            _logger.LogError(
                 "Module folder name does not match module ID! [{FolderName} != {ModuleName}]. This might cause issues and is not expected. Updating for sure wont work properly :3 Please fix this",
                 moduleFolder, loadedModule.Module.Id);
             return;

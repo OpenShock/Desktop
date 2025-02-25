@@ -9,21 +9,21 @@
 
     <MudText Typo="Typo.h6">Installed</MudText>
     
-    @foreach (var module in InstalledModules)
+    @foreach (var module in _installedModules)
     {
         <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.Key"  LoadedModule="@module.Value.Value"/>
     }
 
     <MudText Typo="Typo.h6">Unknown Loaded Modules</MudText>
     
-    @foreach (var module in UnknownModules)
+    @foreach (var module in _unknownModules)
     {
         <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
     }
     
     <MudText Typo="Typo.h6">Installable Modules</MudText>
     
-    @foreach (var module in InstallableModules)
+    @foreach (var module in _installableModules)
     {
         <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
     }
@@ -32,9 +32,9 @@
 
 @code {
 
-    private IEnumerable<KeyValuePair<string, LoadedModule>> UnknownModules;
-    private IEnumerable<KeyValuePair<string, Module>> InstallableModules;
-    private Dictionary<string, KeyValuePair<Module, LoadedModule>> InstalledModules;
+    private IEnumerable<KeyValuePair<string, LoadedModule>> _unknownModules = null!;
+    private IEnumerable<KeyValuePair<string, Module>> _installableModules = null!;
+    private Dictionary<string, KeyValuePair<Module, LoadedModule>> _installedModules = null!;
 
     protected override void OnInitialized()
     {
@@ -49,8 +49,8 @@
             .Where(x => x.Value.Repository != null)
             .SelectMany(x => x.Value.Repository!.Modules).ToDictionary();
         
-        UnknownModules = loadedModules.Where(x => modulesFromRepos.All(y => y.Key != x.Key));
-        InstallableModules = modulesFromRepos.Where(x => !loadedModules.Keys.Contains(x.Key));
+        _unknownModules = loadedModules.Where(x => modulesFromRepos.All(y => y.Key != x.Key));
+        _installableModules = modulesFromRepos.Where(x => !loadedModules.Keys.Contains(x.Key));
 
         var installedModules = new Dictionary<string, KeyValuePair<Module, LoadedModule>>();
         
@@ -61,6 +61,6 @@
             installedModules.Add(loadedModule.Key, new KeyValuePair<Module, LoadedModule>(repoModule, loadedModule.Value));
         }
 
-        InstalledModules = installedModules;
+        _installedModules = installedModules;
     }
 }
