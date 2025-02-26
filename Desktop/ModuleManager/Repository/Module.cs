@@ -1,4 +1,5 @@
-﻿using Semver;
+﻿using System.Collections.Immutable;
+using Semver;
 
 namespace OpenShock.Desktop.ModuleManager.Repository;
 
@@ -9,6 +10,6 @@ public sealed class Module
     public Uri? SourceUrl { get; init; } = null;
     public Uri? IconUrl { get; init; } = null;
     
-    public required IDictionary<SemVersion, Version> Versions { get; init; }
+    public required ImmutableDictionary<SemVersion, Version> Versions { get; init; }
     
 }
