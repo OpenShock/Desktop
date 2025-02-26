@@ -15,7 +15,7 @@ namespace OpenShock.Desktop;
 /// Looks up files using embedded resources in the specified assembly.
 /// This file provider is case-sensitive.
 /// </summary>
-public class ModuleFileProvider : IFileProvider, IDisposable
+public sealed class ModuleFileProvider : IFileProvider, IDisposable
 {
     private readonly ModuleManager.ModuleManager _moduleManager;
 
@@ -33,7 +33,7 @@ public class ModuleFileProvider : IFileProvider, IDisposable
     {
         _moduleManager = moduleManager;
         
-        _moduleManager.ModulesLoaded += UpdateAssemblies;
+        _modulesLoadedSubscription = _moduleManager.ModulesLoaded.Subscribe(_ => UpdateAssemblies());
         UpdateAssemblies();
     }
 
@@ -281,14 +281,13 @@ public class ModuleFileProvider : IFileProvider, IDisposable
     #endregion
 
     private bool _disposed;
-    
+    private readonly IDisposable _modulesLoadedSubscription;
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
         
-        _moduleManager.ModulesLoaded -= UpdateAssemblies;
-        
-        GC.SuppressFinalize(this);
+        _modulesLoadedSubscription.Dispose();
     }
 }

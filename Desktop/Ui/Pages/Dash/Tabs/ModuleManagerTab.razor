@@ -1,4 +1,5 @@
 ﻿@page "/dash/modules"
+@using System.Collections.Immutable
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
@@ -11,7 +12,7 @@
     
     @foreach (var module in _installedModules)
     {
-        <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.Key"  LoadedModule="@module.Value.Value"/>
+        <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule" LoadedModule="@module.Value"/>
     }
 
     <MudText Typo="Typo.h6">Unknown Loaded Modules</MudText>
@@ -34,7 +35,7 @@
 
     private IEnumerable<KeyValuePair<string, LoadedModule>> _unknownModules = null!;
     private IEnumerable<KeyValuePair<string, Module>> _installableModules = null!;
-    private Dictionary<string, KeyValuePair<Module, LoadedModule>> _installedModules = null!;
+    private ImmutableDictionary<string, LoadedModule> _installedModules = null!;
 
     protected override void OnInitialized()
     {
@@ -51,16 +52,7 @@
         
         _unknownModules = loadedModules.Where(x => modulesFromRepos.All(y => y.Key != x.Key));
         _installableModules = modulesFromRepos.Where(x => !loadedModules.Keys.Contains(x.Key));
-
-        var installedModules = new Dictionary<string, KeyValuePair<Module, LoadedModule>>();
         
-        foreach (var loadedModule in loadedModules)
-        {
-            if (!modulesFromRepos.TryGetValue(loadedModule.Key, out var repoModule)) continue;
-            
-            installedModules.Add(loadedModule.Key, new KeyValuePair<Module, LoadedModule>(repoModule, loadedModule.Value));
-        }
-
-        _installedModules = installedModules;
+        _installedModules = loadedModules.Where(x => x.Value.RepositoryModule != null).ToImmutableDictionary();
     }
 }

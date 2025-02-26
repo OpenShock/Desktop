@@ -1,61 +1,74 @@
-﻿@using System.Diagnostics
+﻿@using System.Collections.Immutable
+@using System.Diagnostics
 @using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Utils
-@using Application = Microsoft.Maui.Controls.Application
 @using Semver
 
 @inject ModuleManager ModuleManager
 @inject ConfigManager ConfigManager
+@inject RepositoryManager RepositoryManager
+@inject IDialogService DialogService
 
 <MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10" Outlined="true">
-    <img src="@ModuleIcon" alt="@ModuleName" class="icon rounded-lg"/>
+    <img src="@_moduleIcon" alt="@_moduleName" class="icon rounded-lg"/>
 
     <div class="d-flex flex-column justify-space-evenly overflow-hidden">
-        <MudText Typo="Typo.h4">@ModuleName</MudText>
+        <MudText Typo="Typo.h4">@_moduleName</MudText>
         <MudText Typo="Typo.body1">@(RepoModule?.Description ?? "Description unavailable")</MudText>
     </div>
 
     <div class="ml-auto flex-shrink-0 d-flex flex-column gap-2">
-        @if (ConfigManager.Config.Modules.ModuleTasks.ContainsKey(ModuleId)) // Pending restart for this module
-        {
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="Restart">
-                Pending Restart
-            </MudButton>
-        }
-        else if (LoadedModule != null)
-        {
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RemoveFromQueue" OnClick="Remove">
-                Uninstall
-            </MudButton>
-        }
-        else
-        {
-            <MudButtonGroup Variant="Variant.Outlined">
+
+        <MudButtonGroup Variant="Variant.Outlined">
+            @if (ConfigManager.Config.Modules.ModuleTasks.ContainsKey(ModuleId)) // Pending restart for this module
+            {
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="Restart">
+                    Pending Restart
+                </MudButton>
+            }
+            else if (LoadedModule != null)
+            {
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RemoveFromQueue"
+                           OnClick="Remove">
+                    Uninstall
+                </MudButton>
+            }
+            else
+            {
                 <MudButton StartIcon="@Icons.Material.Filled.InstallDesktop"
                            OnClick="InstallLatest">Install @LatestVersion</MudButton>
-                <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto" Class="slim-split-button">
-                    <MudMenuItem>Reply</MudMenuItem>
-                    <MudMenuItem>Reply All</MudMenuItem>
-                    <MudMenuItem>Forward</MudMenuItem>
-                    <MudMenuItem>Reply & Delete</MudMenuItem>
-                </MudMenu>
-            </MudButtonGroup>
-        }
+            }
+            <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto" Class="slim-split-button">
+                @if (_availableVersions != null)
+                {
+                    <MudMenu Label="Versions" StartIcon="@Icons.Material.Filled.FormatListNumbered" MaxHeight="400"
+                             Dense="true">
+                        @foreach (var version in _availableVersions)
+                        {
+                            <MudMenuItem OnClick="() => InstallSpecificVersion(version)">@version</MudMenuItem>
+                        }
+                    </MudMenu>
+                }
+            </MudMenu>
+        </MudButtonGroup>
+
         <div style="text-align: right">
             @if (LoadedModule != null)
             {
                 <MudTooltip>
                     <ChildContent>
-                        <MudText Typo="Typo.body2">Installed: <MudChip Size="Size.Small" T="string">@LoadedModule.Version.WithoutMetadata().ToString()</MudChip></MudText>
+                        <MudText Typo="Typo.body2">Installed:
+                            <MudChip Size="Size.Small"
+                                     T="string">@LoadedModule.Version.WithoutMetadata().ToString()</MudChip>
+                        </MudText>
                     </ChildContent>
                     <TooltipContent>
                         <MudText Typo="Typo.body2">@LoadedModule.Version.ToString()</MudText>
                     </TooltipContent>
                 </MudTooltip>
-
             }
         </div>
     </div>
@@ -66,7 +79,7 @@
         padding-left: 0 !important;
         padding-right: 0 !important;
     }
-    
+
 </style>
 
 @code {
@@ -87,10 +100,12 @@
 
     [Parameter] public required string ModuleId { get; init; }
 
-    private string ModuleName => RepoModule?.Name ?? (LoadedModule?.Module.Name ?? "error");
-    private string? ModuleIcon => RepoModule?.IconUrl?.ToString() ?? LoadedModule!.Module.IconPath;
+    private string _moduleName = null!;
+    private string? _moduleIcon;
 
     private SemVersion? LatestVersion => RepoModule?.Versions.Keys.OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
+
+    private ImmutableArray<SemVersion>? _availableVersions = null;
 
     protected override void OnInitialized()
     {
@@ -98,6 +113,10 @@
         {
             throw new ArgumentException("RepoModule and LoadedModule cannot both be null");
         }
+
+        _moduleName = RepoModule?.Name ?? (LoadedModule?.Module.Name ?? "error");
+        _moduleIcon = RepoModule?.IconUrl?.ToString() ?? LoadedModule!.Module.IconPath;
+        _availableVersions = GetAvailableVersions();
     }
 
     private void InstallLatest()
@@ -108,6 +127,17 @@
         }
 
         Install(LatestVersion);
+    }
+    
+    private void InstallSpecificVersion(SemVersion version)
+    {
+        var parameters = new DialogParameters<InstallConfirmDialog>
+        {
+            { x => x.ModuleName, _moduleName },
+            { x => x.ModuleVersion, version },
+            { x => x.OnConfirm, (Func<Task>)(async () => Install(version)) }
+        };
+        DialogService.ShowAsync<InstallConfirmDialog>("Install module?", parameters);
     }
 
     private void Install(SemVersion version)
@@ -134,6 +164,11 @@
 #if WINDOWS
         WindowsRestartHelper.RestartApp();
 #endif
+    }
+
+    private ImmutableArray<SemVersion>? GetAvailableVersions()
+    {
+        return RepoModule?.Versions.Keys.ToImmutableArray();
     }
 
 }

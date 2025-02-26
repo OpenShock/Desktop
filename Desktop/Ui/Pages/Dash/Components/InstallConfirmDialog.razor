@@ -1,0 +1,39 @@
+﻿@using Semver
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.InstallDesktop" Class="mr-3 mb-n1"/>
+            Install module?
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2">Are you sure you want to install Version @ModuleVersion for Module @ModuleName?</MudText>
+        <MudText Color="Color.Warning">Be careful when downgrading a module's version. This might cause new data to be lost.</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Error" OnClick="Confirm">Install</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    [Parameter]
+    public required string ModuleName { get; set; }
+    
+    [Parameter]
+    public required SemVersion ModuleVersion { get; set; }
+    
+    [Parameter]
+    public required Func<Task> OnConfirm { get; set; }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm()
+    {
+        OnConfirm.Invoke();
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}

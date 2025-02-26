@@ -1,7 +1,4 @@
-﻿using OneOf;
-using Semver;
-
-namespace OpenShock.Desktop.Config;
+﻿namespace OpenShock.Desktop.Config;
 
 public sealed class ModulesConfig
 {

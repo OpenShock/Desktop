@@ -2,6 +2,7 @@
 using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Net.Mime;
+using System.Reactive.Subjects;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.FileProviders;
@@ -17,17 +18,17 @@ using Semver;
 
 namespace OpenShock.Desktop.ModuleManager;
 
-public sealed class ModuleManager
+public sealed class ModuleManager : IDisposable
 {
     private static readonly Type ModuleBaseType = typeof(DesktopModuleBase);
-    private static readonly Type AspNetIComponentType = typeof(IComponent);
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ModuleManager> _logger;
     private readonly RepositoryManager _repositoryManager;
     private readonly ConfigManager _configManager;
-
-    public event Action? ModulesLoaded;
+    
+    public IObservable<byte> ModulesLoaded => _modulesLoaded;
+    private readonly Subject<byte> _modulesLoaded = new();
 
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
@@ -43,9 +44,15 @@ public sealed class ModuleManager
         _logger = logger;
         _repositoryManager = repositoryManager;
         _configManager = configManager;
+
+        _repositoryUpdatedSubscription = _repositoryManager.RepositoriesUpdated.Subscribe(b =>
+        {
+            RefreshRepositoryInformationOnLoaded();
+        });
     }
 
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
+    private readonly IDisposable _repositoryUpdatedSubscription;
 
     #region Tasks
 
@@ -184,17 +191,19 @@ public sealed class ModuleManager
             _logger.LogError("Failed to parse sem-version {Version} for module {ModuleId}. It needs to be a valid semantic version.", assemblyVersion, pluginTypes[0].FullName);
             return;
         }
-
-
+        
         var module = (DesktopModuleBase?)ActivatorUtilities.CreateInstance(_serviceProvider, pluginTypes[0]);
         if (module is null) throw new Exception("Failed to instantiate module!");
+        
         
         var loadedModule = new LoadedModule
         {
             LoadContext = assemblyLoadContext,
             Assembly = assembly,
             Module = module,
-            Version = loadedModuleVersion
+            Version = loadedModuleVersion,
+            AvailableVersion = null,
+            RepositoryModule = null
         };
         
         module.SetContext(new ModuleInstanceManager(loadedModule, 
@@ -221,6 +230,31 @@ public sealed class ModuleManager
         if (!Modules.TryAdd(module.Id, loadedModule)) throw new Exception("Module already loaded!");
     }
 
+    private void RefreshRepositoryInformationOnLoaded()
+    {
+        var repoModules = _repositoryManager.Repositories
+            .Where(x => x.Value.Repository != null)
+            .SelectMany(x => x.Value.Repository!.Modules)
+            .ToImmutableDictionary();
+
+        foreach (var loadedModule in Modules)
+        {
+            if (repoModules.TryGetValue(loadedModule.Key, out var repoModule))
+            {
+                loadedModule.Value.RepositoryModule = repoModule;
+                
+                var mostRecentRelease = repoModule.Versions.Keys.Where(x => x.IsRelease).OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
+                if (mostRecentRelease != null && loadedModule.Value.Version.ComparePrecedenceTo(mostRecentRelease) < 0)
+                {
+                    loadedModule.Value.AvailableVersion = mostRecentRelease;
+                }
+            } else {
+                loadedModule.Value.RepositoryModule = null;
+                loadedModule.Value.AvailableVersion = null;
+            }
+        }
+    }
+
     internal void LoadAll()
     {
         if (!Directory.Exists(ModuleDirectory))
@@ -241,6 +275,16 @@ public sealed class ModuleManager
             }
         }
 
-        ModulesLoaded?.Invoke();
+        RefreshRepositoryInformationOnLoaded();
+        _modulesLoaded.OnNext(0);
+    }
+
+    private bool _disposed;
+    
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _repositoryUpdatedSubscription.Dispose();
     }
 }

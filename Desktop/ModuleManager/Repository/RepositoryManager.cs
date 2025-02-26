@@ -1,4 +1,5 @@
-﻿using System.Reactive.Subjects;
+﻿using System.Collections.Immutable;
+using System.Reactive.Subjects;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleBase.Utils;
 using OpenShock.Desktop.Utils;
@@ -16,17 +17,21 @@ public sealed class RepositoryManager
     public IAsyncObservable<Uri> RepositoriesStateChanged => _repositoriesStateChanged;
     private readonly ConcurrentSimpleAsyncSubject<Uri> _repositoriesStateChanged = new ConcurrentSimpleAsyncSubject<Uri>();
     
-    public IReadOnlyDictionary<Uri, RepositoryLoadContext> Repositories => _repositories;
-    private readonly Dictionary<Uri, RepositoryLoadContext> _repositories = new Dictionary<Uri, RepositoryLoadContext>();
+    public IObservable<byte> RepositoriesUpdated => _repositoriesUpdated;
+    private readonly Subject<byte> _repositoriesUpdated = new Subject<byte>();
     
+    public ImmutableDictionary<Uri, RepositoryLoadContext> Repositories { get; private set; } = new Dictionary<Uri, RepositoryLoadContext>().ToImmutableDictionary();
+
     private readonly ConfigManager _config;
     private readonly ILogger<RepositoryManager> _logger;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
     
     public RepositoryManager(ConfigManager config, ILogger<RepositoryManager> logger)
     {
         _config = config;
         _logger = logger;
     }
+    
     
     public async Task FetchRepositories()
     {
@@ -35,24 +40,44 @@ public sealed class RepositoryManager
             _logger.LogWarning("Already fetching repositories, skipping");
             return;
         }
-        
-        _repositories.Clear();
+
+        if (!await _semaphore.WaitAsync(0))
+        {
+            _logger.LogWarning("Couldnt enter semaphore, already fetching repositories");
+            return;
+        }
+
+        try
+        {
+            await FetchRepositoriesInternal();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+
+    }
+    
+    private async Task FetchRepositoriesInternal()
+    {
+        var newRepositories = new Dictionary<Uri, RepositoryLoadContext>();
+
         _fetchedRepositories.Value = 0;
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.SettingUp;
 
         foreach (var repoUrl in Constants.BuiltInModuleRepositories)
         {
-            _repositories.TryAdd(repoUrl, new RepositoryLoadContext(repoUrl));
+            newRepositories.TryAdd(repoUrl, new RepositoryLoadContext(repoUrl));
         }
         
         foreach (var repoUrl in _config.Config.Modules.ModuleRepositories)
         {
-            _repositories.TryAdd(repoUrl, new RepositoryLoadContext(repoUrl));
+            newRepositories.TryAdd(repoUrl, new RepositoryLoadContext(repoUrl));
         }
         
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.Fetching;
         
-        foreach (var repoLoadContext in _repositories)
+        foreach (var repoLoadContext in newRepositories)
         {
             await repoLoadContext.Value.State.ValueUpdated.SubscribeAsync(_ => ReposOnStateChange(repoLoadContext.Key));
             // We dont need to care about disposing this, we will just let it be garbage collected when we clear the repositories
@@ -69,6 +94,9 @@ public sealed class RepositoryManager
             _fetchedRepositories.Value++;
         }
         
+        Repositories = newRepositories.ToImmutableDictionary();
+
+        _repositoriesUpdated.OnNext(0);
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.Idle;
     }
 

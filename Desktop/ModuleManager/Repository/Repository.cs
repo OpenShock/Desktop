@@ -1,4 +1,6 @@
-﻿namespace OpenShock.Desktop.ModuleManager.Repository;
+﻿using System.Collections.Immutable;
+
+namespace OpenShock.Desktop.ModuleManager.Repository;
 
 public sealed class Repository
 {
@@ -7,5 +9,5 @@ public sealed class Repository
     public required string Author { get; init; }
     public required Uri Url { get; init; }
     
-    public required Dictionary<string, Module> Modules { get; init; }
+    public required ImmutableDictionary<string, Module> Modules { get; init; }
 }
