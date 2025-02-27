@@ -4,6 +4,7 @@
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
 @using OpenShock.Desktop.Config
+@using OpenShock.Desktop.ReactiveExtensions
 @using OpenShock.Desktop.Services
 @implements IAsyncDisposable
 
@@ -19,8 +20,8 @@
     
     protected override async Task OnInitializedAsync()
     {
-        _disposables.Add(await Updater.UpdateAvailable.ValueUpdated.SubscribeAsync(UpdateAvailableOnValueChanged));
-        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(CheckingForUpdateOnValueChanged));
+        _disposables.Add(await Updater.UpdateAvailable.ValueUpdated.SubscribeConcurrentAsync(UpdateAvailableOnValueChanged));
+        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeConcurrentAsync(CheckingForUpdateOnValueChanged));
         
         if (Updater.UpdateAvailable.Value && !Updater.IsPostponed) await OpenUpdateDialog();
     }

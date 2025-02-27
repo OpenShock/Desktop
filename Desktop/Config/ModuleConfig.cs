@@ -91,7 +91,7 @@ public class ModuleConfig<T> : IModuleConfig<T> where T : new()
         _logger.LogInformation("New configuration file generated!");
     }
 
-    public T Config { get; private set; }
+    public T Config { get; private set; } = default!;
 
     public void SaveDeferred()
     {

@@ -103,7 +103,7 @@
     private string _moduleName = null!;
     private string? _moduleIcon;
 
-    private SemVersion? LatestVersion => RepoModule?.Versions.Keys.OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
+    private SemVersion? LatestVersion => RepoModule?.Versions.Keys.Where(x => x.IsRelease).OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
 
     private ImmutableArray<SemVersion>? _availableVersions = null;
 
@@ -135,7 +135,11 @@
         {
             { x => x.ModuleName, _moduleName },
             { x => x.ModuleVersion, version },
-            { x => x.OnConfirm, (Func<Task>)(async () => Install(version)) }
+            { x => x.OnConfirm, (Func<Task>)(() =>
+            {
+                Install(version);
+                return Task.CompletedTask;
+            }) }
         };
         DialogService.ShowAsync<InstallConfirmDialog>("Install module?", parameters);
     }

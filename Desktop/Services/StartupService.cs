@@ -1,4 +1,5 @@
 ﻿using OpenShock.Desktop.ModuleManager.Repository;
+using OpenShock.Desktop.ReactiveExtensions;
 using OpenShock.SDK.CSharp.Updatables;
 
 namespace OpenShock.Desktop.Services;
@@ -43,9 +44,9 @@ public sealed class StartupService
         _logger.LogDebug("Fetching repositories");
         Status.Update("Fetching repositories");
 
-        await using (await _repositoryManager.FetcherState.ValueUpdated.SubscribeAsync(FetcherStateOnOnValueChanged))
-        await using (await _repositoryManager.FetchedRepositories.ValueUpdated.SubscribeAsync(FetchedRepositoriesOnOnValueChanged))
-        await using (await _repositoryManager.RepositoriesStateChanged.SubscribeAsync(RepositoryManagerOnRepositoriesStateChanged))
+        await using (await _repositoryManager.FetcherState.ValueUpdated.SubscribeConcurrentAsync(FetcherStateOnOnValueChanged))
+        await using (await _repositoryManager.FetchedRepositories.ValueUpdated.SubscribeConcurrentAsync(FetchedRepositoriesOnOnValueChanged))
+        await using (await _repositoryManager.RepositoriesStateChanged.SubscribeConcurrentAsync(RepositoryManagerOnRepositoriesStateChanged))
         {
             try
             {
@@ -120,14 +121,12 @@ public sealed class StartupService
 
 public sealed class StartupStatus
 {
-    public event Action? OnChanged;
-    
     public string StepName { get; private set; } = "Starting";
     
     public uint ProgressCurrent { get; private set; } = 0;
     public uint? ProgressTotal { get; private set; } = null;
 
-    protected internal void Update(string stepName, uint progressCurrent = 0, uint? progressTotal = null)
+    internal void Update(string stepName, uint progressCurrent = 0, uint? progressTotal = null)
     {
         StepName = stepName;
         ProgressCurrent = progressCurrent;

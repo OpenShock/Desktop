@@ -1,6 +1,7 @@
 ﻿using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Models;
+using OpenShock.Desktop.ReactiveExtensions;
 using OpenShock.SDK.CSharp.Hub;
 using OpenShock.SDK.CSharp.Hub.Models;
 using OpenShock.SDK.CSharp.Live;
@@ -146,7 +147,7 @@ public sealed class LiveControlManager
             await OnStateUpdated.Raise();
         };
                     
-        await client.OnHubNotConnected.SubscribeAsync(async _ =>
+        await client.OnHubNotConnected.SubscribeConcurrentAsync(async _ =>
         {
             _logger.LogInformation("Live control client for device [{DeviceId}] ending, device disconnected", deviceId);
             // Dispose the client so it gets removed from the list and co
@@ -154,7 +155,7 @@ public sealed class LiveControlManager
         });
 
         // When the client shuts down, remove it from the list
-        await client.OnDispose.SubscribeAsync(async _ =>
+        await client.OnDispose.SubscribeConcurrentAsync(async _ =>
         {
             _logger.LogTrace("Live control client for device [{DeviceId}] disposed, removing from list",
                 deviceId);

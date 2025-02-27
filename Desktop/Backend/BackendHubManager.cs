@@ -61,13 +61,15 @@ public sealed class BackendHubManager
         });
     }
 
-    private async Task RemoteActivateShockers(ControlLogSender sender, ICollection<ControlLog> logs)
+    private Task RemoteActivateShockers(ControlLogSender sender, ICollection<ControlLog> logs)
     {
         if (sender.ConnectionId == _liveConnectionId)
         {
             _logger.LogDebug("Ignoring remote command log cause it was the local connection");
-            return;
+            return Task.CompletedTask;
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>

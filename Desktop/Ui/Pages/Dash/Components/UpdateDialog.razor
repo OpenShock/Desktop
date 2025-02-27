@@ -1,6 +1,7 @@
 @inject ConfigManager ConfigManager
 @inject Updater Updater
 @using OpenShock.Desktop.Config
+@using OpenShock.Desktop.ReactiveExtensions
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Utils
 @implements IAsyncDisposable
@@ -14,7 +15,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _downloadProgressSubscription = await Updater.DownloadProgress.ValueUpdated.SubscribeAsync(OnDownloadProgressChanged);
+        _downloadProgressSubscription = await Updater.DownloadProgress.ValueUpdated.SubscribeConcurrentAsync(OnDownloadProgressChanged);
     }
 
     private void OnDownloadProgressChanged(double progress)

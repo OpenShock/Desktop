@@ -2,6 +2,7 @@
 using System.Reactive.Subjects;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleBase.Utils;
+using OpenShock.Desktop.ReactiveExtensions;
 using OpenShock.Desktop.Utils;
 
 namespace OpenShock.Desktop.ModuleManager.Repository;
@@ -75,11 +76,13 @@ public sealed class RepositoryManager
             newRepositories.TryAdd(repoUrl, new RepositoryLoadContext(repoUrl));
         }
         
+        Repositories = newRepositories.ToImmutableDictionary();
+        
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.Fetching;
         
         foreach (var repoLoadContext in newRepositories)
         {
-            await repoLoadContext.Value.State.ValueUpdated.SubscribeAsync(_ => ReposOnStateChange(repoLoadContext.Key));
+            await repoLoadContext.Value.State.ValueUpdated.SubscribeConcurrentAsync(_ => ReposOnStateChange(repoLoadContext.Key));
             // We dont need to care about disposing this, we will just let it be garbage collected when we clear the repositories
             
             try
@@ -93,8 +96,6 @@ public sealed class RepositoryManager
 
             _fetchedRepositories.Value++;
         }
-        
-        Repositories = newRepositories.ToImmutableDictionary();
 
         _repositoriesUpdated.OnNext(0);
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.Idle;
