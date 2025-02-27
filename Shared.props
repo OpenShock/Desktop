@@ -1,0 +1,37 @@
+<Project>
+    <PropertyGroup>
+        <Company>OpenShock</Company>
+        <Product>$(Company).$(MSBuildProjectName)</Product>
+        <Version>0.1.0</Version>
+        <AssemblyVersion>0.1.0</AssemblyVersion>
+
+        <Authors>OpenShock</Authors>
+
+        <RepositoryUrl>https://github.com/OpenShock/Desktop</RepositoryUrl>
+        <PackageProjectUrl>https://openshock.org</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+        <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>openshock</PackageTags>
+        <LangVersion>13</LangVersion>
+    </PropertyGroup>
+    
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <FileVersion>$(AssemblyVersion)</FileVersion>
+        <IncludeSymbols>true</IncludeSymbols>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.2" />
+        <PackageReference Include="OneOf" Version="3.0.271" />
+        <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.31" />
+        <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.30" />
+        <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.30" />
+        <PackageReference Include="System.Reactive" Version="6.0.1" />
+        <PackageReference Include="System.Reactive.Async" Version="6.0.0-alpha.18" />
+    </ItemGroup>
+</Project>

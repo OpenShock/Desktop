@@ -1,23 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+    <Import Project="../Shared.props" />
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
         <Configurations>Debug;Release</Configurations>
-        <Platforms>AnyCPU</Platforms>
         <AssemblyName>OpenShock.Desktop.ModuleBase</AssemblyName>
         <RootNamespace>OpenShock.Desktop.ModuleBase</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.2" />
-        <PackageReference Include="OneOf" Version="3.0.271" />
-        <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.31" />
-        <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.30" />
-        <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.30" />
-        <PackageReference Include="System.Reactive" Version="6.0.1" />
-        <PackageReference Include="System.Reactive.Async" Version="6.0.0-alpha.18" />
+
     </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
 
 </Project>
