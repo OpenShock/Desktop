@@ -6,7 +6,6 @@ using OpenShock.SDK.CSharp.Hub;
 using OpenShock.SDK.CSharp.Hub.Models;
 using OpenShock.SDK.CSharp.Models;
 using Serilog;
-using Control = OpenShock.SDK.CSharp.Hub.Models.Control;
 
 namespace OpenShock.Desktop.Backend;
 

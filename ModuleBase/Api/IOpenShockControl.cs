@@ -1,5 +1,4 @@
-﻿using OpenShock.SDK.CSharp.Models;
-using Control = OpenShock.SDK.CSharp.Hub.Models.Control;
+﻿using OpenShock.Desktop.ModuleBase.Models;
 
 namespace OpenShock.Desktop.ModuleBase.Api;
 
@@ -11,7 +10,7 @@ public interface IOpenShockControl
     /// <param name="shocks"></param>
     /// <param name="customName"></param>
     /// <returns></returns>
-    public Task Control(IEnumerable<Control> shocks, string? customName = null);
+    public Task Control(IEnumerable<ShockerControl> shocks, string? customName = null);
 
     /// <summary>
     /// Intake a live control frame, and send it to the server whenever a tick happens.

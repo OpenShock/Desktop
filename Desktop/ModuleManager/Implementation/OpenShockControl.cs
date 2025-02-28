@@ -2,7 +2,6 @@
 using OpenShock.Desktop.ModuleBase.Api;
 using OpenShock.Desktop.Services;
 using OpenShock.SDK.CSharp.Models;
-using Control = OpenShock.SDK.CSharp.Hub.Models.Control;
 
 namespace OpenShock.Desktop.ModuleManager.Implementation;
 
