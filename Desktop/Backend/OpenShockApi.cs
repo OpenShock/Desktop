@@ -2,6 +2,7 @@
 using OneOf;
 using OneOf.Types;
 using OpenShock.Desktop.Config;
+using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp;
 using OpenShock.SDK.CSharp.Models;
@@ -36,7 +37,7 @@ public sealed class OpenShockApi
         });
     }
     
-    public ObservableVariable<ImmutableArray<ResponseDeviceWithShockers>> Hubs { get; } = new(ImmutableArray<ResponseDeviceWithShockers>.Empty);
+    public ObservableVariable<ImmutableArray<OpenShockHub>> Hubs { get; } = new(ImmutableArray<OpenShockHub>.Empty);
     
     public async Task RefreshShockers()
     {
@@ -49,7 +50,7 @@ public sealed class OpenShockApi
         
         response.Switch(success =>
             {
-                Hubs.Value = success.Value;
+                Hubs.Value = [..success.Value.Select(SdkDtoMappings.ToSdkHub)];
                 
                 // re-populate config with previous data if present, this also deletes any shockers that are no longer present
                 var shockerList = new Dictionary<Guid, OpenShockConf.ShockerConf>();
@@ -79,7 +80,7 @@ public sealed class OpenShockApi
 
     public void Logout()
     {
-        Hubs.Value = ImmutableArray<ResponseDeviceWithShockers>.Empty;
+        Hubs.Value = ImmutableArray<OpenShockHub>.Empty;
     }
 
     public
