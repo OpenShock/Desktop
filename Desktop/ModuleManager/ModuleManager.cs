@@ -278,6 +278,17 @@ public sealed class ModuleManager : IDisposable
         RefreshRepositoryInformationOnLoaded();
         _modulesLoaded.OnNext(0);
     }
+    
+    public async Task GetModuleVersions()
+    {
+        if (!Directory.Exists(ModuleDirectory))
+        {
+            return;
+        }
+        
+        
+        var attr = dnlib.DotNet.AssemblyDef.Load(moduleFile).CustomAttributes;
+    }
 
     private bool _disposed;
     
