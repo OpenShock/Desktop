@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Net.Mime;
 using System.Reactive.Subjects;
 using System.Reflection;
+using dnlib.DotNet;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.FileProviders;
 using OneOf;
@@ -150,20 +151,12 @@ public sealed class ModuleManager : IDisposable
         return new Success();
     }
 
-    private void LoadModule(string moduleFolderPath)
+    private void LoadModule(string moduleFolderPath, string moduleDll, string moduleFolderName)
     {
-        _logger.LogTrace("Searching for module in {Path}", moduleFolderPath);
-        var moduleFile = Directory.GetFiles(moduleFolderPath, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
-        if (moduleFile == null)
-        {
-            _logger.LogError("No DLLs found in root module folder!");
-            return;
-        }
-
-        _logger.LogDebug("Attempting to load module: {Path}", moduleFile);
+        _logger.LogDebug("Attempting to load module: {Path}", moduleDll);
 
         var assemblyLoadContext = new ModuleAssemblyLoadContext(moduleFolderPath);
-        var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleFile);
+        var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleDll);
         
         var moduleTypes = assembly.GetTypes();
         var pluginTypes = moduleTypes.Where(t => t.IsAssignableTo(ModuleBaseType)).ToImmutableArray();
@@ -215,15 +208,12 @@ public sealed class ModuleManager : IDisposable
         {
             AppServiceProvider = _serviceProvider
         });
-
-        var moduleFolder =
-            Path.GetFileName(moduleFolderPath); // now this seems odd, but this gives me the modules folder name
-
-        if (moduleFolder != loadedModule.Module.Id)
+        
+        if (moduleFolderName != loadedModule.Module.Id)
         {
             _logger.LogError(
                 "Module folder name does not match module ID! [{FolderName} != {ModuleName}]. This might cause issues and is not expected. Updating for sure wont work properly :3 Please fix this",
-                moduleFolder, loadedModule.Module.Id);
+                moduleFolderName, loadedModule.Module.Id);
             return;
         }
 
@@ -257,17 +247,11 @@ public sealed class ModuleManager : IDisposable
 
     internal void LoadAll()
     {
-        if (!Directory.Exists(ModuleDirectory))
-        {
-            Directory.CreateDirectory(ModuleDirectory);
-            return; // We don't have any modules to load, we just created the directory
-        }
-
-        foreach (var moduleFolders in Directory.GetDirectories(ModuleDirectory))
+        foreach (var modules in GetModules())
         {
             try
             {
-                LoadModule(moduleFolders);
+                LoadModule(modules.Path, modules.ModuleDll, modules.FolderName);
             }
             catch (Exception ex)
             {
@@ -278,16 +262,105 @@ public sealed class ModuleManager : IDisposable
         RefreshRepositoryInformationOnLoaded();
         _modulesLoaded.OnNext(0);
     }
-    
-    public async Task GetModuleVersions()
+
+    private ImmutableArray<AvailableModule> GetModules()
     {
         if (!Directory.Exists(ModuleDirectory))
         {
-            return;
+            Directory.CreateDirectory(ModuleDirectory);
+            return ImmutableArray<AvailableModule>.Empty;
+        }
+
+        var modules = new List<AvailableModule>();
+
+        foreach (var moduleFolder in Directory.GetDirectories(ModuleDirectory))
+        {
+            try
+            {
+                _logger.LogTrace("Searching for module in {Path}", moduleFolder);
+                var moduleFile = Directory.GetFiles(moduleFolder, "*.dll", SearchOption.TopDirectoryOnly)
+                    .ToImmutableArray();
+                if (moduleFile.Length <= 0)
+                {
+                    _logger.LogError("No DLLs found in root module folder!");
+                    continue;
+                }
+                
+                if(moduleFile.Length > 1)
+                {
+                    _logger.LogError("Expected 1 dll, found {NumberOfModules}", moduleFile.Length);
+                    continue;
+                }
+                
+                var moduleFolderName =
+                    Path.GetFileName(moduleFolder);
+                
+                modules.Add(new AvailableModule
+                {
+                    Path = moduleFolder,
+                    FolderName = moduleFolderName,
+                    ModuleDll = moduleFile[0]
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load plugin");
+            }
         }
         
+        return [..modules];
+    }
+    
+    private static readonly string InformationalVersionTypeName = typeof(AssemblyInformationalVersionAttribute).FullName!;
+    
+    public Task<ImmutableDictionary<string, SemVersion>> GetModuleVersions()
+    {
+        var modules = GetModules();
         
-        var attr = dnlib.DotNet.AssemblyDef.Load(moduleFile).CustomAttributes;
+        var moduleVersions = new Dictionary<string, SemVersion>();
+        
+        foreach (var availableModule in modules)
+        {
+            try
+            {
+                var assemblyDef = dnlib.DotNet.AssemblyDef.Load(availableModule.ModuleDll);
+                var customAttributes = assemblyDef.CustomAttributes;
+                var informationalVersion = customAttributes.FirstOrDefault(x => x.AttributeType.FullName == InformationalVersionTypeName);
+                
+                if (informationalVersion is null)
+                {
+                    _logger.LogError("No informational version found for {ModuleDll}", availableModule.ModuleDll);
+                    continue;
+                }
+                
+                if (informationalVersion.ConstructorArguments.Count <= 0)
+                {
+                    _logger.LogError("No version argument found for {ModuleDll}", availableModule.ModuleDll);
+                    continue;
+                }
+                
+                var version = informationalVersion.ConstructorArguments[0];
+                if (version.Value is not UTF8String versionString)
+                {
+                    _logger.LogError("Version argument is not a string for {ModuleDll}", availableModule.ModuleDll);
+                    continue;
+                }
+                
+                if (!SemVersion.TryParse(versionString.String, SemVersionStyles.Strict, out var semVersion))
+                {
+                    _logger.LogError("Failed to parse sem-version {Version} for module {ModuleDll}. It needs to be a valid semantic version.", versionString.String, availableModule.ModuleDll);
+                    continue;
+                }
+                
+                moduleVersions[availableModule.FolderName] = semVersion;
+
+            } catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to get module version for {ModuleDll}", availableModule.ModuleDll);
+            }
+        }
+        
+        return Task.FromResult(moduleVersions.ToImmutableDictionary());
     }
 
     private bool _disposed;
@@ -298,4 +371,11 @@ public sealed class ModuleManager : IDisposable
         _disposed = true;
         _repositoryUpdatedSubscription.Dispose();
     }
+}
+
+public struct AvailableModule
+{
+    public required string Path { get; set; }
+    public required string ModuleDll { get; set; }
+    public required string FolderName { get; set; }
 }

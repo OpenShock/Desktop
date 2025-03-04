@@ -1,4 +1,5 @@
-﻿using OpenShock.Desktop.ModuleManager.Repository;
+﻿using OpenShock.Desktop.Config;
+using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.ReactiveExtensions;
 using OpenShock.SDK.CSharp.Updatables;
 
@@ -10,15 +11,22 @@ public sealed class StartupService
     private readonly RepositoryManager _repositoryManager;
     private readonly ModuleManager.ModuleManager _moduleManager;
     private readonly Updater _updater;
-    
+    private readonly ConfigManager _configManager;
+
     public StartupStatus Status { get; } = new();
 
-    public StartupService(ILogger<StartupService> logger, RepositoryManager repositoryManager, ModuleManager.ModuleManager moduleManager, Updater updater)
+    public StartupService(
+        ILogger<StartupService> logger,
+        RepositoryManager repositoryManager,
+        ModuleManager.ModuleManager moduleManager,
+        Updater updater,
+        ConfigManager configManager)
     {
         _logger = logger;
         _repositoryManager = repositoryManager;
         _moduleManager = moduleManager;
         _updater = updater;
+        _configManager = configManager;
     }
     
     private bool _isStarted = false;
@@ -61,6 +69,20 @@ public sealed class StartupService
 
         _logger.LogDebug("Processing module updates");
         Status.Update("Processing module updates");
+
+        try
+        {
+            //if(_configManager.Config.Modules.AutoUpdate)
+                
+            var moduleVersions = await _moduleManager.GetModuleVersions();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error while processing module updates");
+        }
+        
+        _logger.LogDebug("Processing module tasks");
+        Status.Update("Processing module tasks");
         
         try
         {
