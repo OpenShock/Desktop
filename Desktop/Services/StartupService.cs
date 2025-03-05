@@ -72,9 +72,7 @@ public sealed class StartupService
 
         try
         {
-            //if(_configManager.Config.Modules.AutoUpdate)
-                
-            var moduleVersions = await _moduleManager.GetModuleVersions();
+            _moduleManager.ProcessAutoUpdates();
         }
         catch (Exception e)
         {

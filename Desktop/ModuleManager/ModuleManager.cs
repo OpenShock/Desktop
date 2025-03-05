@@ -15,6 +15,7 @@ using OpenShock.Desktop.ModuleBase;
 using OpenShock.Desktop.ModuleManager.Implementation;
 using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.Services;
+using OpenShock.Desktop.Utils;
 using Semver;
 
 namespace OpenShock.Desktop.ModuleManager;
@@ -233,7 +234,7 @@ public sealed class ModuleManager : IDisposable
             {
                 loadedModule.Value.RepositoryModule = repoModule;
                 
-                var mostRecentRelease = repoModule.Versions.Keys.Where(x => x.IsRelease).OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
+                var mostRecentRelease = repoModule.Versions.Keys.GetLatestReleaseVersion();
                 if (mostRecentRelease != null && loadedModule.Value.Version.ComparePrecedenceTo(mostRecentRelease) < 0)
                 {
                     loadedModule.Value.AvailableVersion = mostRecentRelease;
@@ -313,7 +314,7 @@ public sealed class ModuleManager : IDisposable
     
     private static readonly string InformationalVersionTypeName = typeof(AssemblyInformationalVersionAttribute).FullName!;
     
-    public Task<ImmutableDictionary<string, SemVersion>> GetModuleVersions()
+    private ImmutableDictionary<string, SemVersion> GetModuleVersions()
     {
         var modules = GetModules();
         
@@ -321,9 +322,10 @@ public sealed class ModuleManager : IDisposable
         
         foreach (var availableModule in modules)
         {
+            _logger.LogTrace("Checking for updates for {ModuleId}", availableModule.FolderName);
             try
             {
-                var assemblyDef = dnlib.DotNet.AssemblyDef.Load(availableModule.ModuleDll);
+                var assemblyDef = AssemblyDef.Load(availableModule.ModuleDll);
                 var customAttributes = assemblyDef.CustomAttributes;
                 var informationalVersion = customAttributes.FirstOrDefault(x => x.AttributeType.FullName == InformationalVersionTypeName);
                 
@@ -360,7 +362,45 @@ public sealed class ModuleManager : IDisposable
             }
         }
         
-        return Task.FromResult(moduleVersions.ToImmutableDictionary());
+        return moduleVersions.ToImmutableDictionary();
+    }
+
+    public void ProcessAutoUpdates()
+    {
+        if(!_configManager.Config.Modules.AutoUpdate) return;
+        
+        var repoModules = _repositoryManager.Repositories
+            .Where(x => x.Value.Repository != null)
+            .SelectMany(x => x.Value.Repository!.Modules)
+            .ToImmutableDictionary();
+        
+        var moduleVersions = GetModuleVersions();
+
+        foreach (var moduleVersion in moduleVersions)
+        {
+            if (!repoModules.TryGetValue(moduleVersion.Key, out var repoModule))
+            {
+                _logger.LogDebug("Module {ModuleId} not found in repositories", moduleVersion.Key);
+                continue;
+            }
+
+            var latestReleaseVersion = repoModule.Versions.Keys.GetLatestReleaseVersion();
+         
+            if(latestReleaseVersion == null)
+            {
+                _logger.LogDebug("No releases found for module {ModuleId}", moduleVersion.Key);
+                continue;
+            }
+
+            if (moduleVersion.Value.ComparePrecedenceTo(latestReleaseVersion) >= 0) continue;
+            
+            _logger.LogInformation("Queuing update for module {ModuleId} from {CurrentVersion} to {LatestVersion}", moduleVersion.Key, moduleVersion.Value, latestReleaseVersion);
+                
+            _configManager.Config.Modules.ModuleTasks[moduleVersion.Key] = new InstallModuleTask
+            {
+                Version = latestReleaseVersion
+            };
+        }
     }
 
     private bool _disposed;
