@@ -63,6 +63,17 @@
     </div>
 </MudPaper>
 
+<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding-margin">
+    <MudText>Module Settings</MudText>
+    <MudDivider/>
+
+    <div class="d-flex gap-5" style="align-items: center">
+        <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.Modules.AutoUpdate"
+                     Label="Auto Update" @bind-Value:after="OnSettingsValueChange"/>
+    </div>
+</MudPaper>
+
+
 <MudPaper Outlined="true" Class="rounded-lg lg mud-paper-padding-margin">
     <div class="d-flex justify-space-between">
         <MudText>Module Repositories</MudText>
