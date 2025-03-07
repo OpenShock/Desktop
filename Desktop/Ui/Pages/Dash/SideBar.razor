@@ -47,7 +47,8 @@
                     <div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
                         <MudText Style="font-size: 10pt; text-align: center">SignalR</MudText>
                         <MudTooltip Arrow="true" Placement="Placement.Top" Text="@ApiHubClient.State.ToString()">
-                            <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@GetConnectionStateColor(ApiHubClient.State)"/>
+                            <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@GetConnectionStateColor(ApiHubClient.State)"
+                                     Class="d-block ma-auto"/>
                         </MudTooltip>
                     </div>
 

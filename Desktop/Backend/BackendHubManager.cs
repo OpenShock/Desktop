@@ -41,7 +41,7 @@ public sealed class BackendHubManager
     {
         _logger.LogDebug("Device update received {DeviceId} {UpdateType}", deviceId, updateType);
                 
-        await _openShockApi.RefreshShockers();
+        await _openShockApi.RefreshHubs();
     }
 
 

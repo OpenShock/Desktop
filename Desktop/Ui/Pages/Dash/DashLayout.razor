@@ -4,6 +4,7 @@
 @inherits LayoutComponentBase
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
+@inject ILogger<DashLayout> Logger
 
 <style>
     .childs-width-100 > * {
@@ -35,12 +36,6 @@
 
     protected override void OnInitialized()
     {
-        if (!AuthService.Authenticated)
-        {
-            NavigationManager.NavigateTo("/", true, true);
-            return;
-        }
-        
         UiLogSink.NotificationAction = MsgNoty;
     }
 

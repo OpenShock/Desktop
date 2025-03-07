@@ -39,7 +39,7 @@ public sealed class OpenShockApi
     
     public ObservableVariable<ImmutableArray<OpenShockHub>> Hubs { get; } = new(ImmutableArray<OpenShockHub>.Empty);
     
-    public async Task RefreshShockers()
+    public async Task RefreshHubs()
     {
         if (Client == null)
         {

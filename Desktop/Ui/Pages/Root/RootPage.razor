@@ -1,0 +1,55 @@
+﻿@layout RootLayout
+@inject StartupService StartupService
+@inject NavigationManager NavigationManager
+@inject ILogger<RootPage> Logger
+@implements IAsyncDisposable
+
+@page "/"
+@using OpenShock.Desktop.ReactiveExtensions
+@using OpenShock.Desktop.Services
+
+<div>
+    <MudText>Starting OpenShock Desktop...</MudText>
+    <MudProgressCircular Color="Color.Primary" Style="height:125px;width:125px;" Indeterminate="true"/>
+    
+    <MudText>@StartupService.Status.StepName</MudText>
+    
+</div>
+
+@code {
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _startupSubscription = await StartupService.IsStarted.ValueUpdated.SubscribeConcurrentAsync(b =>
+        {
+            if (b) GoToDash();
+        });
+        
+        _startupUpdatedSubscription = await StartupService.Status.Updated.SubscribeConcurrentAsync(b => InvokeAsync(StateHasChanged));
+
+        if (StartupService.IsStarted.Value)
+        {
+            GoToDash();
+        }
+    }
+    
+    private void GoToDash()
+    {
+        Logger.LogDebug("Navigating to dash");
+        NavigationManager.NavigateTo("dash/dashboard");
+    }
+
+    private bool _disposed;
+    private IAsyncDisposable _startupSubscription = null!;
+    private IAsyncDisposable _startupUpdatedSubscription = null!;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        
+        await _startupSubscription.DisposeAsync();
+        await _startupUpdatedSubscription.DisposeAsync();
+    }
+
+}

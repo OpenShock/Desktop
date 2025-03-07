@@ -11,39 +11,47 @@
 @inject ILogger<Authenticate> Logger
 
 
-@page "/auth"
+<MudDialog>
+    <DialogContent>
+        <MudContainer Class="align-content-center" MaxWidth="MaxWidth.Small" Style="padding-top: 30px">
+            <MudPaper Class="rounded-lg" Elevation="0" Style="padding: 20px; text-align: center;" Outlined="true">
 
-<MudContainer Class="align-content-center" MaxWidth="MaxWidth.Small" Style="padding-top: 30px">
-    <MudPaper Class="rounded-lg" Elevation="0" Style="padding: 20px; text-align: center;" Outlined="true">
+                <MudContainer Class="d-flex" Style="padding: 0">
+                    <MudImage Src="images/Icon.svg" Alt="Logo" Width="75" Height="75" Class="ma-4" Style="vertical-align: bottom;"/>
+                    <MudText Class="d-inline-block flex-grow-1 pa-0" Style="font-size: 5em;">OpenShock</MudText>
+                </MudContainer>
 
-        <MudContainer Class="d-flex" Style="padding: 0">
-            <MudImage Src="images/Icon.svg" Alt="Logo" Width="75" Height="75" Class="ma-4" Style="vertical-align: bottom;"/>
-            <MudText Class="d-inline-block flex-grow-1 pa-0" Style="font-size: 5em;">OpenShock</MudText>
+                <div style="margin-top: 20px;">
+
+                    @switch (_currentState)
+                    {
+                        case State.Login:
+                            <LoginPart ProceedAuthenticated="ProceedAuthenticated"/>
+                            break;
+                        case State.Loading:
+                            <MudProgressCircular Color="Color.Primary" Style="height:125px;width:125px;" Indeterminate="true"/>
+                            break;
+                        case State.Failed:
+                            <MudText Typo="Typo.h6">Failed to authenticate</MudText>
+                            <MudButton OnClick="ReLogin" Variant="Variant.Filled" Color="Color.Primary">Re-login</MudButton>
+                            break;
+                        case State.Authenticated:
+                            <MudText Typo="Typo.h6">Successful, redirecting...</MudText>
+                            break;
+                    }
+                </div>
+            </MudPaper>
         </MudContainer>
-        
-        <div style="margin-top: 20px;">
-        
-        @switch (_currentState)
-        {
-            case State.Login:
-                <LoginPart ProceedAuthenticated="ProceedAuthenticated"/>
-                break;
-            case State.Loading:
-                <MudProgressCircular Color="Color.Primary" Style="height:125px;width:125px;" Indeterminate="true"/>
-                break;
-            case State.Failed:
-                <MudText Typo="Typo.h6">Failed to authenticate</MudText>
-                <MudButton OnClick="ReLogin" Variant="Variant.Filled" Color="Color.Primary">Re-login</MudButton>
-                break;
-            case State.Authenticated:
-                <MudText Typo="Typo.h6">Successful, redirecting...</MudText>
-                break;
-        }
-        </div>
-    </MudPaper>
-</MudContainer>
+    </DialogContent>
+    <DialogActions>
+
+    </DialogActions>
+</MudDialog>
 
 @code {
+    
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
 
     private enum State
     {
@@ -55,19 +63,11 @@
 
     private State _currentState = State.Login;
 
-    protected override void OnInitialized()
-    {
-        if(AuthService.Authenticated) NavigationManager.NavigateTo("dash/dashboard");
-    }
-
     protected override async Task OnInitializedAsync()
     {
         if (await CheckTokenReceived()) return;
         
         PipeService.OnMessageReceived += CheckTokenReceived;
-        
-        if (string.IsNullOrEmpty(ConfigManager.Config.OpenShock.Token)) return;
-        await ProceedAuthenticated();
     }
 
     private async Task<bool> CheckTokenReceived()
@@ -96,8 +96,8 @@
 
             _currentState = State.Authenticated;
             await InvokeAsync(StateHasChanged);
-
-            NavigationManager.NavigateTo("dash/dashboard");
+            
+            MudDialog.Close();
         }
         catch (Exception e)
         {

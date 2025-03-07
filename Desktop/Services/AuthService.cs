@@ -1,5 +1,7 @@
 using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
+using OpenShock.Desktop.ModuleBase.Utils;
+using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Hub;
 using OpenShock.SDK.CSharp.Models;
 
@@ -15,7 +17,20 @@ public sealed class AuthService
     private readonly ConfigManager _configManager;
     public SelfResponse? SelfResponse { get; private set; } 
 
-    public bool Authenticated { get; private set; }
+    // NotAuthed
+    // FailedAuth
+    // Authed
+    
+    public enum AuthStateType
+    {
+        NotAuthed,
+        FailedAuth,
+        Authenticating,
+        Authed
+    }
+    
+    public IObservableVariable<AuthStateType> AuthState => _authState;
+    private readonly ObservableVariable<AuthStateType> _authState = new(AuthStateType.NotAuthed);
 
     public AuthService(ILogger<AuthService> logger,
         BackendHubManager backendHubManager,
@@ -30,6 +45,8 @@ public sealed class AuthService
         _liveControlManager = liveControlManager;
         _apiClient = apiClient;
         _configManager = configManager;
+
+        
     }
 
     private SemaphoreSlim _authLock = new(1, 1);
@@ -37,11 +54,12 @@ public sealed class AuthService
     public async Task Authenticate()
     {
         await _authLock.WaitAsync();
+        
+        if (_authState.Value == AuthStateType.Authed) return;
+        _authState.Value = AuthStateType.Authenticating;
+
         try
         {
-            if (Authenticated) return;
-            Authenticated = false;
-
             _logger.LogInformation("Setting up api client");
             _apiClient.SetupApiClient();
             _logger.LogInformation("Setting up live client");
@@ -50,15 +68,19 @@ public sealed class AuthService
             await _hubClient.StartAsync();
 
             _logger.LogInformation("Refreshing shockers");
-            await _apiClient.RefreshShockers();
+            await _apiClient.RefreshHubs();
 
             await _liveControlManager.RefreshConnections();
 
             var selfResponse = await _apiClient.Client!.GetSelf();
-            if(!selfResponse.IsT0) throw new Exception("Failed to get self response");
+            if (!selfResponse.IsT0) throw new Exception("Failed to get self response");
             SelfResponse = selfResponse.AsT0.Value;
 
-            Authenticated = true;
+            _authState.Value = AuthStateType.Authed;
+        }
+        catch (Exception)
+        {
+            _authState.Value = AuthStateType.FailedAuth;
         }
         finally
         {
@@ -68,18 +90,26 @@ public sealed class AuthService
 
     public async Task Logout()
     {
-        Authenticated = false;
+        await _authLock.WaitAsync();
         
-        _configManager.Config.OpenShock.Token = string.Empty;
-        _configManager.Save();
-        
-        _logger.LogInformation("Logging out");
-        await _hubClient.StopAsync();
-        
-        _apiClient.Logout();
+        if (_authState.Value != AuthStateType.Authed) return;
 
-        await _liveControlManager.RefreshConnections();
-        
-        _logger.LogInformation("Logged out");
+        try
+        {
+            _logger.LogInformation("Logging out");
+            _configManager.Config.OpenShock.Token = string.Empty;
+            await _configManager.SaveNow();
+            
+            await _hubClient.StopAsync();
+            _apiClient.Logout();
+            await _liveControlManager.RefreshConnections();
+
+            _logger.LogInformation("Logged out");
+        }
+        finally
+        {
+            _authState.Value = AuthStateType.NotAuthed;
+            _authLock.Release();
+        }
     }
 }

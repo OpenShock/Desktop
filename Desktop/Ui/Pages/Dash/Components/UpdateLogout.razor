@@ -6,14 +6,16 @@
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.ReactiveExtensions
 @using OpenShock.Desktop.Services
+@using OpenShock.Desktop.Ui.Pages.Authentication
 @implements IAsyncDisposable
 
 @code {
-    private readonly DialogOptions _dialogOptions = new() { NoHeader = true, BackdropClick = false };
+    private static readonly DialogOptions UpdateDialogOptions = new() { NoHeader = true, BackdropClick = false };
+    private static readonly DialogOptions LoginDialogOptions = new() { FullScreen = true, CloseButton = true};
 
     private async Task OpenUpdateDialog()
     {
-        await DialogService.ShowAsync<UpdateDialog>("Update", _dialogOptions);
+        await DialogService.ShowAsync<UpdateDialog>("Update", UpdateDialogOptions);
     }
 
     private List<IAsyncDisposable> _disposables = new();
@@ -59,23 +61,47 @@
         _disposables.Clear();
     }
 
+    private async Task OpenLoginDialog()
+    {
+        await DialogService.ShowAsync<Authenticate>("Login", LoginDialogOptions);
+    }
+
 }
 
 <div class="d-flex">
     <MudMenu>
         <ActivatorContent>
+        @if (AuthService.AuthState.Value == AuthService.AuthStateType.Authed)
+        {
             <MudAvatar>
-                <MudImage Src="@AuthService.SelfResponse?.Image.ToString()" />
+                <MudImage Src="@AuthService.SelfResponse?.Image.ToString()"/>
             </MudAvatar>
             <div class="d-flex align-center" style="margin-left: 15px">
                 <p>@AuthService.SelfResponse?.Name</p>
             </div>
+        }
+        else
+        {
+            <MudAvatar Style="background-color: transparent">
+                <MudImage Src="/images/Icon.svg"/>
+            </MudAvatar>
+            <div class="d-flex align-center" style="margin-left: 15px">
+                <p>Not Logged In</p>
+            </div>
+        }
         </ActivatorContent>
         <ChildContent>
             <MudMenuItem Icon="@Icons.Material.Filled.List" Href="/dash/logs">Logs</MudMenuItem>
             <MudMenuItem Icon="@Icons.Material.Filled.ElectricBolt" Href="/dash/shockers">Shockers</MudMenuItem>
             <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/dash/settings">Settings</MudMenuItem>
-            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="Logout">Logout</MudMenuItem>
+            @if (AuthService.AuthState.Value == AuthService.AuthStateType.Authed)
+            {
+                <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="Logout">Logout</MudMenuItem>
+            }
+            else
+            {
+                <MudMenuItem Icon="@Icons.Material.Filled.Login" OnClick="OpenLoginDialog">Login</MudMenuItem>
+            }
         </ChildContent>
     </MudMenu>
 

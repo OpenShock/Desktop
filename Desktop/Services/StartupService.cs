@@ -1,6 +1,9 @@
-﻿using OpenShock.Desktop.Config;
+﻿using System.Reactive.Subjects;
+using OpenShock.Desktop.Config;
+using OpenShock.Desktop.ModuleBase.Utils;
 using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.ReactiveExtensions;
+using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Updatables;
 
 namespace OpenShock.Desktop.Services;
@@ -12,6 +15,10 @@ public sealed class StartupService
     private readonly ModuleManager.ModuleManager _moduleManager;
     private readonly Updater _updater;
     private readonly ConfigManager _configManager;
+    
+    public IObservableVariable<bool> IsStarted => _isStartedObservable; 
+    
+    private readonly ObservableVariable<bool> _isStartedObservable = new(false);
 
     public StartupStatus Status { get; } = new();
 
@@ -29,7 +36,7 @@ public sealed class StartupService
         _configManager = configManager;
     }
     
-    private bool _isStarted = false;
+    private volatile bool _isStarted;
     
     public async Task StartupApp()
     {
@@ -37,7 +44,7 @@ public sealed class StartupService
         _isStarted = true;
         
         _logger.LogDebug("Checking for updates");
-        Status.Update("Checking for updates");
+        await Status.Update("Checking for updates");
         
         try
         {
@@ -50,11 +57,11 @@ public sealed class StartupService
         }
         
         _logger.LogDebug("Fetching repositories");
-        Status.Update("Fetching repositories");
+        await Status.Update("Fetching repositories");
 
-        await using (await _repositoryManager.FetcherState.ValueUpdated.SubscribeConcurrentAsync(FetcherStateOnOnValueChanged))
-        await using (await _repositoryManager.FetchedRepositories.ValueUpdated.SubscribeConcurrentAsync(FetchedRepositoriesOnOnValueChanged))
-        await using (await _repositoryManager.RepositoriesStateChanged.SubscribeConcurrentAsync(RepositoryManagerOnRepositoriesStateChanged))
+        await using (await _repositoryManager.FetcherState.ValueUpdated.SubscribeConcurrentAsync(_ => UpdateStateForRepositories()))
+        await using (await _repositoryManager.FetchedRepositories.ValueUpdated.SubscribeConcurrentAsync(_ => UpdateStateForRepositories()))
+        await using (await _repositoryManager.RepositoriesStateChanged.SubscribeConcurrentAsync(_ => UpdateStateForRepositories()))
         {
             try
             {
@@ -68,7 +75,7 @@ public sealed class StartupService
         }
 
         _logger.LogDebug("Processing module updates");
-        Status.Update("Processing module updates");
+        await Status.Update("Processing module updates");
 
         try
         {
@@ -80,7 +87,7 @@ public sealed class StartupService
         }
         
         _logger.LogDebug("Processing module tasks");
-        Status.Update("Processing module tasks");
+        await Status.Update("Processing module tasks");
         
         try
         {
@@ -91,7 +98,7 @@ public sealed class StartupService
         }
         
         _logger.LogDebug("Loading modules");
-        Status.Update("Loading modules");
+        await Status.Update("Loading modules");
         
         try
         {
@@ -102,7 +109,7 @@ public sealed class StartupService
         }
         
         _logger.LogDebug("Setting up modules");
-        Status.Update("Setting up modules");
+        await Status.Update("Setting up modules");
         
         foreach (var moduleManagerModule in _moduleManager.Modules)
         {
@@ -110,46 +117,38 @@ public sealed class StartupService
         }
         
         _logger.LogDebug("Starting modules");
-        Status.Update("Starting modules");
+        await Status.Update("Starting modules");
         
         foreach (var moduleManagerModule in _moduleManager.Modules)
         {
             await moduleManagerModule.Value.Module.Start();
         }
+        
+        _isStartedObservable.Value = true;
     }
     
-    private void RepositoryManagerOnRepositoriesStateChanged(Uri repo)
+    private Task UpdateStateForRepositories()
     {
-        UpdateStateForRepositories();
-    }
-
-    private void FetchedRepositoriesOnOnValueChanged(uint arg)
-    {
-        UpdateStateForRepositories();
-    }
-
-    private void FetcherStateOnOnValueChanged(FetcherState arg)
-    {
-        UpdateStateForRepositories();
-    }
-    
-    private void UpdateStateForRepositories()
-    {
-        Status.Update("Fetching repositories", _repositoryManager.FetchedRepositories.Value, (uint)_repositoryManager.Repositories.Count);
+        return Status.Update("Fetching repositories", _repositoryManager.FetchedRepositories.Value, (uint)_repositoryManager.Repositories.Count);
     }
 }
 
 public sealed class StartupStatus
 {
+    public IAsyncObservable<StartupStatus> Updated => _updatedObservable;
+    
+    private readonly ConcurrentSimpleAsyncSubject<StartupStatus> _updatedObservable = new();
     public string StepName { get; private set; } = "Starting";
     
     public uint ProgressCurrent { get; private set; } = 0;
     public uint? ProgressTotal { get; private set; } = null;
 
-    internal void Update(string stepName, uint progressCurrent = 0, uint? progressTotal = null)
+    internal async Task Update(string stepName, uint progressCurrent = 0, uint? progressTotal = null)
     {
         StepName = stepName;
         ProgressCurrent = progressCurrent;
         ProgressTotal = progressTotal;
+
+        await _updatedObservable.OnNextAsync(this);
     }
 }

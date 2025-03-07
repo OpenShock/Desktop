@@ -2,7 +2,7 @@
     <MudText Style="font-size: 10pt; text-align: center">@Text</MudText>
     <MudTooltip Arrow="true" Placement="Placement.Top">
         <ChildContent>
-            <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="GetConnectionStateColor()"/>
+            <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="GetConnectionStateColor()" Class="d-block ma-auto"/>
         </ChildContent>
         <TooltipContent>
             <MudText Typo="Typo.body2">@Client.State.Value.ToString()</MudText>
