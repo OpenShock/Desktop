@@ -12,6 +12,7 @@
 @inject LiveControlManager LiveControlManager
 @inject StatusHandler StatusHandler
 @inject ModuleManager ModuleManager
+@implements IAsyncDisposable
 
 <MudPaper Width="250px" Height="100%" Elevation="0" Class="flex-none">
 
@@ -78,11 +79,13 @@
 </MudPaper>
 
 @code {
-    
-    protected override void OnInitialized()
+    private IAsyncDisposable _statusSubscription = null!;
+
+    protected override async Task OnInitializedAsync()
     {
-        StatusHandler.OnWebsocketStatusChanged += () => InvokeAsync(StateHasChanged);
+        _statusSubscription = await StatusHandler.OnWebsocketStatusChanged.SubscribeAsync(() => InvokeAsync(StateHasChanged));
     }
+    
 
     private static Color GetConnectionStateColor(HubConnectionState state) =>
         state switch
@@ -93,6 +96,15 @@
             HubConnectionState.Disconnected => Color.Error,
             _ => Color.Error
         };
+
+    private bool _disposed = false;
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        await _statusSubscription.DisposeAsync();
+    }
 
 }
 

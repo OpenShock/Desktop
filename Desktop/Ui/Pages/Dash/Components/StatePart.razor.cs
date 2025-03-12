@@ -6,7 +6,7 @@ using Color = MudBlazor.Color;
 
 namespace OpenShock.Desktop.Ui.Pages.Dash.Components;
 
-public partial class StatePart : ComponentBase, IDisposable
+public partial class StatePart : ComponentBase, IAsyncDisposable
 {
     [Parameter]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
@@ -31,11 +31,12 @@ public partial class StatePart : ComponentBase, IDisposable
             WebsocketConnectionState.Disconnected => Color.Error,
             _ => Color.Error
         };
-    
-    protected override void OnInitialized()
+
+
+    protected override async Task OnInitializedAsync()
     {
-        Client.State.OnValueChanged += StateOnValueChanged;
-        Client.Latency.OnValueChanged += LatencyOnValueChanged;
+        _stateSubscription = await Client.State.Updated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+        _latencySubscription = await Client.Latency.Updated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
 
     private Task LatencyOnValueChanged(ulong arg)
@@ -44,15 +45,15 @@ public partial class StatePart : ComponentBase, IDisposable
     }
 
     private bool _disposed = false;
+    private IAsyncDisposable _stateSubscription = null!;
+    private IAsyncDisposable _latencySubscription = null!;
     
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
         _disposed = true;
         
-        Client.State.OnValueChanged -= StateOnValueChanged;
-        Client.Latency.OnValueChanged -= LatencyOnValueChanged;
-        
-        GC.SuppressFinalize(this);
+        await _stateSubscription.DisposeAsync();
+        await _latencySubscription.DisposeAsync();
     }
 }

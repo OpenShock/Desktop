@@ -40,6 +40,7 @@
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.40" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.40" />
         <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.40" />
+        <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
@@ -63,20 +64,20 @@
         <PackageReference Include="AspNetCore.SassCompiler" Version="1.85.1" />
         <PackageReference Include="CommandLineParser" Version="2.9.1"/>
         <PackageReference Include="dnlib" Version="4.4.0" />
-        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.2" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.3" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.3" />
         <PackageReference Include="MudBlazor" Version="8.3.0" />
         <PackageReference Include="Semver" Version="3.0.0" />
         <PackageReference Include="Serilog" Version="4.2.0" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.3" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
-        <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.32" />
-        <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.32" />
-        <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.32" />
+        <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.33" />
+        <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.33" />
+        <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.33" />
     </ItemGroup>
 
     <ItemGroup>

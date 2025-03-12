@@ -101,12 +101,12 @@ public static class Bootstrap
         {
             var applicationThread = new Thread(() =>
             {
-                services.GetService<ITrayService>()?.Initialize();
+                services.GetService<ITrayService>()?.Initialize().Wait();
                 System.Windows.Forms.Application.Run();
             });
             applicationThread.Start();
         }
-        else services.GetService<ITrayService>()?.Initialize();
+        else services.GetService<ITrayService>()?.Initialize().Wait();
 #else
         services.GetService<ITrayService>()?.Initialize();
 #endif

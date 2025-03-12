@@ -1,6 +1,7 @@
 ﻿using System.IO.Pipes;
 using System.Text.Json;
 using OpenShock.Desktop.Utils;
+using OpenShock.MinimalEvents;
 using OpenShock.SDK.CSharp.Utils;
 
 namespace OpenShock.Desktop.Services.Pipes;
@@ -16,7 +17,9 @@ public sealed class PipeServerService
     }
 
     public string? Token { get; set; }
-    public event Func<Task>? OnMessageReceived;
+
+    public IAsyncMinimalEventObservable OnMessageReceived => _onMessageReceived;
+    private readonly AsyncMinimalEvent _onMessageReceived = new();
 
     public void StartServer()
     {
@@ -69,7 +72,7 @@ public sealed class PipeServerService
                         break;
                 }
 
-                await OnMessageReceived.Raise();
+                await OsTask.Run(_onMessageReceived.InvokeAsyncParallel); // Task.Run to error handle in the event handler
                 _logger.LogInformation("[{Id}], Received pipe message of type: {Type}", id, jsonObj.Type);
             }
             catch (JsonException ex)

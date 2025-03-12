@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using MudBlazor.Extensions;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Models;
 using OpenShock.Desktop.Services;
@@ -27,19 +28,19 @@ public sealed class BackendHubManager
         _openShockHubClient = openShockHubClient;
         _openShockApi = openShockApi;
 
-        _openShockHubClient.OnWelcome += s =>
+        _openShockHubClient.OnWelcome.SubscribeAsync(s =>
         {
             _liveConnectionId = s;
             return Task.CompletedTask;
-        };
-
-        _openShockHubClient.OnLog += RemoteActivateShockers;
-        _openShockHubClient.OnDeviceUpdate += DeviceUpdate;
+        }).AsTask().Wait();
+        
+        _openShockHubClient.OnLog.SubscribeAsync(RemoteActivateShockers).AsTask().Wait();
+        _openShockHubClient.OnHubUpdate.SubscribeAsync(DeviceUpdate).AsTask().Wait();
     }
 
-    private async Task DeviceUpdate(Guid deviceId, DeviceUpdateType updateType)
+    private async Task DeviceUpdate(HubUpdateEventArgs hubUpdateEventArgs)
     {
-        _logger.LogDebug("Device update received {DeviceId} {UpdateType}", deviceId, updateType);
+        _logger.LogDebug("Device update received {DeviceId} {UpdateType}", hubUpdateEventArgs.HubId, hubUpdateEventArgs.UpdateType);
                 
         await _openShockApi.RefreshHubs();
     }
@@ -60,9 +61,9 @@ public sealed class BackendHubManager
         });
     }
 
-    private Task RemoteActivateShockers(ControlLogSender sender, ICollection<ControlLog> logs)
+    private Task RemoteActivateShockers(LogEventArgs logEventArgs)
     {
-        if (sender.ConnectionId == _liveConnectionId)
+        if (logEventArgs.Sender.ConnectionId == _liveConnectionId)
         {
             _logger.LogDebug("Ignoring remote command log cause it was the local connection");
             return Task.CompletedTask;

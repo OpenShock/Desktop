@@ -2,11 +2,14 @@
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Models;
 using OpenShock.Desktop.ReactiveExtensions;
+using OpenShock.Desktop.Utils;
+using OpenShock.MinimalEvents;
 using OpenShock.SDK.CSharp.Hub;
 using OpenShock.SDK.CSharp.Hub.Models;
 using OpenShock.SDK.CSharp.Live;
 using OpenShock.SDK.CSharp.Models;
 using OpenShock.SDK.CSharp.Utils;
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 namespace OpenShock.Desktop.Services;
 
@@ -35,25 +38,21 @@ public sealed class LiveControlManager
         _hubClient = hubClient;
         _apiClient = apiClient;
 
-        _hubClient.OnDeviceStatus += HubClientOnDeviceStatus;
-        _hubClient.OnDeviceUpdate += HubClientOnDeviceUpdate;
+        _hubClient.OnHubStatus.SubscribeAsync(async _ =>
+        {
+            _logger.LogDebug("Device update received, updating shockers and refreshing connections");
+            await RefreshConnections();
+        }).AsTask().Wait();
+        _hubClient.OnHubUpdate.SubscribeAsync(async _ =>
+        {
+            _logger.LogDebug("Device status received, refreshing connections");
+            await RefreshConnections();
+        }).AsTask().Wait();
     }
     
-    public event Func<Task>? OnStateUpdated;
-
-    private async Task HubClientOnDeviceUpdate(Guid device, DeviceUpdateType type)
-    {
-        _logger.LogDebug("Device update received, updating shockers and refreshing connections");
-
-        await RefreshConnections();
-    }
-
-    private async Task HubClientOnDeviceStatus(IEnumerable<DeviceOnlineState> deviceStatus)
-    {
-        _logger.LogDebug("Device status received, refreshing connections");
-        await RefreshConnections();
-    }
-
+    public IAsyncMinimalEventObservable OnStateUpdated => _onStateUpdated;
+    private readonly AsyncMinimalEvent _onStateUpdated = new();
+    
     public Dictionary<Guid, OpenShockLiveControlClient> LiveControlClients { get; } = new();
 
     public async Task RefreshConnections()
@@ -128,7 +127,7 @@ public sealed class LiveControlManager
                 });
         }
 
-        await OnStateUpdated.Raise();
+        OsTask.Run(_onStateUpdated.InvokeAsyncParallel);
     }
 
     private async Task SetupLiveControlClient(Guid deviceId, LcgResponse gateway)
@@ -140,14 +139,14 @@ public sealed class LiveControlManager
             _configManager.Config.OpenShock.Token, _liveControlLogger);
         LiveControlClients.Add(deviceId, client);
 
-        client.State.OnValueChanged += async state =>
+        await client.State.Updated.SubscribeAsync(async state =>
         {
             _logger.LogTrace("Live control client for device [{DeviceId}] status updated {Status}",
                 deviceId, state);
-            await OnStateUpdated.Raise();
-        };
+            await _onStateUpdated.InvokeAsyncParallel();
+        });
                     
-        await client.OnHubNotConnected.SubscribeConcurrentAsync(async _ =>
+        await client.OnHubNotConnected.SubscribeAsync(async () =>
         {
             _logger.LogInformation("Live control client for device [{DeviceId}] ending, device disconnected", deviceId);
             // Dispose the client so it gets removed from the list and co
@@ -155,14 +154,14 @@ public sealed class LiveControlManager
         });
 
         // When the client shuts down, remove it from the list
-        await client.OnDispose.SubscribeConcurrentAsync(async _ =>
+        await client.OnDispose.SubscribeAsync(async () =>
         {
             _logger.LogTrace("Live control client for device [{DeviceId}] disposed, removing from list",
                 deviceId);
             if (!LiveControlClients.Remove(deviceId, out var removedClient)) return;
             await removedClient.DisposeAsync(); // Dispose incase it was not disposed
 
-            await OnStateUpdated.Raise();
+            await _onStateUpdated.InvokeAsyncParallel();
         });
 
         await client.InitializeAsync();

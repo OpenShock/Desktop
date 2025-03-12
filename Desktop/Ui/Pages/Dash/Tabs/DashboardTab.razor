@@ -15,7 +15,7 @@
 @inject OpenShockHubClient ApiHubClient
 @inject ISnackbar Snackbar
 @inject ConfigManager ConfigManager
-@implements IDisposable
+@implements IAsyncDisposable
 
 @page "/dash/dashboard"
 
@@ -108,21 +108,13 @@
 
     private void OpenOpenShock() => UiUtils.OpenUrl("https://openshock.org", Snackbar);
     private void OpenGithub() => UiUtils.OpenUrl("https://github.com/OpenShock/Desktop", Snackbar);
-
-    protected override void OnInitialized()
+    private IAsyncDisposable _statusSubscription = null!;
+    
+    protected override async Task OnInitializedAsync()
     {
-        StatusHandler.OnWebsocketStatusChanged += StatusHandlerOnWebsocketStatusChanged;
+        _statusSubscription = await StatusHandler.OnWebsocketStatusChanged.SubscribeAsync(() => InvokeAsync(StateHasChanged));
     }
-
-    private Task StatusHandlerOnWebsocketStatusChanged()
-    {
-        return InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        StatusHandler.OnWebsocketStatusChanged -= StatusHandlerOnWebsocketStatusChanged;
-    }
+    
 
     private static Color GetConnectionStateColor(HubConnectionState state) =>
         state switch
@@ -133,5 +125,14 @@
             HubConnectionState.Disconnected => Color.Error,
             _ => Color.Error
         };
+    
+    private bool _disposed = false;
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        await _statusSubscription.DisposeAsync();
+    }
 
 }

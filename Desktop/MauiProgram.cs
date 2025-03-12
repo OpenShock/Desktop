@@ -51,15 +51,12 @@ public static class MauiProgram
                 {
                     var appWindow = WindowUtils.GetAppWindow(window);
 
-                    if (_pipeServerService != null)
+                    _pipeServerService?.OnMessageReceived.SubscribeAsync(() =>
                     {
-                        _pipeServerService.OnMessageReceived += () =>
-                        {
-                            appWindow.ShowOnTop();
+                        appWindow.ShowOnTop();
 
-                            return Task.CompletedTask;
-                        };
-                    }
+                        return Task.CompletedTask;
+                    }).AsTask().Wait();
 
                     //When user execute the closing method, we can push a display alert. If user click Yes, close this application, if click the cancel, display alert will dismiss.
                     appWindow.Closing += async (s, e) =>

@@ -8,6 +8,7 @@
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Services.Pipes
 @inherits LayoutComponentBase
+@implements IAsyncDisposable
 @inject ILogger<Authenticate> Logger
 
 
@@ -62,12 +63,14 @@
     }
 
     private State _currentState = State.Login;
+    private IAsyncDisposable _pipeMessageSubscription = null!;
 
     protected override async Task OnInitializedAsync()
     {
         if (await CheckTokenReceived()) return;
-        
-        PipeService.OnMessageReceived += CheckTokenReceived;
+
+        _pipeMessageSubscription = await PipeService.OnMessageReceived.SubscribeAsync(CheckTokenReceived);
+
     }
 
     private async Task<bool> CheckTokenReceived()
@@ -106,6 +109,15 @@
             Logger.LogError(e, "Failed to authenticate");
             Snackbar.Add("Failed to authenticate", Severity.Error);
         }
+    }
+    
+    private bool _disposed;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        await _pipeMessageSubscription.DisposeAsync();
     }
 
 }

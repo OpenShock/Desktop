@@ -1,6 +1,5 @@
 ﻿#if WINDOWS
 
-using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 using OpenShock.Desktop.Services;
@@ -11,9 +10,10 @@ using Image = System.Drawing.Image;
 // ReSharper disable once CheckNamespace
 namespace OpenShock.Desktop.Platforms.Windows;
 
-public class WindowsTrayService : ITrayService
+public class WindowsTrayService : ITrayService, IAsyncDisposable
 {
     private readonly OpenShockHubClient _apiHubClient;
+    private readonly List<IAsyncDisposable> _subscriptions = new();
 
     /// <summary>
     /// Windows Tray Service
@@ -22,15 +22,10 @@ public class WindowsTrayService : ITrayService
     public WindowsTrayService(OpenShockHubClient apiHubClient)
     {
         _apiHubClient = apiHubClient;
-        
-        _apiHubClient.Reconnecting += _ => HubStateChanged();
-        _apiHubClient.Reconnected += _ => HubStateChanged();
-        _apiHubClient.Closed += _ => HubStateChanged();
-        _apiHubClient.Connected += _ => HubStateChanged();
     }
-    
-    private ToolStripLabel? _stateLabel = null;
-    
+
+    private ToolStripLabel? _stateLabel;
+
     private Task HubStateChanged()
     {
         if (_stateLabel == null) return Task.CompletedTask;
@@ -38,21 +33,30 @@ public class WindowsTrayService : ITrayService
         return Task.CompletedTask;
     }
 
-    public void Initialize()
+    public async Task Initialize()
     {
+        _subscriptions.Add(await _apiHubClient.OnReconnecting.SubscribeAsync(_ => HubStateChanged())
+            .ConfigureAwait(false));
+        _subscriptions.Add(await _apiHubClient.OnReconnected.SubscribeAsync(_ => HubStateChanged())
+            .ConfigureAwait(false));
+        _subscriptions.Add(await _apiHubClient.OnClosed.SubscribeAsync(_ => HubStateChanged())
+            .ConfigureAwait(false));
+        _subscriptions.Add(await _apiHubClient.OnConnected.SubscribeAsync(_ => HubStateChanged())
+            .ConfigureAwait(false));
+
         var tray = new NotifyIcon();
         tray.Icon = Icon.ExtractAssociatedIcon(@"Resources\openshock-icon.ico");
         tray.Text = "OpenShock";
 
         var menu = new ContextMenuStrip();
-        
+
         menu.Items.Add("OpenShock", Image.FromFile(@"Resources\openshock-icon.ico"), OnMainClick);
         menu.Items.Add(new ToolStripSeparator());
         _stateLabel = new ToolStripLabel($"State: {_apiHubClient.State}");
         menu.Items.Add(_stateLabel);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Quit OpenShock", null, OnQuitClick);
-        
+
         tray.ContextMenuStrip = menu;
 
         tray.Click += OnMainClick;
@@ -67,9 +71,9 @@ public class WindowsTrayService : ITrayService
         var window = Application.Current?.Windows[0];
         var nativeWindow = window?.Handler?.PlatformView;
         if (nativeWindow == null) return;
-        
+
         var appWindow = WindowUtils.GetAppWindow(nativeWindow);
-        
+
         appWindow.ShowOnTop();
     }
 
@@ -80,8 +84,23 @@ public class WindowsTrayService : ITrayService
             Application.Current.Quit();
             return;
         }
-        
+
         Environment.Exit(0);
+    }
+
+    private bool _disposed;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _stateLabel?.Dispose();
+
+        foreach (var subscription in _subscriptions)
+        {
+            await subscription.DisposeAsync();
+        }
     }
 }
 
