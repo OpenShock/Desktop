@@ -1,12 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.IO.Compression;
-using System.Net.Mime;
 using System.Reactive.Subjects;
 using System.Reflection;
+using System.Security.Cryptography;
 using dnlib.DotNet;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.FileProviders;
 using OneOf;
 using OneOf.Types;
 using OpenShock.Desktop.Backend;
@@ -114,7 +112,7 @@ public sealed class ModuleManager : IDisposable
             return new NotFound();
         }
 
-        var moduleDownload = await DownloadModule(moduleId, moduleVersion.Url);
+        var moduleDownload = await DownloadModule(moduleId, moduleVersion.Url, moduleVersion.Sha256Hash);
         if (moduleDownload.IsT0)
         {
             return new Success();
@@ -123,8 +121,9 @@ public sealed class ModuleManager : IDisposable
         return new Error();
     }
 
-    private async Task<OneOf<Success, Error>> DownloadModule(string moduleId, Uri moduleUrl)
+    private async Task<OneOf<Success, Error>> DownloadModule(string moduleId, Uri moduleUrl, byte[] remoteSha256)
     {
+        _logger.LogDebug("Downloading module {ModuleId} from {ModuleUrl}", moduleId, moduleUrl);
         using var downloadResponse = await HttpClient.GetAsync(moduleUrl, HttpCompletionOption.ResponseHeadersRead);
 
         if (!downloadResponse.IsSuccessStatusCode)
@@ -134,7 +133,9 @@ public sealed class ModuleManager : IDisposable
             return new Error();
         }
 
-        if (downloadResponse.Content.Headers.ContentType?.MediaType != MediaTypeNames.Application.Zip)
+        var mediaType = downloadResponse.Content.Headers.ContentType?.MediaType;
+        
+        if (mediaType == null || !Constants.ModuleZipAllowedMediaTypeNames.Contains(mediaType))
         {
             _logger.LogError(
                 "Failed to download module {ModuleId} from {ModuleUrl} as it is not a ZIP file (Content-Type: {ContentType})",
@@ -142,12 +143,29 @@ public sealed class ModuleManager : IDisposable
             return new Error();
         }
 
+        await using var fileBytes = await downloadResponse.Content.ReadAsStreamAsync();
+        await using var fileMemoryStream = new MemoryStream();
+        await fileBytes.CopyToAsync(fileMemoryStream);
+        fileMemoryStream.Seek(0, SeekOrigin.Begin);
+        var downloadedHash = await SHA256.HashDataAsync(fileMemoryStream);
+        
+        if (!downloadedHash.SequenceEqual(remoteSha256))
+        {
+            var downloadedHashString = Convert.ToHexString(downloadedHash);
+            var remoteHashString = Convert.ToHexString(remoteSha256);
+            _logger.LogError("Failed to download module {ModuleId} from {ModuleUrl} as the SHA256 hash does not match. {Downloaded Hash} - {Remote Hash}", moduleId, moduleUrl, downloadedHashString, remoteHashString);
+            return new Error();
+        }
+        
+        _logger.LogTrace("Hashes match for module {ModuleId} from {ModuleUrl}. {Downloaded Hash} - {Remote Hash}", moduleId, moduleUrl, downloadedHash, remoteSha256);
+
         var moduleFolderPath = Path.Combine(ModuleDirectory, moduleId);
 
         if (Directory.Exists(moduleFolderPath)) Directory.Delete(moduleFolderPath, true);
 
         Directory.CreateDirectory(moduleFolderPath);
-        ZipFile.ExtractToDirectory(await downloadResponse.Content.ReadAsStreamAsync(), moduleFolderPath, true);
+        fileMemoryStream.Seek(0, SeekOrigin.Begin);
+        ZipFile.ExtractToDirectory(fileMemoryStream, moduleFolderPath, true);
 
         return new Success();
     }

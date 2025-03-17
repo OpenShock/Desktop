@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System.Collections.Immutable;
+using System.Net.Mime;
+using System.Reflection;
 using Microsoft.VisualBasic.ApplicationServices;
 using OpenShock.Desktop.Ui.Utils;
 using Semver;
@@ -16,8 +18,19 @@ public static class Constants
     public static readonly SemVersion Version = SemVersion.Parse(typeof(Constants).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, SemVersionStyles.Strict);
     public static readonly SemVersion VersionWithoutMetadata = Version.WithoutMetadata();
 
-    public static readonly IReadOnlyList<Uri> BuiltInModuleRepositories = new List<Uri>
-    {
-        new("https://repo.openshock.org/1")
-    };
+    public static readonly ImmutableArray<Uri> BuiltInModuleRepositories = [
+        ..new List<Uri>
+        {
+            new("https://repo.openshock.org/1")
+        }
+    ];
+
+    public static readonly ImmutableArray<string> ModuleZipAllowedMediaTypeNames =
+    [
+        ..new List<string>
+        {
+            MediaTypeNames.Application.Zip,
+            MediaTypeNames.Application.Octet
+        }
+    ];
 }
