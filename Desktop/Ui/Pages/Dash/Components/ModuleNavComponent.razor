@@ -1,9 +1,9 @@
 ﻿@using OpenShock.Desktop.ModuleManager
 
-<ModuleNavGroup IconImage="@LoadedModule.Module.IconPath" Title="@LoadedModule.Module.Name">
+<ModuleNavGroup IconImage="@LoadedModule.Module.IconPath" Title="@LoadedModule.Name">
     @foreach (var subComponent in LoadedModule.Module.NavigationComponents)
     {
-        <ModuleNavLink Icon="@subComponent.Icon" Href="@("/dash/module/" + LoadedModule.Module.Id + "/" + subComponent.Name)">@(subComponent.Name)</ModuleNavLink>
+        <ModuleNavLink Icon="@subComponent.Icon" Href="@("/dash/module/" + LoadedModule.Id + "/" + subComponent.Name)">@(subComponent.Name)</ModuleNavLink>
     }
 </ModuleNavGroup>
 

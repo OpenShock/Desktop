@@ -62,7 +62,7 @@ public class OpenShockModuleComponentActivator : IComponentActivator
             if (service == null)
             {
                 throw new Exception(
-                    $"There is no registered service of type {prop.PropertyType.Name} for module {module.Module.Id}");
+                    $"There is no registered service of type {prop.PropertyType.Name} for module {module.Id}");
             }
 
             prop.SetValue(instance, service);

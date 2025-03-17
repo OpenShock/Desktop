@@ -114,8 +114,8 @@
             throw new ArgumentException("RepoModule and LoadedModule cannot both be null");
         }
 
-        _moduleName = RepoModule?.Name ?? (LoadedModule?.Module.Name ?? "error");
-        _moduleIcon = RepoModule?.IconUrl?.ToString() ?? LoadedModule!.Module.IconPath;
+        _moduleName = RepoModule?.Name ?? (LoadedModule?.Name ?? "error");
+        _moduleIcon = RepoModule?.IconUrl?.ToString() ?? LoadedModule?.Module.IconPath;
         _availableVersions = GetAvailableVersions();
     }
 

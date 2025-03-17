@@ -6,8 +6,6 @@ namespace OpenShock.Desktop.ModuleBase;
 
 public abstract class DesktopModuleBase
 {
-    public abstract string Id { get; }
-    public abstract string Name { get; }
     public virtual string? IconPath { get; } = null;
     public IModuleInstanceManager ModuleInstanceManager { get; private set; } = null!;
 

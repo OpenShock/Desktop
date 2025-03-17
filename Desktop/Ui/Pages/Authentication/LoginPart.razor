@@ -35,8 +35,7 @@
         @if (!_useCustomServerDialog)
         {
             <MudSelect T="BackendServer" Label="Server" @bind-Value="Server" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
-                <MudSelectItem T="BackendServer" Value="BackendServer.Production"><span class="server-url-backdrop">https://api.openshock.app/</span> (Production)</MudSelectItem>
-                <MudSelectItem T="BackendServer" Value="BackendServer.Staging"><span class="server-url-backdrop">https://api-staging.openshock.app/</span> (Staging)</MudSelectItem>
+                <MudSelectItem T="BackendServer" Value="BackendServer.Production"><span class="server-url-backdrop">https://api.openshock.app/</span> (OpenShock Official)</MudSelectItem>
                 @if (_customServerUri != null)
                 {
                     <MudSelectItem T="BackendServer" Value="BackendServer.Custom"><span class="server-url-backdrop">@_customServerUri</span> (Custom)</MudSelectItem>
@@ -125,7 +124,6 @@
     private enum BackendServer
     {
         Production,
-        Staging,
         Custom
     }
 
@@ -136,13 +134,11 @@
         get => ConfigManager.Config.OpenShock.Backend.ToString() switch
         {
             ProductionServerString => BackendServer.Production,
-            StagingServerString => BackendServer.Staging,
             _ => BackendServer.Custom
         };
         set => ConfigManager.Config.OpenShock.Backend = value switch
         {
             BackendServer.Production => _productionServer,
-            BackendServer.Staging => _stagingServer,
             BackendServer.Custom => _customServerUri,
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
         } ?? throw new InvalidOperationException();
@@ -155,10 +151,8 @@
     private struct UriIsNotValid;
 
     private const string ProductionServerString = "https://api.openshock.app/";
-    private const string StagingServerString = "https://staging-api.openshock.app/";
 
     private static Uri _productionServer = new(ProductionServerString);
-    private static Uri _stagingServer = new(StagingServerString);
 
     protected override void OnInitialized()
     {
@@ -169,7 +163,7 @@
     {
         Logger.LogTrace("Get API info");
         var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Add("User-Agent", "OpenShock.Desktop-Internal/1.0");
+        httpClient.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent);
         httpClient.BaseAddress = ConfigManager.Config.OpenShock.Backend;
         var response = await httpClient.GetAsync("1");
         if (!response.IsSuccessStatusCode)
@@ -191,19 +185,6 @@
 
         var requestUri = new Uri(root.Data!.ShortLinkUrl, "/t/?name=OpenShock%20Desktop&redirect_uri=openshock:token/%&permissions=shockers.use,shockers.pause");
         UiUtils.OpenUrl(requestUri.ToString());
-    }
-    
-    private string GetUserAgent()
-    {
-        var desktopVersion = GetType().Assembly.GetName().Version!;
-        
-
-        var runtimeVersion = RuntimeInformation.FrameworkDescription;
-        if (string.IsNullOrEmpty(runtimeVersion)) runtimeVersion = "Unknown Runtime";
-
-        return
-            $"OpenShock.Desktop/{desktopVersion.Major}.{desktopVersion.Minor}.{desktopVersion.Build} " +
-            $"({runtimeVersion}; {UserAgentUtils.GetOs()}; OpenShockDesktopInternals)";
     }
 
     public sealed class RootResponse

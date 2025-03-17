@@ -7,7 +7,7 @@ public sealed class Repository
     public required string Name { get; init; }
     public required string Id { get; init; }
     public required string Author { get; init; }
-    public required Uri Url { get; init; }
+    public required Uri? Homepage { get; init; }
     
     public required ImmutableDictionary<string, Module> Modules { get; init; }
 }

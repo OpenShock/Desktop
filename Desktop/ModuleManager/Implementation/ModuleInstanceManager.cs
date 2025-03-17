@@ -26,14 +26,14 @@ public class ModuleInstanceManager : IModuleInstanceManager
     
     public async Task<IModuleConfig<T>> GetModuleConfig<T>() where T : new()
     {
-        var moduleConfigPath = Path.Combine(Constants.ModuleData, _loadedModule.Module.Id);
+        var moduleConfigPath = Path.Combine(Constants.ModuleData, _loadedModule.Id);
         
         if(!Directory.Exists(moduleConfigPath)) Directory.CreateDirectory(moduleConfigPath);
         
         var moduleConfigFile = Path.Combine(moduleConfigPath, "config.json");
 
         return await ModuleConfig<T>.Create(moduleConfigFile,
-            _loggerFactory.CreateLogger("ModuleConfig+" + _loadedModule.Module.Id));
+            _loggerFactory.CreateLogger("ModuleConfig+" + _loadedModule.Id));
     }
 
     public required IServiceProvider AppServiceProvider { get; init; }

@@ -154,21 +154,23 @@ public sealed class ModuleManager : IDisposable
 
     private void LoadModule(string moduleFolderPath, string moduleDll, string moduleFolderName)
     {
-        _logger.LogDebug("Attempting to load module: {Path}", moduleDll);
+        _logger.LogInformation("Loading module: {Path}", moduleDll);
 
         var assemblyLoadContext = new ModuleAssemblyLoadContext(moduleFolderPath);
         var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleDll);
+
+        var moduleAttribute = assembly.GetCustomAttribute<DesktopModuleAttribute>();
         
-        var moduleTypes = assembly.GetTypes();
-        var pluginTypes = moduleTypes.Where(t => t.IsAssignableTo(ModuleBaseType)).ToImmutableArray();
-        switch (pluginTypes.Length)
+        if (moduleAttribute is null)
         {
-            case 0:
-                _logger.LogError("No modules found in DLL!");
-                return;
-            case > 1:
-                _logger.LogError("Expected 1 module, found {NumberOfModules}", pluginTypes.Length);
-                return;
+            _logger.LogError("Module Assembly does not have a module attribute!");
+            return;
+        }
+
+        if (!moduleAttribute.ModuleType.IsAssignableTo(ModuleBaseType))
+        {
+            _logger.LogError("Module Attribute: Type does not inherit from DesktopModuleBase!");
+            return;
         }
 
         var assemblyVersion =
@@ -182,17 +184,18 @@ public sealed class ModuleManager : IDisposable
 
         if (!SemVersion.TryParse(assemblyVersion, SemVersionStyles.Strict, out var loadedModuleVersion))
         {
-            _logger.LogError("Failed to parse sem-version {Version} for module {ModuleId}. It needs to be a valid semantic version.", assemblyVersion, pluginTypes[0].FullName);
+            _logger.LogError("Failed to parse sem-version {Version} for module {ModuleId}. It needs to be a valid semantic version.", assemblyVersion, moduleAttribute.ModuleType.FullName);
             return;
         }
         
-        var module = (DesktopModuleBase?)ActivatorUtilities.CreateInstance(_serviceProvider, pluginTypes[0]);
+        var module = (DesktopModuleBase?)ActivatorUtilities.CreateInstance(_serviceProvider, moduleAttribute.ModuleType);
         if (module is null) throw new Exception("Failed to instantiate module!");
         
         
         var loadedModule = new LoadedModule
         {
             LoadContext = assemblyLoadContext,
+            ModuleAttribute = moduleAttribute,
             Assembly = assembly,
             Module = module,
             Version = loadedModuleVersion,
@@ -210,15 +213,15 @@ public sealed class ModuleManager : IDisposable
             AppServiceProvider = _serviceProvider
         });
         
-        if (moduleFolderName != loadedModule.Module.Id)
+        if (moduleFolderName != loadedModule.Id)
         {
             _logger.LogError(
                 "Module folder name does not match module ID! [{FolderName} != {ModuleName}]. This might cause issues and is not expected. Updating for sure wont work properly :3 Please fix this",
-                moduleFolderName, loadedModule.Module.Id);
+                moduleFolderName, loadedModule.Id);
             return;
         }
 
-        if (!Modules.TryAdd(module.Id, loadedModule)) throw new Exception("Module already loaded!");
+        if (!Modules.TryAdd(loadedModule.Id, loadedModule)) throw new Exception("Module already loaded!");
     }
 
     private void RefreshRepositoryInformationOnLoaded()

@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using OneOf;
 using OneOf.Types;
 using OpenShock.Desktop.ModuleBase.Utils;
+using OpenShock.Desktop.Ui.Utils;
 using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Updatables;
 using Serilog;
@@ -13,10 +15,19 @@ namespace OpenShock.Desktop.ModuleManager.Repository;
 
 public sealed class RepositoryLoadContext
 {
-    private static readonly HttpClient HttpClient = new HttpClient()
+    private static readonly HttpClient HttpClient;
+
+    static RepositoryLoadContext()
     {
-        Timeout = TimeSpan.FromSeconds(15)
-    };
+        HttpClient = new HttpClient(new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromHours(1)
+        })
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+        HttpClient.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent);
+    }
 
     private static readonly ILogger Logger = Log.ForContext<RepositoryLoadContext>();
 
