@@ -34,7 +34,7 @@ public sealed class RepositoryLoadContext
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true, AllowTrailingCommas = true,
-        Converters = { new SemVersionConverter() }
+        Converters = { new SemVersionConverter(), new ByteArrayHexConverter() }
     };
 
     public required Uri RepositoryUrl { get; init; }
