@@ -30,7 +30,8 @@ public static class Constants
         ..new List<string>
         {
             MediaTypeNames.Application.Zip,
-            MediaTypeNames.Application.Octet
+            MediaTypeNames.Application.Octet,
+            "application/x-zip-compressed"
         }
     ];
 }

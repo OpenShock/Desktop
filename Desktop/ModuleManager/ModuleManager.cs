@@ -32,10 +32,19 @@ public sealed class ModuleManager : IAsyncDisposable
 
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
-    private static readonly HttpClient HttpClient = new()
+    private static readonly HttpClient HttpClient;
+
+    static ModuleManager()
     {
-        Timeout = TimeSpan.FromMinutes(5)
-    };
+        HttpClient = new HttpClient(new SocketsHttpHandler
+        {
+            PooledConnectionIdleTimeout = TimeSpan.FromHours(1)
+        })
+        {
+            Timeout = TimeSpan.FromMinutes(5)
+        };
+        HttpClient.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent);
+    }
 
     public ModuleManager(IServiceProvider serviceProvider, ILogger<ModuleManager> logger,
         RepositoryManager repositoryManager, ConfigManager configManager)
