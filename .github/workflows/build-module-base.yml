@@ -38,14 +38,12 @@ jobs:
             module-base-nuget-
 
       - name: Publish OpenShock Desktop Module Base
-        run: dotnet publish ModuleBase/ModuleBase.csproj -c Release -o ./publish/ModuleBase
+        run: dotnet build ModuleBase/ModuleBase.csproj -c Release -o ./publish/ModuleBase
 
       - name: Upload OpenShock Desktop Module Base artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OpenShock Desktop Module Base
-          path: |
-            ./publish/ModuleBase/*.nupkg
-            ./publish/ModuleBase/*.snupkg
+          path: ./publish/ModuleBase/**
           retention-days: 1
           if-no-files-found: error
