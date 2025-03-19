@@ -42,7 +42,7 @@ public static class PhotinoEntryPoint
         var app = builder.Build();
 
         app.MainWindow
-            .SetIconFile("Resources/Icon512.png")
+            .SetIconFile("wwwroot/images/Icon512.png")
             .SetTitle("ShockOSC");
         
         app.MainWindow.MinHeight = 600;

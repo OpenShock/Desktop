@@ -49,8 +49,8 @@
 ;--------------------------------
 ;Icons
 
-    !define MUI_ICON "..\publish\Resources\openshock-icon.ico"
-    !define MUI_UNICON "..\publish\Resources\openshock-icon.ico"
+    !define MUI_ICON "..\publish\wwwroot\images\openshock-icon.ico"
+    !define MUI_UNICON "..\publish\wwwroot\images\openshock-icon.ico"
 
 ;--------------------------------
 ;Pages
@@ -168,7 +168,7 @@ Section "Install" SecInstall
     WriteUninstaller "$INSTDIR\Uninstall.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "DisplayName" "OpenShock Desktop"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "DisplayIcon" "$\"$INSTDIR\Resources\openshock-icon.ico$\""
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "DisplayIcon" "$\"$INSTDIR\wwwroot\images\openshock-icon.ico$\""
 
     ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
     IntFmt $0 "0x%08X" $0
@@ -180,7 +180,7 @@ Section "Install" SecInstall
     WriteRegStr HKCU "Software\Classes\OpenShockDesktop" "" "URL:OpenShock"
     WriteRegStr HKCU "Software\Classes\OpenShockDesktop" "FriendlyTypeName" "OpenShock"
     WriteRegStr HKCU "Software\Classes\OpenShockDesktop" "URL Protocol" ""
-    WriteRegExpandStr HKCU "Software\Classes\OpenShockDesktop\DefaultIcon" "" "$INSTDIR\Resources\openshock-icon.ico"
+    WriteRegExpandStr HKCU "Software\Classes\OpenShockDesktop\DefaultIcon" "" "$INSTDIR\wwwroot\images\openshock-icon.ico"
     WriteRegStr HKCU "Software\Classes\OpenShockDesktop\shell" "" "open"
     WriteRegStr HKCU "Software\Classes\OpenShockDesktop\shell\open" "FriendlyAppName" "OpenShock Desktop"
     WriteRegStr HKCU "Software\Classes\OpenShockDesktop\shell\open\command" "" '"$INSTDIR\OpenShock.Desktop.exe" --uri="%1"'
