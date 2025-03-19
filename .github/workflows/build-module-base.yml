@@ -38,7 +38,7 @@ jobs:
             module-base-nuget-
 
       - name: Publish OpenShock Desktop Module Base
-        run: dotnet publish ModuleBase/ModuleBase.csproj -c Release-Windows -o ./publish/ModuleBase
+        run: dotnet publish ModuleBase/ModuleBase.csproj -c Release -o ./publish/ModuleBase
 
       - name: Upload OpenShock Desktop Module Base artifacts
         uses: actions/upload-artifact@v4

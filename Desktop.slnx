@@ -7,8 +7,6 @@
   <Project Path="Desktop/Desktop.csproj" />
   <Project Path="ExampleModule/ExampleModule.csproj" />
   <Project Path="ModuleBase/ModuleBase.csproj">
-    <BuildType Solution="Debug-Web|*" Project="Debug" />
-    <BuildType Solution="Debug-Windows|*" Project="Debug" />
-    <BuildType Solution="Release-Windows|*" Project="Release" />
+    <Configuration Solution="Debug-Windows|Any CPU" Project="Debug|Any CPU" />
   </Project>
 </Solution>
