@@ -1,7 +1,4 @@
 ﻿@using OpenShock.Desktop.Backend
-@using OpenShock.Desktop.Config
-@using OpenShock.Desktop.ReactiveExtensions
-@using OpenShock.SDK.CSharp.Hub.Models
 @using OpenShock.SDK.CSharp.Models
 @using ControlType = OpenShock.SDK.CSharp.Models.ControlType
 @inject OpenShockApi OpenShockApi
@@ -53,10 +50,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hubsUpdateSubscription = await OpenShockApi.Hubs.ValueUpdated.SubscribeConcurrentAsync(list =>
-        {
-            InvokeAsync(StateHasChanged);
-        });
+        _hubsUpdateSubscription = await OpenShockApi.Hubs.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
 
     public async ValueTask DisposeAsync()

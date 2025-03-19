@@ -6,16 +6,22 @@
         <Configurations>Debug;Release</Configurations>
         <AssemblyName>OpenShock.Desktop.ModuleBase</AssemblyName>
         <RootNamespace>OpenShock.Desktop.ModuleBase</RootNamespace>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>OpenShock ModuleBase</Title>
+        <PackageIcon>Icon512.png</PackageIcon>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <ItemGroup>
         <None Include="..\README.md" Pack="true" PackagePath="\"/>
+        <None Include="..\Desktop\wwwroot\images\Icon512.png" Pack="true" PackagePath="$(PackageIcon)" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="OpenShock.MinimalEvents" Version="0.0.1" />
       <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
+      <PackageReference Remove="System.Reactive.Async" />
     </ItemGroup>
-
 
 </Project>

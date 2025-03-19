@@ -36,9 +36,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          key: ${{ runner.os }}-nuget
           restore-keys: |
-            ${{ runner.os }}-nuget-
+            ${{ runner.os }}-nuget
 
       - name: Publish OpenShock Desktop Windows
         run: dotnet publish Desktop/Desktop.csproj -c Release-Windows -o ./publish/Desktop

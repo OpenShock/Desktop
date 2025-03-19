@@ -1,12 +1,12 @@
-﻿@layout RootLayout
+﻿@using OpenShock.Desktop.Services
+@layout RootLayout
 @inject StartupService StartupService
 @inject NavigationManager NavigationManager
 @inject ILogger<RootPage> Logger
 @implements IAsyncDisposable
 
 @page "/"
-@using OpenShock.Desktop.ReactiveExtensions
-@using OpenShock.Desktop.Services
+
 
 <div>
     <MudText>Starting OpenShock Desktop...</MudText>
@@ -20,12 +20,14 @@
     
     protected override async Task OnInitializedAsync()
     {
-        _startupSubscription = await StartupService.IsStarted.ValueUpdated.SubscribeConcurrentAsync(b =>
+        _startupSubscription = await StartupService.IsStarted.ValueUpdated.SubscribeAsync(b =>
         {
             if (b) GoToDash();
+            
+            return Task.CompletedTask;
         });
         
-        _startupUpdatedSubscription = await StartupService.Status.Updated.SubscribeConcurrentAsync(b => InvokeAsync(StateHasChanged));
+        _startupUpdatedSubscription = await StartupService.Status.Updated.SubscribeAsync(b => InvokeAsync(StateHasChanged));
 
         if (StartupService.IsStarted.Value)
         {

@@ -45,12 +45,12 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
             .ConfigureAwait(false));
 
         var tray = new NotifyIcon();
-        tray.Icon = Icon.ExtractAssociatedIcon(@"Resources\openshock-icon.ico");
+        tray.Icon = Icon.ExtractAssociatedIcon(@"wwwroot/images/openshock-icon.ico");
         tray.Text = "OpenShock";
 
         var menu = new ContextMenuStrip();
 
-        menu.Items.Add("OpenShock", Image.FromFile(@"Resources\openshock-icon.ico"), OnMainClick);
+        menu.Items.Add("OpenShock", Image.FromFile(@"wwwroot/images/openshock-icon.ico"), OnMainClick);
         menu.Items.Add(new ToolStripSeparator());
         _stateLabel = new ToolStripLabel($"State: {_apiHubClient.State}");
         menu.Items.Add(_stateLabel);

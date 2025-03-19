@@ -17,7 +17,7 @@ public partial class MauiApp
             Title = "OpenShock",
             TitleBar = new TitleBar
             {
-                Icon = ImageSource.FromFile("Resources/Icon512.png"),
+                Icon = ImageSource.FromFile("wwwroot/images/Icon512.png"),
                 Title = "OpenShock",
                 Subtitle = Constants.Version.ToString(),
                 BackgroundColor = Color.FromArgb("212121")

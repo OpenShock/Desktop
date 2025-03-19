@@ -1,9 +1,7 @@
 ﻿@inject ConfigManager ConfigManager
 @inject Updater Updater
-@using System.Reactive
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.ModuleManager.Repository
-@using OpenShock.Desktop.ReactiveExtensions
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
 @inject IDialogService DialogService
@@ -231,10 +229,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeConcurrentAsync(_ => UpdateView())); 
-        _disposables.Add(await RepositoryManager.FetcherState.ValueUpdated.SubscribeConcurrentAsync(_ => UpdateView()));
-        _disposables.Add(await RepositoryManager.FetchedRepositories.ValueUpdated.SubscribeConcurrentAsync(_ => UpdateView()));
-        _disposables.Add(await RepositoryManager.RepositoriesStateChanged.SubscribeConcurrentAsync(_ => UpdateView()));
+        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(_ => UpdateView())); 
+        _disposables.Add(await RepositoryManager.FetcherState.ValueUpdated.SubscribeAsync(_ => UpdateView()));
+        _disposables.Add(await RepositoryManager.FetchedRepositories.ValueUpdated.SubscribeAsync(_ => UpdateView()));
+        _disposables.Add(await RepositoryManager.RepositoriesStateChanged.SubscribeAsync(_ => UpdateView()));
 
         UpdateRepositoriesWithFetchedData();
     }
@@ -242,7 +240,7 @@
     #region Event Handlers 
     
     
-    private async ValueTask UpdateView()
+    private async Task UpdateView()
     {
         UpdateRepositoriesWithFetchedData();
         await InvokeAsync(StateHasChanged);

@@ -10,10 +10,10 @@
         <AssemblyName>OpenShock.Desktop</AssemblyName>
         <RootNamespace>OpenShock.Desktop</RootNamespace>
         
-        <ApplicationIcon>Resources\openshock-icon.ico</ApplicationIcon>
+        <ApplicationIcon>wwwroot/images/openshock-icon.ico</ApplicationIcon>
         <SelfContained>true</SelfContained>
 
-        <PackageIcon>Resources\Icon512.png</PackageIcon>
+        <PackageIcon>wwwroot/images/Icon512.png</PackageIcon>
 
         <ResourceLanguages>en</ResourceLanguages>
         <SatelliteResourceLanguages>en-US;en</SatelliteResourceLanguages>
@@ -41,6 +41,7 @@
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.40" />
         <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.40" />
         <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
+        <PackageReference Remove="System.Reactive.Async" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
@@ -84,9 +85,6 @@
         <Content Update="wwwroot\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <None Update="Resources\**">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
 
     <ItemGroup>

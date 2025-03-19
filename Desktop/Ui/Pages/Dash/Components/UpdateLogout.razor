@@ -4,7 +4,6 @@
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
 @using OpenShock.Desktop.Config
-@using OpenShock.Desktop.ReactiveExtensions
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Ui.Pages.Authentication
 @implements IAsyncDisposable
@@ -22,21 +21,16 @@
     
     protected override async Task OnInitializedAsync()
     {
-        _disposables.Add(await Updater.UpdateAvailable.ValueUpdated.SubscribeConcurrentAsync(UpdateAvailableOnValueChanged));
-        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeConcurrentAsync(CheckingForUpdateOnValueChanged));
+        _disposables.Add(await Updater.UpdateAvailable.ValueUpdated.SubscribeAsync(UpdateAvailableOnValueChanged));
+        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(b => InvokeAsync(StateHasChanged)));
         
         if (Updater.UpdateAvailable.Value && !Updater.IsPostponed) await OpenUpdateDialog();
     }
 
-    private async ValueTask UpdateAvailableOnValueChanged(bool v)
+    private async Task UpdateAvailableOnValueChanged(bool v)
     {
         await InvokeAsync(StateHasChanged);
         if (v && !Updater.IsPostponed) await OpenUpdateDialog();
-    }
-
-    private void CheckingForUpdateOnValueChanged(bool v)
-    {
-        InvokeAsync(StateHasChanged);
     }
 
     private async Task Logout()

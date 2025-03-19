@@ -1,10 +1,8 @@
-﻿using System.Reactive.Subjects;
-using OpenShock.Desktop.Config;
+﻿using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleBase.Utils;
 using OpenShock.Desktop.ModuleManager.Repository;
-using OpenShock.Desktop.ReactiveExtensions;
 using OpenShock.Desktop.Utils;
-using OpenShock.SDK.CSharp.Updatables;
+using OpenShock.MinimalEvents;
 
 namespace OpenShock.Desktop.Services;
 
@@ -59,9 +57,9 @@ public sealed class StartupService
         _logger.LogDebug("Fetching repositories");
         await Status.Update("Fetching repositories");
 
-        await using (await _repositoryManager.FetcherState.ValueUpdated.SubscribeConcurrentAsync(_ => UpdateStateForRepositories()))
-        await using (await _repositoryManager.FetchedRepositories.ValueUpdated.SubscribeConcurrentAsync(_ => UpdateStateForRepositories()))
-        await using (await _repositoryManager.RepositoriesStateChanged.SubscribeConcurrentAsync(_ => UpdateStateForRepositories()))
+        await using (await _repositoryManager.FetcherState.ValueUpdated.SubscribeAsync(_ => UpdateStateForRepositories()))
+        await using (await _repositoryManager.FetchedRepositories.ValueUpdated.SubscribeAsync(_ => UpdateStateForRepositories()))
+        await using (await _repositoryManager.RepositoriesStateChanged.SubscribeAsync(_ => UpdateStateForRepositories()))
         {
             try
             {
@@ -135,9 +133,9 @@ public sealed class StartupService
 
 public sealed class StartupStatus
 {
-    public IAsyncObservable<StartupStatus> Updated => _updatedObservable;
+    public IAsyncMinimalEventObservable<StartupStatus> Updated => _updatedObservable;
     
-    private readonly ConcurrentSimpleAsyncSubject<StartupStatus> _updatedObservable = new();
+    private readonly AsyncMinimalEvent<StartupStatus> _updatedObservable = new();
     public string StepName { get; private set; } = "Starting";
     
     public uint ProgressCurrent { get; private set; } = 0;
@@ -148,7 +146,7 @@ public sealed class StartupStatus
         StepName = stepName;
         ProgressCurrent = progressCurrent;
         ProgressTotal = progressTotal;
-
-        await _updatedObservable.OnNextAsync(this);
+        
+        await _updatedObservable.InvokeAsyncParallel(this);
     }
 }

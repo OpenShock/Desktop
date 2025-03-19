@@ -2,8 +2,8 @@
 using System.Reactive.Subjects;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleBase.Utils;
-using OpenShock.Desktop.ReactiveExtensions;
 using OpenShock.Desktop.Utils;
+using OpenShock.MinimalEvents;
 
 namespace OpenShock.Desktop.ModuleManager.Repository;
 
@@ -15,8 +15,8 @@ public sealed class RepositoryManager
     public IObservableVariable<FetcherState> FetcherState => _fetcherState;
     private readonly ObservableVariable<FetcherState> _fetcherState = new(Desktop.ModuleManager.Repository.FetcherState.Idle);
     
-    public IAsyncObservable<Uri> RepositoriesStateChanged => _repositoriesStateChanged;
-    private readonly ConcurrentSimpleAsyncSubject<Uri> _repositoriesStateChanged = new ConcurrentSimpleAsyncSubject<Uri>();
+    public IAsyncMinimalEventObservable<Uri> RepositoriesStateChanged => _repositoriesStateChanged;
+    private readonly AsyncMinimalEvent<Uri> _repositoriesStateChanged = new AsyncMinimalEvent<Uri>();
     
     public IObservable<byte> RepositoriesUpdated => _repositoriesUpdated;
     private readonly Subject<byte> _repositoriesUpdated = new Subject<byte>();
@@ -82,7 +82,7 @@ public sealed class RepositoryManager
         
         foreach (var repoLoadContext in newRepositories)
         {
-            await repoLoadContext.Value.State.ValueUpdated.SubscribeConcurrentAsync(_ => ReposOnStateChange(repoLoadContext.Key));
+            await repoLoadContext.Value.State.ValueUpdated.SubscribeAsync(_ => _repositoriesStateChanged.InvokeAsyncParallel(repoLoadContext.Key));
             // We dont need to care about disposing this, we will just let it be garbage collected when we clear the repositories
             
             try
@@ -99,11 +99,6 @@ public sealed class RepositoryManager
 
         _repositoriesUpdated.OnNext(0);
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.Idle;
-    }
-
-    private ValueTask ReposOnStateChange(Uri repoUri)
-    {
-        return _repositoriesStateChanged.OnNextAsync(repoUri);
     }
 }
 

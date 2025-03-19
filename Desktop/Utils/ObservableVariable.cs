@@ -1,12 +1,13 @@
 ﻿using System.Reactive.Subjects;
 using OpenShock.Desktop.ModuleBase.Utils;
+using OpenShock.MinimalEvents;
 
 namespace OpenShock.Desktop.Utils;
 
-public class ObservableVariable<T> : IObservableVariable<T>
+public sealed class ObservableVariable<T> : IObservableVariable<T>
 {
-    public IAsyncObservable<T> ValueUpdated => _subject;
-    private readonly ConcurrentSimpleAsyncSubject<T> _subject = new();
+    public IAsyncMinimalEventObservable<T> ValueUpdated => _subject;
+    private readonly AsyncMinimalEvent<T> _subject = new();
     
     private T _value;
     
@@ -16,7 +17,7 @@ public class ObservableVariable<T> : IObservableVariable<T>
         set
         {
             _value = value; 
-            OsTask.Run(async () => { await _subject.OnNextAsync(value); });
+            OsTask.Run(async () => { await _subject.InvokeAsyncParallel(value); });
         }
     }
     
@@ -25,6 +26,4 @@ public class ObservableVariable<T> : IObservableVariable<T>
         _value = initialValue;
         
     }
-    
-    internal ValueTask OnCompletedAsync() => _subject.OnCompletedAsync();
 }

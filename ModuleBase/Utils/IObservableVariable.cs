@@ -1,7 +1,9 @@
-﻿namespace OpenShock.Desktop.ModuleBase.Utils;
+﻿using OpenShock.MinimalEvents;
 
-public interface IObservableVariable<T>
+namespace OpenShock.Desktop.ModuleBase.Utils;
+
+public interface IObservableVariable<out T>
 {
-    public IAsyncObservable<T> ValueUpdated { get; }
+    public IAsyncMinimalEventObservable<T> ValueUpdated { get; }
     public T Value { get; }
 }
