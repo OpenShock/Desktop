@@ -11,10 +11,11 @@
         <PackageIcon>Icon512.png</PackageIcon>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <Description>OpenShock Desktop Module Framework Base. Install to make a module for OpenShock Desktop</Description>
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\README.md" Pack="true" PackagePath="\"/>
+        <None Include=".\README.md" Pack="true" PackagePath="\"/>
         <None Include="..\Desktop\wwwroot\images\Icon512.png" Pack="true" PackagePath="$(PackageIcon)" />
     </ItemGroup>
 
