@@ -41,7 +41,6 @@
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.40" />
         <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.40" />
         <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
-        <PackageReference Remove="System.Reactive.Async" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
@@ -79,6 +78,7 @@
         <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.33" />
         <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.33" />
         <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.33" />
+        <PackageReference Include="System.Reactive" Version="6.0.1" />
     </ItemGroup>
 
     <ItemGroup>

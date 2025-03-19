@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Reactive.Subjects;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleBase.Utils;
 using OpenShock.Desktop.Utils;
@@ -18,8 +17,8 @@ public sealed class RepositoryManager
     public IAsyncMinimalEventObservable<Uri> RepositoriesStateChanged => _repositoriesStateChanged;
     private readonly AsyncMinimalEvent<Uri> _repositoriesStateChanged = new AsyncMinimalEvent<Uri>();
     
-    public IObservable<byte> RepositoriesUpdated => _repositoriesUpdated;
-    private readonly Subject<byte> _repositoriesUpdated = new Subject<byte>();
+    public IAsyncMinimalEventObservable RepositoriesUpdated => _repositoriesUpdated;
+    private readonly AsyncMinimalEvent _repositoriesUpdated = new AsyncMinimalEvent();
     
     public ImmutableDictionary<Uri, RepositoryLoadContext> Repositories { get; private set; } = new Dictionary<Uri, RepositoryLoadContext>().ToImmutableDictionary();
 
@@ -97,7 +96,9 @@ public sealed class RepositoryManager
             _fetchedRepositories.Value++;
         }
 
-        _repositoriesUpdated.OnNext(0);
+#pragma warning disable CS4014
+        OsTask.Run(_repositoriesUpdated.InvokeAsyncParallel);
+#pragma warning restore CS4014
         _fetcherState.Value = Desktop.ModuleManager.Repository.FetcherState.Idle;
     }
 }

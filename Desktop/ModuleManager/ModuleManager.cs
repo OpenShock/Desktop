@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.IO.Compression;
-using System.Reactive.Subjects;
 using System.Reflection;
 using System.Security.Cryptography;
 using dnlib.DotNet;
@@ -14,11 +13,12 @@ using OpenShock.Desktop.ModuleManager.Implementation;
 using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Utils;
+using OpenShock.MinimalEvents;
 using Semver;
 
 namespace OpenShock.Desktop.ModuleManager;
 
-public sealed class ModuleManager : IDisposable
+public sealed class ModuleManager : IAsyncDisposable
 {
     private static readonly Type ModuleBaseType = typeof(DesktopModuleBase);
 
@@ -27,8 +27,8 @@ public sealed class ModuleManager : IDisposable
     private readonly RepositoryManager _repositoryManager;
     private readonly ConfigManager _configManager;
     
-    public IObservable<byte> ModulesLoaded => _modulesLoaded;
-    private readonly Subject<byte> _modulesLoaded = new();
+    public IMinimalEventObservable ModulesLoaded => _modulesLoaded;
+    private readonly MinimalEvent _modulesLoaded = new();
 
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
@@ -45,14 +45,15 @@ public sealed class ModuleManager : IDisposable
         _repositoryManager = repositoryManager;
         _configManager = configManager;
 
-        _repositoryUpdatedSubscription = _repositoryManager.RepositoriesUpdated.Subscribe(b =>
+        _repositoryUpdatedSubscription = _repositoryManager.RepositoriesUpdated.SubscribeAsync(() =>
         {
             RefreshRepositoryInformationOnLoaded();
-        });
+            return Task.CompletedTask;
+        }).Result;
     }
 
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
-    private readonly IDisposable _repositoryUpdatedSubscription;
+    private readonly IAsyncDisposable _repositoryUpdatedSubscription;
 
     #region Tasks
 
@@ -282,7 +283,7 @@ public sealed class ModuleManager : IDisposable
         }
 
         RefreshRepositoryInformationOnLoaded();
-        _modulesLoaded.OnNext(0);
+        _modulesLoaded.Invoke();
     }
 
     private ImmutableArray<AvailableModule> GetModules()
@@ -425,12 +426,12 @@ public sealed class ModuleManager : IDisposable
     }
 
     private bool _disposed;
-    
-    public void Dispose()
+
+    public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
         _disposed = true;
-        _repositoryUpdatedSubscription.Dispose();
+        await _repositoryUpdatedSubscription.DisposeAsync();
     }
 }
 

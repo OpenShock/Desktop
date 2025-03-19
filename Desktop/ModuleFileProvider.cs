@@ -33,7 +33,7 @@ public sealed class ModuleFileProvider : IFileProvider, IDisposable
     {
         _moduleManager = moduleManager;
         
-        _modulesLoadedSubscription = _moduleManager.ModulesLoaded.Subscribe(_ => UpdateAssemblies());
+        _modulesLoadedSubscription = _moduleManager.ModulesLoaded.Subscribe(UpdateAssemblies);
         UpdateAssemblies();
     }
 

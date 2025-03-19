@@ -28,7 +28,5 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.2" />
         <PackageReference Include="OneOf" Version="3.0.271" />
-        <PackageReference Include="System.Reactive" Version="6.0.1" />
-        <PackageReference Include="System.Reactive.Async" Version="6.0.0-alpha.18" />
     </ItemGroup>
 </Project>
