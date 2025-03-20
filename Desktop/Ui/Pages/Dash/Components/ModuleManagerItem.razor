@@ -29,18 +29,26 @@
                     Pending Restart
                 </MudButton>
             }
-            else if (LoadedModule != null)
+            else if (LoadedModule?.AvailableVersion != null) // Installed, but update available
+            {
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Update"
+                           OnClick="() => InstallSpecificVersion(LoadedModule.AvailableVersion)">
+                    Update to @LoadedModule.AvailableVersion
+                </MudButton>
+            }
+            else if (LoadedModule != null) // Installed, no updated
             {
                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RemoveFromQueue"
                            OnClick="Remove">
                     Uninstall
                 </MudButton>
             }
-            else
+            else // Not Installed, but installable
             {
                 <MudButton StartIcon="@Icons.Material.Filled.InstallDesktop"
                            OnClick="InstallLatest">Install @LatestVersion</MudButton>
             }
+            
             <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto" Class="slim-split-button">
                 @if (_availableVersions != null)
                 {
