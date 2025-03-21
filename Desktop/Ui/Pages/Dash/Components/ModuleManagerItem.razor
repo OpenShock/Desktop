@@ -22,35 +22,44 @@
 
     <div class="ml-auto flex-shrink-0 d-flex flex-column gap-2">
 
-        <MudButtonGroup Variant="Variant.Outlined">
-            @if (ConfigManager.Config.Modules.ModuleTasks.ContainsKey(ModuleId)) // Pending restart for this module
+
+        <MudButtonGroup Variant="Variant.Outlined" Color="@CurrentButtonColor">
+            @switch (CurrentInstallState)
             {
-                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="Restart">
-                    Pending Restart
-                </MudButton>
+                case InstallState.RestartRequired:
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RestartAlt"
+                               OnClick="Restart">
+                        Pending Restart
+                    </MudButton>
+                    break;
+
+                case InstallState.UpdateAvailable:
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Update"
+                               OnClick="() => InstallSpecificVersion(LoadedModule!.AvailableVersion!)">
+                        Update to @LoadedModule!.AvailableVersion
+                    </MudButton>
+                    break;
+                case InstallState.Installed:
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.DesktopWindows"
+                               Disabled="true">
+                        Up to date
+                    </MudButton>
+                    break;
+                case InstallState.Installable:
+                    <MudButton StartIcon="@Icons.Material.Filled.InstallDesktop"
+                               OnClick="InstallLatest">Install @LatestVersion</MudButton>
+                    break;
+                case InstallState.PreReleaseInstallable:
+                    <MudButton StartIcon="@Icons.Material.Filled.InstallDesktop" Color="Color.Warning"
+                               OnClick="InstallLatest">Install preview @LatestPreReleaseVersion</MudButton>
+                    break;
+                case InstallState.NoVersionAvailable:
+                    <MudButton StartIcon="@Icons.Material.Filled.CodeOff" Disabled="true">No version available
+                    </MudButton>
+                    break;
             }
-            else if (LoadedModule?.AvailableVersion != null) // Installed, but update available
-            {
-                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Update"
-                           OnClick="() => InstallSpecificVersion(LoadedModule.AvailableVersion)">
-                    Update to @LoadedModule.AvailableVersion
-                </MudButton>
-            }
-            else if (LoadedModule != null) // Installed, no updated
-            {
-                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.RemoveFromQueue"
-                           OnClick="Remove">
-                    Uninstall
-                </MudButton>
-            }
-            else // Not Installed, but installable
-            {
-                <MudButton StartIcon="@Icons.Material.Filled.InstallDesktop"
-                           OnClick="InstallLatest">Install @LatestVersion</MudButton>
-            }
-            
             <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto" Class="slim-split-button">
-                @if (_availableVersions != null)
+                @if (_availableVersions != null && _availableVersions.Value.Length > 0)
                 {
                     <MudMenu Label="Versions" StartIcon="@Icons.Material.Filled.FormatListNumbered" MaxHeight="400"
                              Dense="true">
@@ -60,6 +69,8 @@
                         }
                     </MudMenu>
                 }
+                <MudDivider/>
+                <MudMenuItem Icon="@Icons.Material.Filled.RemoveFromQueue" OnClick="Remove">Remove</MudMenuItem>
             </MudMenu>
         </MudButtonGroup>
 
@@ -112,6 +123,7 @@
     private string? _moduleIcon;
 
     private SemVersion? LatestVersion => RepoModule?.Versions.Keys.Where(x => x.IsRelease).OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
+    private SemVersion? LatestPreReleaseVersion => RepoModule?.Versions.Keys.Where(x => !x.IsRelease).OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
 
     private ImmutableArray<SemVersion>? _availableVersions = null;
 
@@ -136,18 +148,20 @@
 
         Install(LatestVersion);
     }
-    
+
     private void InstallSpecificVersion(SemVersion version)
     {
         var parameters = new DialogParameters<InstallConfirmDialog>
         {
             { x => x.ModuleName, _moduleName },
             { x => x.ModuleVersion, version },
-            { x => x.OnConfirm, (Func<Task>)(() =>
             {
-                Install(version);
-                return Task.CompletedTask;
-            }) }
+                x => x.OnConfirm, (Func<Task>)(() =>
+                {
+                    Install(version);
+                    return Task.CompletedTask;
+                })
+            }
         };
         DialogService.ShowAsync<InstallConfirmDialog>("Install module?", parameters);
     }
@@ -182,5 +196,50 @@
     {
         return RepoModule?.Versions.Keys.ToImmutableArray();
     }
+
+    private Color CurrentButtonColor =>
+        CurrentInstallState switch
+        {
+            InstallState.RestartRequired => Color.Info,
+            InstallState.UpdateAvailable => Color.Tertiary,
+            InstallState.Installable => Color.Success,
+            InstallState.PreReleaseInstallable => Color.Warning,
+            InstallState.NoVersionAvailable => Color.Default,
+            _ => Color.Default
+        };
+
+    private InstallState CurrentInstallState
+    {
+        get
+        {
+            if (ConfigManager.Config.Modules.ModuleTasks.ContainsKey(ModuleId))
+                return InstallState.RestartRequired; // Restart pending due to queued module task
+
+            if (LoadedModule?.AvailableVersion != null)
+                return InstallState.UpdateAvailable; // Installed and update available
+
+            if (LoadedModule != null)
+                return InstallState.Installed; // Installed, no update available
+
+            if (LatestVersion != null)
+                return InstallState.Installable; // Not installed, but installable
+
+            if (LatestPreReleaseVersion != null)
+                return InstallState.PreReleaseInstallable; // Not installed, no full release, but a prerelease is installable
+
+            return InstallState.NoVersionAvailable;
+        }
+    }
+
+    private enum InstallState
+    {
+        RestartRequired,
+        UpdateAvailable,
+        Installed,
+        Installable,
+        PreReleaseInstallable,
+        NoVersionAvailable
+    }
+
 
 }
