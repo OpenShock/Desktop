@@ -1,6 +1,4 @@
 ﻿@using System.Collections.Immutable
-@using System.Diagnostics
-@using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.ModuleManager.Repository
@@ -11,6 +9,7 @@
 @inject ConfigManager ConfigManager
 @inject RepositoryManager RepositoryManager
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10" Outlined="true">
     <img src="@_moduleIcon" alt="@_moduleName" class="icon rounded-lg"/>
@@ -51,7 +50,7 @@
                     break;
                 case InstallState.PreReleaseInstallable:
                     <MudButton StartIcon="@Icons.Material.Filled.InstallDesktop" Color="Color.Warning"
-                               OnClick="InstallLatest">Install preview @LatestPreReleaseVersion</MudButton>
+                               OnClick="() => InstallSpecificVersion(LatestPreReleaseVersion!)">Install preview @LatestPreReleaseVersion</MudButton>
                     break;
                 case InstallState.NoVersionAvailable:
                     <MudButton StartIcon="@Icons.Material.Filled.CodeOff" Disabled="true">No version available
@@ -70,7 +69,10 @@
                     </MudMenu>
                 }
                 <MudDivider/>
-                <MudMenuItem Icon="@Icons.Material.Filled.RemoveFromQueue" OnClick="Remove">Remove</MudMenuItem>
+                @if (CurrentInstallState is InstallState.Installed or InstallState.UpdateAvailable or InstallState.RestartRequired)
+                {
+                    <MudMenuItem Icon="@Icons.Material.Filled.RemoveFromQueue" OnClick="Remove">Remove</MudMenuItem>
+                }
             </MudMenu>
         </MudButtonGroup>
 
@@ -181,6 +183,7 @@
     {
         ConfigManager.Config.Modules.ModuleTasks[ModuleId] = new RemoveModuleTask();
         ConfigManager.Save();
+        Snackbar.Add("Module will be removed upon restart", Severity.Info);
         InvokeAsync(StateHasChanged);
     }
 
