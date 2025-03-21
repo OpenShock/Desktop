@@ -57,7 +57,7 @@
 
     private async Task ProceedAuthenticated()
     {
-        MudDialog.Close();
+        await InvokeAsync(MudDialog.Close).ConfigureAwait(false);
         await AuthService.Authenticate();
     }
     

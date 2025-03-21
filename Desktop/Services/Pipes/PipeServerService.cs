@@ -72,6 +72,7 @@ public sealed class PipeServerService
                             _logger.LogWarning("[{Id}] Received empty token. Skipping...", id);
                             continue;
                         }
+                        _logger.LogDebug("[{Id}] Received token: {Token}", id, token);
                         await OsTask.Run(() => _onTokenReceived.InvokeAsyncParallel(token));
                         break;
                     case PipeMessageType.Show:
