@@ -1,6 +1,4 @@
 ﻿#if MAUI
-using System.Globalization;
-using System.Text;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Maui.LifecycleEvents;
 using OpenShock.Desktop.Config;
@@ -51,7 +49,7 @@ public static class MauiProgram
                 {
                     var appWindow = WindowUtils.GetAppWindow(window);
 
-                    _pipeServerService?.OnMessageReceived.SubscribeAsync(() =>
+                    _pipeServerService?.OnMessageReceived.SubscribeAsync(_ =>
                     {
                         appWindow.ShowOnTop();
 

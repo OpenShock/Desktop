@@ -49,7 +49,7 @@ public sealed class AuthService
         
     }
 
-    private SemaphoreSlim _authLock = new(1, 1);
+    private readonly SemaphoreSlim _authLock = new(1, 1);
     
     public async Task Authenticate()
     {

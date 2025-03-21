@@ -5,7 +5,7 @@ public static class UriParser
     public static UriParameter Parse(string uri)
     {
         ReadOnlySpan<char> uriSpan = uri;
-        var dePrefixed = uriSpan[9..];
+        var dePrefixed = uriSpan[10..]; // 10 is the length of "openshock:"
         
         var getEnd = dePrefixed.IndexOf('/');
         if(getEnd == -1) getEnd = dePrefixed.Length;

@@ -15,7 +15,7 @@
 @inject ILogger<LoginPart> Logger
 
 <div class="d-flex">
-<MudButton Class="get-token-button" Style="width: 1000px; height:  100px; font-size: 2rem" Variant="Variant.Filled" Color="Color.Primary" OnClick="GetToken">Login with OpenShock</MudButton>
+<MudButton Class="get-token-button" Style="width: 1000px; height:  100px; font-size: 2rem" Variant="Variant.Filled" Color="Color.Primary" OnClick="GetTokenFromBrowser">Login with OpenShock</MudButton>
 </div>
 <br/>
 <br/>
@@ -159,7 +159,7 @@
         if (Server == BackendServer.Custom) _customServerUri = ConfigManager.Config.OpenShock.Backend;
     }
 
-    private async Task GetToken()
+    private async Task GetTokenFromBrowser()
     {
         Logger.LogTrace("Get API info");
         var httpClient = new HttpClient();

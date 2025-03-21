@@ -16,10 +16,11 @@ public sealed class PipeServerService
         _logger = logger;
     }
 
-    public string? Token { get; set; }
-
-    public IAsyncMinimalEventObservable OnMessageReceived => _onMessageReceived;
-    private readonly AsyncMinimalEvent _onMessageReceived = new();
+    public IAsyncMinimalEventObservable<PipeMessageType> OnMessageReceived => _onMessageReceived;
+    private readonly AsyncMinimalEvent<PipeMessageType>_onMessageReceived = new();
+    
+    public IAsyncMinimalEventObservable<string> OnTokenReceived => _onTokenReceived;
+    private readonly AsyncMinimalEvent<string> _onTokenReceived = new();
 
     public void StartServer()
     {
@@ -65,14 +66,20 @@ public sealed class PipeServerService
                 switch (jsonObj.Type)
                 {
                     case PipeMessageType.Token:
-                        Token = jsonObj.Data?.ToString();
+                        var token = jsonObj.Data?.ToString();
+                        if (string.IsNullOrEmpty(token))
+                        {
+                            _logger.LogWarning("[{Id}] Received empty token. Skipping...", id);
+                            continue;
+                        }
+                        await OsTask.Run(() => _onTokenReceived.InvokeAsyncParallel(token));
                         break;
                     case PipeMessageType.Show:
                     default:
                         break;
                 }
 
-                await OsTask.Run(_onMessageReceived.InvokeAsyncParallel); // Task.Run to error handle in the event handler
+                await OsTask.Run(() => _onMessageReceived.InvokeAsyncParallel(jsonObj.Type)); // Task.Run to error handle in the event handler
                 _logger.LogInformation("[{Id}], Received pipe message of type: {Type}", id, jsonObj.Type);
             }
             catch (JsonException ex)

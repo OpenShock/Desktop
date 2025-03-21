@@ -3,5 +3,5 @@
 public class UriParameter
 {
     public required UriParameterType Type { get; set; }
-    public IReadOnlyCollection<string> Arguments { get; set; } = Array.Empty<string>();
+    public IReadOnlyList<string> Arguments { get; set; } = Array.Empty<string>();
 }

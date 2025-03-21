@@ -23,23 +23,7 @@
                 </MudContainer>
 
                 <div style="margin-top: 20px;">
-
-                    @switch (_currentState)
-                    {
-                        case State.Login:
-                            <LoginPart ProceedAuthenticated="ProceedAuthenticated"/>
-                            break;
-                        case State.Loading:
-                            <MudProgressCircular Color="Color.Primary" Style="height:125px;width:125px;" Indeterminate="true"/>
-                            break;
-                        case State.Failed:
-                            <MudText Typo="Typo.h6">Failed to authenticate</MudText>
-                            <MudButton OnClick="ReLogin" Variant="Variant.Filled" Color="Color.Primary">Re-login</MudButton>
-                            break;
-                        case State.Authenticated:
-                            <MudText Typo="Typo.h6">Successful, redirecting...</MudText>
-                            break;
-                    }
+                    <LoginPart ProceedAuthenticated="ProceedAuthenticated"/>
                 </div>
             </MudPaper>
         </MudContainer>
@@ -54,61 +38,27 @@
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = null!;
 
-    private enum State
-    {
-        Login,
-        Loading,
-        Authenticated,
-        Failed
-    }
-
-    private State _currentState = State.Login;
+    
     private IAsyncDisposable _pipeMessageSubscription = null!;
 
     protected override async Task OnInitializedAsync()
     {
-        if (await CheckTokenReceived()) return;
-
-        _pipeMessageSubscription = await PipeService.OnMessageReceived.SubscribeAsync(CheckTokenReceived);
+        _pipeMessageSubscription = await PipeService.OnTokenReceived.SubscribeAsync(TokenReceived);
 
     }
 
-    private async Task<bool> CheckTokenReceived()
+    private async Task TokenReceived(string token)
     {
-        if (string.IsNullOrEmpty(PipeService.Token) || _currentState != State.Login) return false;
-        ConfigManager.Config.OpenShock.Token = PipeService.Token;
-        ConfigManager.Save();
-        PipeService.Token = null;
+        ConfigManager.Config.OpenShock.Token = token;
+        await ConfigManager.SaveNow();
+        
         await ProceedAuthenticated();
-        return true;
-    }
-
-    public void ReLogin()
-    {
-        _currentState = State.Login;
     }
 
     private async Task ProceedAuthenticated()
     {
-        _currentState = State.Loading;
-        await InvokeAsync(StateHasChanged);
-
-        try
-        {
-            await AuthService.Authenticate();
-
-            _currentState = State.Authenticated;
-            await InvokeAsync(StateHasChanged);
-            
-            MudDialog.Close();
-        }
-        catch (Exception e)
-        {
-            _currentState = State.Failed;
-            await InvokeAsync(StateHasChanged);
-            Logger.LogError(e, "Failed to authenticate");
-            Snackbar.Add("Failed to authenticate", Severity.Error);
-        }
+        MudDialog.Close();
+        await AuthService.Authenticate();
     }
     
     private bool _disposed;

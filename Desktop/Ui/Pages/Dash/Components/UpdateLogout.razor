@@ -10,7 +10,7 @@
 
 @code {
     private static readonly DialogOptions UpdateDialogOptions = new() { NoHeader = true, BackdropClick = false };
-    private static readonly DialogOptions LoginDialogOptions = new() { FullScreen = true, CloseButton = true};
+    private static readonly DialogOptions LoginDialogOptions = new() { FullScreen = true, CloseButton = true };
 
     private async Task OpenUpdateDialog()
     {
@@ -18,12 +18,13 @@
     }
 
     private List<IAsyncDisposable> _disposables = new();
-    
+
     protected override async Task OnInitializedAsync()
     {
         _disposables.Add(await Updater.UpdateAvailable.ValueUpdated.SubscribeAsync(UpdateAvailableOnValueChanged));
         _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(b => InvokeAsync(StateHasChanged)));
-        
+        _disposables.Add(await AuthService.AuthState.ValueUpdated.SubscribeAsync(type => InvokeAsync(StateHasChanged)));
+
         if (Updater.UpdateAvailable.Value && !Updater.IsPostponed) await OpenUpdateDialog();
     }
 
@@ -39,19 +40,19 @@
 
         NavigationManager.NavigateTo("/");
     }
-    
+
     private bool _disposed = false;
 
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
         _disposed = true;
-        
+
         foreach (var asyncDisposable in _disposables)
         {
             await asyncDisposable.DisposeAsync();
         }
-        
+
         _disposables.Clear();
     }
 
@@ -65,24 +66,41 @@
 <div class="d-flex">
     <MudMenu>
         <ActivatorContent>
-        @if (AuthService.AuthState.Value == AuthService.AuthStateType.Authed)
-        {
-            <MudAvatar>
-                <MudImage Src="@AuthService.SelfResponse?.Image.ToString()"/>
-            </MudAvatar>
-            <div class="d-flex align-center" style="margin-left: 15px">
-                <p>@AuthService.SelfResponse?.Name</p>
-            </div>
-        }
-        else
-        {
-            <MudAvatar Style="background-color: transparent">
-                <MudImage Src="/images/Icon.svg"/>
-            </MudAvatar>
-            <div class="d-flex align-center" style="margin-left: 15px">
-                <p>Not Logged In</p>
-            </div>
-        }
+            @switch (AuthService.AuthState.Value)
+            {
+                case AuthService.AuthStateType.NotAuthed:
+                    <MudAvatar Style="background-color: transparent">
+                        <MudImage Src="/images/Icon.svg"/>
+                    </MudAvatar>
+                    <div class="d-flex align-center" style="margin-left: 15px">
+                        <p>Not Logged In</p>
+                    </div>
+                    break;
+                case AuthService.AuthStateType.FailedAuth:
+                    <MudAvatar Style="background-color: transparent">
+                        <MudImage Src="/images/Icon.svg"/>
+                    </MudAvatar>
+                    <div class="d-flex align-center" style="margin-left: 15px">
+                        <p>Not Logged In (Failed)</p>
+                    </div>
+                    break;
+                case AuthService.AuthStateType.Authenticating:
+                    <MudAvatar Style="background-color: transparent">
+                        <MudProgressCircular Indeterminate="true"></MudProgressCircular>
+                    </MudAvatar>
+                    <div class="d-flex align-center" style="margin-left: 15px">
+                        <p>Logging in....</p>
+                    </div>
+                    break;
+                case AuthService.AuthStateType.Authed:
+                    <MudAvatar>
+                        <MudImage Src="@AuthService.SelfResponse?.Image.ToString()"/>
+                    </MudAvatar>
+                    <div class="d-flex align-center" style="margin-left: 15px">
+                        <p>@AuthService.SelfResponse?.Name</p>
+                    </div>
+                    break;
+            }
         </ActivatorContent>
         <ChildContent>
             <MudMenuItem Icon="@Icons.Material.Filled.List" Href="/dash/logs">Logs</MudMenuItem>
@@ -107,7 +125,7 @@
 </div>
 
 <style>
-    .flex-childs-full-width >* {
-        width:  100%;
+    .flex-childs-full-width > * {
+        width: 100%;
     }
 </style>

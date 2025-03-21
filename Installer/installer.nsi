@@ -32,7 +32,7 @@
     Name "OpenShock Desktop"
     OutFile "OpenShock_Desktop_Setup.exe"
     InstallDir "$LocalAppdata\OpenShock\Desktop"
-    InstallDirRegKey HKLM "Software\OpenShockDesktop" "InstallDir"
+    InstallDirRegKey HKLM "Software\OpenShock" "InstallDir"
     RequestExecutionLevel admin
     ShowInstDetails show
 
@@ -103,7 +103,7 @@ FunctionEnd
 Function .onInit
     StrCpy $upgradeInstallation 0
 
-    ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "UninstallString"
+    ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShock" "UninstallString"
     StrCmp $R0 "" notInstalled
         StrCpy $upgradeInstallation 1
     notInstalled:
@@ -164,26 +164,26 @@ Section "Install" SecInstall
 
     File /r /x *.log /x *.pdb /x *.mui "..\publish\*.*"
 
-    WriteRegStr HKLM "Software\OpenShockDesktop" "InstallDir" $INSTDIR
+    WriteRegStr HKLM "Software\OpenShock" "InstallDir" $INSTDIR
     WriteUninstaller "$INSTDIR\Uninstall.exe"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "DisplayName" "OpenShock Desktop"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "DisplayIcon" "$\"$INSTDIR\wwwroot\images\openshock-icon.ico$\""
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShock" "DisplayName" "OpenShock Desktop"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShock" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShock" "DisplayIcon" "$\"$INSTDIR\wwwroot\images\openshock-icon.ico$\""
 
     ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
     IntFmt $0 "0x%08X" $0
-    WriteRegDWORD HKLM  "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop" "EstimatedSize" "$0"
+    WriteRegDWORD HKLM  "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShock" "EstimatedSize" "$0"
 
     CreateShortCut "$SMPROGRAMS\OpenShock.lnk" "$INSTDIR\OpenShock.Desktop.exe"
     ApplicationID::Set "$SMPROGRAMS\OpenShock.lnk" "OpenShock"
 
-    WriteRegStr HKCU "Software\Classes\OpenShockDesktop" "" "URL:OpenShock"
-    WriteRegStr HKCU "Software\Classes\OpenShockDesktop" "FriendlyTypeName" "OpenShock"
-    WriteRegStr HKCU "Software\Classes\OpenShockDesktop" "URL Protocol" ""
-    WriteRegExpandStr HKCU "Software\Classes\OpenShockDesktop\DefaultIcon" "" "$INSTDIR\wwwroot\images\openshock-icon.ico"
-    WriteRegStr HKCU "Software\Classes\OpenShockDesktop\shell" "" "open"
-    WriteRegStr HKCU "Software\Classes\OpenShockDesktop\shell\open" "FriendlyAppName" "OpenShock Desktop"
-    WriteRegStr HKCU "Software\Classes\OpenShockDesktop\shell\open\command" "" '"$INSTDIR\OpenShock.Desktop.exe" --uri="%1"'
+    WriteRegStr HKCU "Software\Classes\OpenShock" "" "URL:OpenShock"
+    WriteRegStr HKCU "Software\Classes\OpenShock" "FriendlyTypeName" "OpenShock"
+    WriteRegStr HKCU "Software\Classes\OpenShock" "URL Protocol" ""
+    WriteRegExpandStr HKCU "Software\Classes\OpenShock\DefaultIcon" "" "$INSTDIR\wwwroot\images\openshock-icon.ico"
+    WriteRegStr HKCU "Software\Classes\OpenShock\shell" "" "open"
+    WriteRegStr HKCU "Software\Classes\OpenShock\shell\open" "FriendlyAppName" "OpenShock Desktop"
+    WriteRegStr HKCU "Software\Classes\OpenShock\shell\open\command" "" '"$INSTDIR\OpenShock.Desktop.exe" --uri="%1"'
 SectionEnd
 
 ;--------------------------------
@@ -201,9 +201,9 @@ Section "Uninstall"
 
     RMDir /r "$INSTDIR"
 
-    DeleteRegKey HKLM "Software\OpenShockDesktop"
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShockDesktop"
-    DeleteRegKey HKCU "Software\Classes\OpenShockDesktop"
+    DeleteRegKey HKLM "Software\OpenShock"
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenShock"
+    DeleteRegKey HKCU "Software\Classes\OpenShock"
 
     ${IfNot} ${Silent}
         Delete "$SMPROGRAMS\OpenShock.lnk"
