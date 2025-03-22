@@ -1,4 +1,5 @@
-﻿using OpenShock.Desktop.Config;
+﻿using System.Diagnostics;
+using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleBase.Utils;
 using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.Utils;
@@ -13,7 +14,8 @@ public sealed class StartupService
     private readonly ModuleManager.ModuleManager _moduleManager;
     private readonly Updater _updater;
     private readonly ConfigManager _configManager;
-    
+    private readonly AuthService _authService;
+
     public IObservableVariable<bool> IsStarted => _isStartedObservable; 
     
     private readonly ObservableVariable<bool> _isStartedObservable = new(false);
@@ -25,13 +27,15 @@ public sealed class StartupService
         RepositoryManager repositoryManager,
         ModuleManager.ModuleManager moduleManager,
         Updater updater,
-        ConfigManager configManager)
+        ConfigManager configManager,
+        AuthService authService)
     {
         _logger = logger;
         _repositoryManager = repositoryManager;
         _moduleManager = moduleManager;
         _updater = updater;
         _configManager = configManager;
+        _authService = authService;
     }
     
     private volatile bool _isStarted;
@@ -123,6 +127,10 @@ public sealed class StartupService
         }
         
         _isStartedObservable.Value = true;
+
+#pragma warning disable CS4014
+        OsTask.Run(_authService.Authenticate);
+#pragma warning restore CS4014
     }
     
     private Task UpdateStateForRepositories()
