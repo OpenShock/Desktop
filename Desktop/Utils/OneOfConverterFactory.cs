@@ -47,8 +47,7 @@ public class OneOfConverterFactory : JsonConverterFactory
                 {
                     return (type, typeof(OneOf3JsonConverter<,,>));
                 }
-
-                // TODO: Not supported (yet).
+                
                 // if (genericTypeDefinition == typeof(OneOfBase<,,,>) ||
                 //     genericTypeDefinition == typeof(OneOf<,,,>))
                 // {

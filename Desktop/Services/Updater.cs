@@ -222,9 +222,9 @@ public sealed class Updater
             return;
         }
 
-        UpdateAvailable.Value = true;
         LatestVersion = latestVersion.Value.Item1;
         ReleaseDownloadUrl = latestVersion.Value.Item2.BrowserDownloadUrl;
+        UpdateAvailable.Value = true;
         if (_configManager.Config.App.LastIgnoredVersion != null &&
             _configManager.Config.App.LastIgnoredVersion.ComparePrecedenceTo(latestVersion.Value.Item1) >= 0)
         {
