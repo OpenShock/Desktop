@@ -7,14 +7,27 @@
 
 @page "/"
 
+<MudContainer Class="align-content-center" MaxWidth="MaxWidth.Small" Style="padding-top: 30px">
+    <MudPaper Class="rounded-lg" Elevation="0" Style="padding: 20px; text-align: center;" Outlined="true">
 
-<div>
-    <MudText>Starting OpenShock Desktop...</MudText>
-    <MudProgressCircular Color="Color.Primary" Style="height:125px;width:125px;" Indeterminate="true"/>
-    
-    <MudText>@StartupService.Status.StepName</MudText>
-    
-</div>
+        <MudText>Starting OpenShock Desktop...</MudText>
+        <br/>
+        <MudProgressCircular Color="Color.Primary" Style="height:125px;width:125px;" Indeterminate="@(!StartupService.IsStarted.Value)" Value="100" Max="100"/>
+
+        <br/>
+        <MudText>@StartupService.Status.StepName</MudText>
+        
+        <br/>
+        @if (@StartupService.Status.ProgressTotal != null)
+        {
+            <MudProgressLinear Value="@StartupService.Status.ProgressCurrent" Max="@StartupService.Status.ProgressTotal.Value"></MudProgressLinear>
+        }
+        else
+        {
+            <MudProgressLinear Value="100" Max="100"></MudProgressLinear>
+        }
+    </MudPaper>
+</MudContainer>
 
 @code {
     

@@ -104,29 +104,50 @@ public sealed class StartupService
         
         try
         {
-            _moduleManager.LoadAll();
+            _moduleManager.LoadAll(); // Progress tracking on this, maybe use IEnumerable and out value? Dont know if thats possible, otherwise just use events or something
         } catch (Exception e)
         {
             _logger.LogError(e, "Error while loading modules");
         }
+
+        var totalModules = (uint)_moduleManager.Modules.Count;
         
         _logger.LogDebug("Setting up modules");
-        await Status.Update("Setting up modules");
+        await Status.Update("Setting up modules",0, totalModules);
         
+        uint j = 0;
         foreach (var moduleManagerModule in _moduleManager.Modules)
         {
-            await moduleManagerModule.Value.Module.Setup();
+            await Status.Update("Setting up modules", ++j, totalModules);
+            try
+            {
+                await moduleManagerModule.Value.Module.Setup();    
+            } catch (Exception e)
+            {
+                _logger.LogError(e, "Error while setting up module {Module}", moduleManagerModule.Key);
+            }
         }
         
         _logger.LogDebug("Starting modules");
-        await Status.Update("Starting modules");
+        await Status.Update("Starting modules", 0, totalModules);
         
+        uint i = 0;
         foreach (var moduleManagerModule in _moduleManager.Modules)
         {
-            await moduleManagerModule.Value.Module.Start();
+            await Status.Update("Starting modules", ++i, totalModules);
+            try
+            {
+                await moduleManagerModule.Value.Module.Start();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error while starting module {Module}", moduleManagerModule.Key);;
+            }
         }
         
         _isStartedObservable.Value = true;
+        
+        await Status.Update("Starting complete, redirecting to dashboard");
 
 #pragma warning disable CS4014
         OsTask.Run(_authService.Authenticate);
