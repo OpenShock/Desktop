@@ -1,7 +1,6 @@
 ﻿// ReSharper disable InconsistentNaming
 namespace OpenShock.Desktop.ModuleBase.Models;
 
-// TODO: Add parser in sdk that allows for unknown values to be parsed as Unknown
 public enum ShockerModelType : byte
 {
     CaiXianlin = 0,

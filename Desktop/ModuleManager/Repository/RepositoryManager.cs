@@ -43,7 +43,7 @@ public sealed class RepositoryManager
 
         if (!await _semaphore.WaitAsync(0))
         {
-            _logger.LogWarning("Couldnt enter semaphore, already fetching repositories");
+            _logger.LogWarning("Couldn't enter semaphore, already fetching repositories");
             return;
         }
 
@@ -82,7 +82,7 @@ public sealed class RepositoryManager
         foreach (var repoLoadContext in newRepositories)
         {
             await repoLoadContext.Value.State.ValueUpdated.SubscribeAsync(_ => _repositoriesStateChanged.InvokeAsyncParallel(repoLoadContext.Key));
-            // We dont need to care about disposing this, we will just let it be garbage collected when we clear the repositories
+            // We don't need to care about disposing this, we will just let it be garbage collected when we clear the repositories
             
             try
             {
