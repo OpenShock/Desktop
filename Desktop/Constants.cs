@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Net.Mime;
 using System.Reflection;
-using Microsoft.VisualBasic.ApplicationServices;
 using OpenShock.Desktop.Ui.Utils;
 using Semver;
 

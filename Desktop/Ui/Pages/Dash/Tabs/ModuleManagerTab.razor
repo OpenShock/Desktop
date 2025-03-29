@@ -6,53 +6,67 @@
 @inject RepositoryManager RepositoryManager
 @inject ModuleManager ModuleManager
 
-<div class="d-flex gap-3 flex-column">
 
-    <MudText Typo="Typo.h6">Installed</MudText>
-    
-    @foreach (var module in _installedModules)
-    {
-        <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule" LoadedModule="@module.Value"/>
-    }
-
-    <MudText Typo="Typo.h6">Unknown Loaded Modules</MudText>
-    
-    @foreach (var module in _unknownModules)
-    {
-        <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
-    }
-    
-    <MudText Typo="Typo.h6">Installable Modules</MudText>
-    
-    @foreach (var module in _installableModules)
-    {
-        <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
-    }
-
-</div>
+<MudExpansionPanels MultiExpansion="true">
+    <MudExpansionPanel Expanded="true">
+        <TitleContent>
+            Installed <MudChip T="int">@_installedModules.Count</MudChip>
+        </TitleContent>
+        <ChildContent>
+        @foreach (var module in _installedModules)
+        {
+            <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
+                               LoadedModule="@module.Value"/>
+        }
+        </ChildContent>
+    </MudExpansionPanel>
+    <MudExpansionPanel>
+        <TitleContent>
+            Unknown Loaded Modules <MudChip T="int">@_unknownModules.Count</MudChip>
+        </TitleContent>
+        <ChildContent>
+        @foreach (var module in _unknownModules)
+        {
+            <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
+        }
+        </ChildContent>
+    </MudExpansionPanel>
+    <MudExpansionPanel>
+        <TitleContent>
+            Installable Modules <MudChip T="int">@_installableModules.Count</MudChip>
+        </TitleContent>
+        <ChildContent>
+        @foreach (var module in _installableModules)
+        {
+            <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
+        }
+        </ChildContent>
+    </MudExpansionPanel>
+</MudExpansionPanels>
 
 @code {
 
-    private IEnumerable<KeyValuePair<string, LoadedModule>> _unknownModules = null!;
-    private IEnumerable<KeyValuePair<string, Module>> _installableModules = null!;
+    private ImmutableDictionary<string, LoadedModule> _unknownModules = null!;
+    private ImmutableDictionary<string, Module> _installableModules = null!;
     private ImmutableDictionary<string, LoadedModule> _installedModules = null!;
 
     protected override void OnInitialized()
     {
         PopulateModuleLists();
     }
-    
+
     private void PopulateModuleLists()
     {
         var loadedModules = ModuleManager.Modules;
-        
+
         var modulesFromRepos = RepositoryManager.Repositories
             .Where(x => x.Value.Repository != null)
             .SelectMany(x => x.Value.Repository!.Modules).ToDictionary();
-        
-        _unknownModules = loadedModules.Where(x => modulesFromRepos.All(y => y.Key != x.Key));
-        _installableModules = modulesFromRepos.Where(x => !loadedModules.Keys.Contains(x.Key));
-        
+
+        _unknownModules = loadedModules.Where(x => modulesFromRepos.All(y => y.Key != x.Key)).ToImmutableDictionary();
+        _installableModules = modulesFromRepos.Where(x => !loadedModules.Keys.Contains(x.Key)).ToImmutableDictionary();
+
         _installedModules = loadedModules.Where(x => x.Value.RepositoryModule != null).ToImmutableDictionary();
     }
+
 }
