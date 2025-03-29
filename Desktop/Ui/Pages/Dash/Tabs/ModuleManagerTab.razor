@@ -14,30 +14,33 @@
         </TitleContent>
         <ChildContent>
             <div class="d-flex gap-3 flex-wrap">
-            @foreach (var module in _installedModules)
-            {
-                <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
-                                   LoadedModule="@module.Value"/>
-            }
+                @foreach (var module in _installedModules)
+                {
+                    <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
+                                       LoadedModule="@module.Value"/>
+                }
             </div>
         </ChildContent>
     </MudExpansionPanel>
+    @if (_unknownModules.Count > 0)
+    {
+        <MudExpansionPanel>
+            <TitleContent>
+                Unknown Loaded <MudChip T="int">@_unknownModules.Count</MudChip>
+            </TitleContent>
+            <ChildContent>
+                <div class="d-flex gap-3 flex-wrap">
+                    @foreach (var module in _unknownModules)
+                    {
+                        <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
+                    }
+                </div>
+            </ChildContent>
+        </MudExpansionPanel>
+    }
     <MudExpansionPanel>
         <TitleContent>
-            Unknown Loaded Modules <MudChip T="int">@_unknownModules.Count</MudChip>
-        </TitleContent>
-        <ChildContent>
-            <div class="d-flex gap-3 flex-wrap">
-            @foreach (var module in _unknownModules)
-            {
-                <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
-            }
-            </div>
-        </ChildContent>
-    </MudExpansionPanel>
-    <MudExpansionPanel>
-        <TitleContent>
-            Installable Modules <MudChip T="int">@_installableModules.Count</MudChip>
+            Available <MudChip T="int">@_installableModules.Count</MudChip>
         </TitleContent>
         <ChildContent>
             <div class="d-flex gap-3 flex-wrap">
