@@ -13,11 +13,13 @@
             Installed <MudChip T="int">@_installedModules.Count</MudChip>
         </TitleContent>
         <ChildContent>
-        @foreach (var module in _installedModules)
-        {
-            <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
-                               LoadedModule="@module.Value"/>
-        }
+            <div class="d-flex gap-3 flex-wrap">
+            @foreach (var module in _installedModules)
+            {
+                <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
+                                   LoadedModule="@module.Value"/>
+            }
+            </div>
         </ChildContent>
     </MudExpansionPanel>
     <MudExpansionPanel>
@@ -25,10 +27,12 @@
             Unknown Loaded Modules <MudChip T="int">@_unknownModules.Count</MudChip>
         </TitleContent>
         <ChildContent>
-        @foreach (var module in _unknownModules)
-        {
-            <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
-        }
+            <div class="d-flex gap-3 flex-wrap">
+            @foreach (var module in _unknownModules)
+            {
+                <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
+            }
+            </div>
         </ChildContent>
     </MudExpansionPanel>
     <MudExpansionPanel>
@@ -36,10 +40,12 @@
             Installable Modules <MudChip T="int">@_installableModules.Count</MudChip>
         </TitleContent>
         <ChildContent>
-        @foreach (var module in _installableModules)
-        {
-            <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
-        }
+            <div class="d-flex gap-3 flex-wrap">
+            @foreach (var module in _installableModules)
+            {
+                <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
+            }
+            </div>
         </ChildContent>
     </MudExpansionPanel>
 </MudExpansionPanels>

@@ -20,7 +20,10 @@
 
         <div class="flex-none" style="align-self: flex-start;">
             <div class="d-flex" style="align-items: center">
-                <MudImage Src="images/NavbarLogoSpin.svg" Alt="Logo" Height="45" Width="218" Class="mx-4 my-2" Style="vertical-align: bottom;"/>
+                @* ReSharper disable once Html.PathError *@
+                <a href="/dash/dashboard">
+                    <MudImage Src="images/NavbarLogoSpin.svg" Alt="Logo" Height="45" Width="218" Class="mx-4 my-2" Style="vertical-align: bottom;"/>
+                </a>
             </div>
             <MudDivider Style="margin-bottom: 5px" DividerType="DividerType.Middle"/>
         </div>
