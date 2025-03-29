@@ -1,4 +1,5 @@
 ﻿using OpenShock.Desktop.ModuleBase.Models;
+using OpenShock.MinimalEvents;
 
 namespace OpenShock.Desktop.ModuleBase.Api;
 
@@ -26,4 +27,6 @@ public interface IOpenShockControl
     /// <param name="intensity"></param>
     /// <param name="type"></param>
     public void ControlAllShockers(byte intensity, ControlType type);
+    
+    public IAsyncMinimalEventObservable<RemoteControlledShockerArgs> OnRemoteControlledShocker { get; }
 }

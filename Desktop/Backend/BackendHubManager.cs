@@ -3,6 +3,7 @@ using MudBlazor.Extensions;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Models;
 using OpenShock.Desktop.Services;
+using OpenShock.MinimalEvents;
 using OpenShock.SDK.CSharp.Hub;
 using OpenShock.SDK.CSharp.Hub.Models;
 using OpenShock.SDK.CSharp.Models;
@@ -18,6 +19,9 @@ public sealed class BackendHubManager
     private readonly OpenShockApi _openShockApi;
 
     private string _liveConnectionId = string.Empty;
+
+    public IAsyncMinimalEventObservable<LogEventArgs> OnRemoteControlledShocker => _onRemoteControlledShocker;
+    private readonly AsyncMinimalEvent<LogEventArgs> _onRemoteControlledShocker = new();
 
     public BackendHubManager(ILogger<BackendHubManager> logger,
         ConfigManager configManager,
@@ -69,7 +73,7 @@ public sealed class BackendHubManager
             return Task.CompletedTask;
         }
 
-        return Task.CompletedTask;
+        return _onRemoteControlledShocker.InvokeAsyncParallel(logEventArgs);
     }
 
     /// <summary>
