@@ -32,7 +32,7 @@
     Name "OpenShock Desktop"
     OutFile "OpenShock_Desktop_Setup.exe"
     InstallDir "$LocalAppdata\OpenShock\Desktop"
-    InstallDirRegKey HKLM "Software\OpenShock" "InstallDir"
+    InstallDirRegKey HKCU "Software\OpenShock" "InstallDir"
     ShowInstDetails show
 
 ;--------------------------------
