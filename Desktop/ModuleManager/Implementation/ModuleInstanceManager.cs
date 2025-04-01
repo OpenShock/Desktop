@@ -14,14 +14,12 @@ public class ModuleInstanceManager : IModuleInstanceManager
     public ModuleInstanceManager(
         LoadedModule loadedModule, 
         ILoggerFactory loggerFactory, 
-        BackendHubManager backendHubManager,
-        LiveControlManager liveControlManager,
-        OpenShockApi openShockApi)
+        IServiceProvider serviceProvider)
     {
         _loadedModule = loadedModule;
         _loggerFactory = loggerFactory;
 
-        OpenShock = new OpenShockService(backendHubManager, liveControlManager, openShockApi);
+        OpenShock = new OpenShockService(serviceProvider);
     }
     
     public async Task<IModuleConfig<T>> GetModuleConfig<T>() where T : new()

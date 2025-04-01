@@ -1,4 +1,5 @@
 ﻿#if MAUI
+using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Maui.LifecycleEvents;
 using OpenShock.Desktop.Config;
@@ -19,6 +20,7 @@ public static class MauiProgram
     {
         try
         {
+            Console.Write(RuntimeInformation.RuntimeIdentifier);
             return CreateMauiAppInternal();
         } catch (Exception e)
         {
@@ -34,7 +36,7 @@ public static class MauiProgram
         // <---- Services ---->
 
         builder.Services.AddOpenShockDesktopServices();
-        builder.Services.AddCommonBlazorServices();
+        builder.Services.AddCommonBlazorServices(builder.Logging);
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddScoped<IComponentActivator, OpenShockModuleComponentActivator>();
 

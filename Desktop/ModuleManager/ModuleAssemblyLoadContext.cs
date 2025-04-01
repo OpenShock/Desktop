@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace OpenShock.Desktop.ModuleManager;
 
@@ -20,8 +21,14 @@ public class ModuleAssemblyLoadContext : System.Runtime.Loader.AssemblyLoadConte
 
         if (File.Exists(dependencyFilePath))
         {
-            // Load the dependency
             return LoadFromAssemblyPath(dependencyFilePath);
+        }
+
+        // Check for runtime-specific assembly, allows us for cross-platform modules
+        var runtimeSpecificAssembly = Path.Combine(_moduleLibPath, RuntimeInformation.RuntimeIdentifier, $"{assemblyName.Name}.dll");
+        if (File.Exists(runtimeSpecificAssembly))
+        {
+            return LoadFromAssemblyPath(runtimeSpecificAssembly);
         }
 
         return null; // Allow fallback to default context if necessary

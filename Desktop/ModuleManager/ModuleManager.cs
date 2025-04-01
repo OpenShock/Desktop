@@ -231,12 +231,7 @@ public sealed class ModuleManager : IAsyncDisposable
             RepositoryModule = null
         };
         
-        module.SetContext(new ModuleInstanceManager(loadedModule, 
-            _serviceProvider.GetRequiredService<ILoggerFactory>(), 
-            _serviceProvider.GetRequiredService<BackendHubManager>(), 
-            _serviceProvider.GetRequiredService<LiveControlManager>(),
-                            _serviceProvider.GetRequiredService<OpenShockApi>()
-            )
+        module.SetContext(new ModuleInstanceManager(loadedModule, _serviceProvider.GetRequiredService<ILoggerFactory>(), _serviceProvider)
         {
             AppServiceProvider = _serviceProvider
         });

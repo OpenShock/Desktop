@@ -70,7 +70,7 @@ public static class Bootstrap
         services.AddSingleton<StartupService>();
     }
 
-    public static void AddCommonBlazorServices(this IServiceCollection services)
+    public static void AddCommonBlazorServices(this IServiceCollection services, ILoggingBuilder builderLogging)
     {
 #if DEBUG_WINDOWS || DEBUG_PHOTINO
         services.AddBlazorWebViewDeveloperTools();

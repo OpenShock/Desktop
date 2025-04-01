@@ -6,4 +6,6 @@ public interface IOpenShockService
     public IOpenShockData Data { get; }
     
     public IOpenShockApi Api { get; }
+    
+    public IOpenShockAuth Auth { get; }
 }

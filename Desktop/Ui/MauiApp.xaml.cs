@@ -1,4 +1,6 @@
-﻿#if WINDOWS 
+﻿using System.Runtime.InteropServices;
+
+#if WINDOWS 
 namespace OpenShock.Desktop.Ui;
 
 public partial class MauiApp
@@ -19,7 +21,7 @@ public partial class MauiApp
             {
                 Icon = ImageSource.FromFile("wwwroot/images/Icon512.png"),
                 Title = "OpenShock",
-                Subtitle = Constants.Version.ToString(),
+                Subtitle = $"{Constants.Version} | {RuntimeInformation.RuntimeIdentifier}",
                 BackgroundColor = Color.FromArgb("212121")
             }
         };

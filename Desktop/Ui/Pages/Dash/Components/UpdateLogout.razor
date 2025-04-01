@@ -4,6 +4,7 @@
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
 @using OpenShock.Desktop.Config
+@using OpenShock.Desktop.ModuleBase.Models
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Ui.Pages.Authentication
 @implements IAsyncDisposable
@@ -68,7 +69,7 @@
         <ActivatorContent>
             @switch (AuthService.AuthState.Value)
             {
-                case AuthService.AuthStateType.NotAuthed:
+                case AuthStateType.NotAuthed:
                     <MudAvatar Style="background-color: transparent">
                         <MudImage Src="/images/Icon.svg"/>
                     </MudAvatar>
@@ -76,7 +77,7 @@
                         <p>Not Logged In</p>
                     </div>
                     break;
-                case AuthService.AuthStateType.FailedAuth:
+                case AuthStateType.FailedAuth:
                     <MudAvatar Style="background-color: transparent">
                         <MudImage Src="/images/Icon.svg"/>
                     </MudAvatar>
@@ -84,7 +85,7 @@
                         <p>Not Logged In (Failed)</p>
                     </div>
                     break;
-                case AuthService.AuthStateType.Authenticating:
+                case AuthStateType.Authenticating:
                     <MudAvatar Style="background-color: transparent">
                         <MudProgressCircular Indeterminate="true"></MudProgressCircular>
                     </MudAvatar>
@@ -92,7 +93,7 @@
                         <p>Logging in....</p>
                     </div>
                     break;
-                case AuthService.AuthStateType.Authed:
+                case AuthStateType.Authed:
                     <MudAvatar>
                         <MudImage Src="@AuthService.SelfResponse?.Image.ToString()"/>
                     </MudAvatar>
@@ -106,7 +107,7 @@
             <MudMenuItem Icon="@Icons.Material.Filled.List" Href="/dash/logs">Logs</MudMenuItem>
             <MudMenuItem Icon="@Icons.Material.Filled.ElectricBolt" Href="/dash/shockers">Shockers</MudMenuItem>
             <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/dash/settings">Settings</MudMenuItem>
-            @if (AuthService.AuthState.Value == AuthService.AuthStateType.Authed)
+            @if (AuthService.AuthState.Value == AuthStateType.Authed)
             {
                 <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="Logout">Logout</MudMenuItem>
             }

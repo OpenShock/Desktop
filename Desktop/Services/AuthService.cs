@@ -1,5 +1,6 @@
 using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
+using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.ModuleBase.Utils;
 using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Hub;
@@ -21,14 +22,7 @@ public sealed class AuthService
     // FailedAuth
     // Authed
     
-    public enum AuthStateType
-    {
-        NotAuthed,
-        FailedAuth,
-        Authenticating,
-        Authed
-    }
-    
+
     public IObservableVariable<AuthStateType> AuthState => _authState;
     private readonly ObservableVariable<AuthStateType> _authState = new(AuthStateType.NotAuthed);
 
@@ -45,8 +39,6 @@ public sealed class AuthService
         _liveControlManager = liveControlManager;
         _apiClient = apiClient;
         _configManager = configManager;
-
-        
     }
 
     private readonly SemaphoreSlim _authLock = new(1, 1);

@@ -8,4 +8,5 @@ namespace OpenShock.Desktop.ModuleBase.Api;
 public interface IOpenShockData
 {
     public IObservableVariable<ImmutableArray<OpenShockHub>> Hubs { get; }
+    
 }
