@@ -38,7 +38,6 @@ public static class MauiProgram
         builder.Services.AddOpenShockDesktopServices();
         builder.Services.AddCommonBlazorServices(builder.Logging);
         builder.Services.AddMauiBlazorWebView();
-        builder.Services.AddScoped<IComponentActivator, OpenShockModuleComponentActivator>();
 
 #if WINDOWS
         builder.Services.AddWindowsServices();

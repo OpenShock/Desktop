@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using MudBlazor.State;
 using MudBlazor.Utilities;
-using Color = Microsoft.Maui.Graphics.Color;
 
 namespace OpenShock.Desktop.Ui.Pages.Dash.Components;
 

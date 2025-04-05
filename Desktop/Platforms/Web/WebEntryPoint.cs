@@ -1,4 +1,6 @@
 ﻿#if WEB
+using Microsoft.AspNetCore.Hosting.StaticWebAssets;
+using Microsoft.Extensions.FileProviders;
 using OpenShock.Desktop.Cli;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Utils;
@@ -19,7 +21,6 @@ public static class WebEntryPoint
             Console.WriteLine("Running in headless mode.");
 
             var host = HeadlessProgram.SetupHeadlessHost();
-            OsTask.Run(host.Services.GetRequiredService<AuthService>().Authenticate);
             await host.RunAsync();
 
             return;
@@ -31,7 +32,7 @@ public static class WebEntryPoint
             .AddInteractiveServerComponents();
 
         builder.Services.AddOpenShockDesktopServices();
-        builder.Services.AddCommonBlazorServices();
+        builder.Services.AddCommonBlazorServices(builder.Logging);
         
 #if WINDOWS
             builder.Services.AddWindowsServices();
@@ -41,15 +42,26 @@ public static class WebEntryPoint
         
         app.UseHttpsRedirection();
 
-        app.UseStaticFiles();
+        var moduleManager = app.Services.GetRequiredService<ModuleManager.ModuleManager>();
+
+
+        
+        StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);
+        
+        var comp = new CompositeFileProvider(app.Environment.WebRootFileProvider, new ModuleFileProvider(moduleManager));
+        
+        app.UseStaticFiles(new StaticFileOptions()
+        {
+         FileProvider   = comp
+        });
         app.UseAntiforgery();
 
+
+        
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
         
         app.Services.StartOpenShockDesktopServices(true);
-        
-        OsTask.Run(app.Services.GetRequiredService<AuthService>().Authenticate);
         
         await app.RunAsync();
     }

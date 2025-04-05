@@ -1,4 +1,5 @@
-﻿using MudBlazor.Services;
+﻿using Microsoft.AspNetCore.Components;
+using MudBlazor.Services;
 using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Logging;
@@ -68,6 +69,8 @@ public static class Bootstrap
         // }
 
         services.AddSingleton<StartupService>();
+        
+        services.AddScoped<IComponentActivator, OpenShockModuleComponentActivator>();
     }
 
     public static void AddCommonBlazorServices(this IServiceCollection services, ILoggingBuilder builderLogging)

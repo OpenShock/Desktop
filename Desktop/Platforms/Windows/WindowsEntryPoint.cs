@@ -97,7 +97,6 @@ public static class WindowsEntryPoint
             Console.WriteLine("Running in headless mode.");
 
             var host = HeadlessProgram.SetupHeadlessHost();
-            OsTask.Run(host.Services.GetRequiredService<AuthService>().Authenticate);
             host.Run();
 
             return;

@@ -40,7 +40,6 @@
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.50" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.50" />
         <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.50" />
-        <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
@@ -89,6 +88,11 @@
 
     <ItemGroup>
       <ProjectReference Include="..\ModuleBase\ModuleBase.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\deps\MudBlazor\MudBlazor.min.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\deps\MudBlazor\MudBlazor.min.js" />
     </ItemGroup>
 
     <PropertyGroup>
