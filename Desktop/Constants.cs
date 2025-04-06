@@ -9,7 +9,7 @@ namespace OpenShock.Desktop;
 public static class Constants
 {
     public static readonly string AppdataFolder =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"OpenShock\Desktop");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "OpenShock", "Desktop");
     public static readonly string LogsFolder = Path.Combine(AppdataFolder, "logs");
     public static readonly string ModuleData = Path.Combine(AppdataFolder, "moduleData");
     public static readonly string UserAgent = UserAgentUtil.GetUserAgent();
