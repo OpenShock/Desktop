@@ -1,5 +1,6 @@
 ﻿@inject ConfigManager ConfigManager
 @inject Updater Updater
+@using System.Runtime.InteropServices
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Services
@@ -12,6 +13,23 @@
 @page "/dash/settings"
 
 <MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
+    <MudText>Information</MudText>
+    <MudDivider/>
+    
+    <div class="d-flex gap-5 align-center pt-2">
+        <span class="d-flex align-center">
+            <MudText>Version: </MudText>
+            <MudChip Value="Constants.Version"></MudChip>    
+        </span>
+
+        <span class="d-flex align-center">
+            <MudText>Runtime: </MudText>
+            <MudChip Value="RuntimeInformation.RuntimeIdentifier"></MudChip>    
+        </span>
+    </div>
+</MudPaper>
+
+<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding-margin">
     <MudText>Desktop App</MudText>
     <MudDivider/>
 
