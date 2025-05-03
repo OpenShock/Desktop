@@ -14,6 +14,9 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
 {
     private readonly OpenShockHubClient _apiHubClient;
     private readonly List<IAsyncDisposable> _subscriptions = new();
+    private NotifyIcon _tray;
+    private ContextMenuStrip _menu;
+    private ToolStripLabel? _stateLabel;
 
     /// <summary>
     /// Windows Tray Service
@@ -23,8 +26,7 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
     {
         _apiHubClient = apiHubClient;
     }
-
-    private ToolStripLabel? _stateLabel;
+    
 
     private Task HubStateChanged()
     {
@@ -44,24 +46,24 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
         _subscriptions.Add(await _apiHubClient.OnConnected.SubscribeAsync(_ => HubStateChanged())
             .ConfigureAwait(false));
 
-        var tray = new NotifyIcon();
-        tray.Icon = Icon.ExtractAssociatedIcon(@"wwwroot/images/openshock-icon.ico");
-        tray.Text = "OpenShock";
+        _tray = new NotifyIcon();
+        _tray.Icon = Icon.ExtractAssociatedIcon(@"wwwroot/images/openshock-icon.ico");
+        _tray.Text = "OpenShock";
 
-        var menu = new ContextMenuStrip();
+        _menu = new ContextMenuStrip();
 
-        menu.Items.Add("OpenShock", Image.FromFile(@"wwwroot/images/openshock-icon.ico"), OnMainClick);
-        menu.Items.Add(new ToolStripSeparator());
+        _menu.Items.Add("OpenShock", Image.FromFile(@"wwwroot/images/openshock-icon.ico"), OnMainClick);
+        _menu.Items.Add(new ToolStripSeparator());
         _stateLabel = new ToolStripLabel($"State: {_apiHubClient.State}");
-        menu.Items.Add(_stateLabel);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Quit OpenShock", null, OnQuitClick);
+        _menu.Items.Add(_stateLabel);
+        _menu.Items.Add(new ToolStripSeparator());
+        _menu.Items.Add("Quit OpenShock", null, OnQuitClick);
 
-        tray.ContextMenuStrip = menu;
+        _tray.ContextMenuStrip = _menu;
 
-        tray.Click += OnMainClick;
+        _tray.Click += OnMainClick;
 
-        tray.Visible = true;
+        _tray.Visible = true;
     }
 
     private static void OnMainClick(object? sender, EventArgs eventArgs)
@@ -90,17 +92,22 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
 
     private bool _disposed;
 
+
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
         _disposed = true;
 
-        _stateLabel?.Dispose();
-
         foreach (var subscription in _subscriptions)
         {
             await subscription.DisposeAsync();
         }
+        
+        _tray.Dispose();
+        _menu.Dispose();
+        _stateLabel?.Dispose();
+        
+        GC.SuppressFinalize(this);
     }
 }
 
