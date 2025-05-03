@@ -37,9 +37,9 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(Configuration)' == 'Debug-Windows' Or '$(Configuration)' == 'Release-Windows'">
-        <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.50" />
-        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.50" />
-        <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.50" />
+        <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.60" />
+        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.60" />
+        <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.60" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
@@ -60,16 +60,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AspNetCore.SassCompiler" Version="1.86.0" />
+        <PackageReference Include="AspNetCore.SassCompiler" Version="1.87.0" />
         <PackageReference Include="CommandLineParser" Version="2.9.1"/>
         <PackageReference Include="dnlib" Version="4.4.0" />
-        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.3" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.3" />
-        <PackageReference Include="MudBlazor" Version="8.5.1" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.4" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.4" />
+        <PackageReference Include="MudBlazor" Version="8.6.0" />
         <PackageReference Include="Semver" Version="3.0.0" />
         <PackageReference Include="Serilog" Version="4.2.0" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.3" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.4" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.1" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
