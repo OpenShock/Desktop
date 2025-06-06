@@ -84,7 +84,7 @@ public sealed class OpenShockApi
     }
 
     public
-        Task<OneOf<Success<LcgResponse>, NotFound, DeviceOffline, DeviceNotConnectedToGateway, UnauthenticatedError>>
+        Task<OneOf<Success<LcgResponse>, NotFound, DeviceOffline, UnauthenticatedError>>
         GetDeviceGateway(Guid deviceId, CancellationToken cancellationToken = default)
     {
         if (Client == null)

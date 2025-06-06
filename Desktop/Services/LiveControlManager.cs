@@ -12,34 +12,29 @@ namespace OpenShock.Desktop.Services;
 public sealed class LiveControlManager
 {
     private readonly ILogger<LiveControlManager> _logger;
-    private readonly OpenShockApi _api;
     private readonly ConfigManager _configManager;
     private readonly ILogger<OpenShockLiveControlClient> _liveControlLogger;
-    private readonly OpenShockHubClient _hubClient;
     private readonly OpenShockApi _apiClient;
     private readonly SemaphoreSlim _refreshLock = new(1, maxCount: 1);
 
     public LiveControlManager(
         ILogger<LiveControlManager> logger,
-        OpenShockApi api, 
         ConfigManager configManager,
         ILogger<OpenShockLiveControlClient> liveControlLogger,
         OpenShockHubClient hubClient,
         OpenShockApi apiClient)
     {
         _logger = logger;
-        _api = api;
         _configManager = configManager;
         _liveControlLogger = liveControlLogger;
-        _hubClient = hubClient;
         _apiClient = apiClient;
 
-        _hubClient.OnHubStatus.SubscribeAsync(async _ =>
+        hubClient.OnHubStatus.SubscribeAsync(async _ =>
         {
             _logger.LogDebug("Device update received, updating shockers and refreshing connections");
             await RefreshConnections();
         }).AsTask().Wait();
-        _hubClient.OnHubUpdate.SubscribeAsync(async _ =>
+        hubClient.OnHubUpdate.SubscribeAsync(async _ =>
         {
             _logger.LogDebug("Device status received, refreshing connections");
             await RefreshConnections();
@@ -64,6 +59,8 @@ public sealed class LiveControlManager
         }
     }
 
+    // TODO: Should probably make this be dependent on the online status we get via signalr hub.
+    // Right now it will try to get the device gateway everytime there is a status update or hub details update.
     private async Task RefreshInternal()
     {
         _logger.LogDebug("Refreshing live control connections");
@@ -71,12 +68,12 @@ public sealed class LiveControlManager
         // Remove devices that dont exist anymore
         foreach (var liveControlClient in LiveControlClients)
         {
-            if (_api.Hubs.Value.Any(x => x.Id == liveControlClient.Key)) continue;
+            if (_apiClient.Hubs.Value.Any(x => x.Id == liveControlClient.Key)) continue;
             if (!LiveControlClients.Remove(liveControlClient.Key, out var removedClient))
                 await removedClient!.DisposeAsync();
         }
 
-        foreach (var device in _api.Hubs.Value)
+        foreach (var device in _apiClient.Hubs.Value)
         {
             if (LiveControlClients.ContainsKey(device.Id)) continue;
 
@@ -107,14 +104,7 @@ public sealed class LiveControlManager
                     _logger.LogInformation("Failed to get device gateway for device [{DeviceId}], device offline",
                         device.Id);
                 },
-                gateway =>
-                {
-                    _logger.LogError(
-                        "Failed to get device gateway for device [{DeviceId}], " +
-                        "the device is online but its not connected to a gateway, this means the device is probably" +
-                        " outdated and does not support live control. Please upgrade your device",
-                        device.Id);
-                }, unauthenticated =>
+                unauthenticated =>
                 {
                     _logger.LogError(
                         "Failed to get device gateway for device [{DeviceId}], we are not authenticated",
