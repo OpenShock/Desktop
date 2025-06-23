@@ -3,8 +3,8 @@
         <Company>OpenShock</Company>
         <Product>$(Company).$(MSBuildProjectName)</Product>
         <Version>1.0.0-preview.5</Version>
-        <AssemblyVersion>$(Version)</AssemblyVersion>
-        <FileVersion>$(Version)</FileVersion>
+        <AssemblyVersion>1.0.0.5</AssemblyVersion>
+        <FileVersion>$(AssemblyVersion)</FileVersion>
         <Authors>OpenShock</Authors>
 
         <RepositoryUrl>https://github.com/OpenShock/Desktop</RepositoryUrl>

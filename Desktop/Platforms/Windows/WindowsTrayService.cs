@@ -14,8 +14,8 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
 {
     private readonly OpenShockHubClient _apiHubClient;
     private readonly List<IAsyncDisposable> _subscriptions = new();
-    private NotifyIcon _tray;
-    private ContextMenuStrip _menu;
+    private NotifyIcon? _tray;
+    private ContextMenuStrip? _menu;
     private ToolStripLabel? _stateLabel;
 
     /// <summary>
@@ -103,8 +103,8 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
             await subscription.DisposeAsync();
         }
         
-        _tray.Dispose();
-        _menu.Dispose();
+        _tray?.Dispose();
+        _menu?.Dispose();
         _stateLabel?.Dispose();
         
         GC.SuppressFinalize(this);
