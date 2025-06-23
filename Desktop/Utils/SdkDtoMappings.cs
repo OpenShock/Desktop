@@ -1,5 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿using OpenShock.Desktop.Backend;
+using OpenShock.Desktop.Models.BaseImpl;
 using OpenShock.Desktop.ModuleBase.Models;
+using OpenShock.Desktop.ModuleBase.StableInterfaces;
 using OpenShock.SDK.CSharp.Models;
 using ControlType = OpenShock.SDK.CSharp.Models.ControlType;
 using ShockerModelType = OpenShock.Desktop.ModuleBase.Models.ShockerModelType;
@@ -20,7 +22,7 @@ public static class SdkDtoMappings
         };
     }
     
-    public static OpenShockShocker ToSdkShocker(this ShockerResponse shocker)
+    public static IOpenShockShocker ToSdkShocker(this ShockerResponse shocker)
     {
         return new OpenShockShocker
         {
@@ -33,14 +35,15 @@ public static class SdkDtoMappings
         };
     }
     
-    public static OpenShockHub ToSdkHub(this ResponseDeviceWithShockers hub)
+    public static IOpenShockHub ToSdkHub(this ResponseHubWithShockers hub, OpenShockApi openShockApi)
     {
         return new OpenShockHub
         {
             Id = hub.Id,
             Name = hub.Name,
             CreatedOn = hub.CreatedOn,
-            Shockers = [..hub.Shockers.Select(ToSdkShocker)]
+            Shockers = [..hub.Shockers.Select(ToSdkShocker)],
+            GetStatus = () => openShockApi.HubStates.TryGetValue(hub.Id, out var value) ? value : new HubStatus()
         };
     }
 }

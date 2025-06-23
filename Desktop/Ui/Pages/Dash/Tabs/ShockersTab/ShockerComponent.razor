@@ -1,6 +1,8 @@
 ﻿@using OpenShock.Desktop.Backend
 @using OpenShock.Desktop.Config
+@using OpenShock.Desktop.Models.BaseImpl
 @using OpenShock.Desktop.ModuleBase.Models
+@using OpenShock.Desktop.ModuleBase.StableInterfaces
 @inject ConfigManager ConfigManager
 @inject OpenShockApi OpenShockApi
 
@@ -48,7 +50,7 @@ else
 @code {
     private OpenShockConf.ShockerConf? _configShocker;
 
-    [Parameter] public required OpenShockShocker Shocker { get; set; }
+    [Parameter] public required IOpenShockShocker Shocker { get; set; }
 
     private bool _wasChanged = false;
 

@@ -1,12 +1,10 @@
-﻿using System.Collections.Immutable;
-using OneOf;
-using OneOf.Types;
+﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using OpenShock.Desktop.Config;
-using OpenShock.Desktop.ModuleBase.Models;
+using OpenShock.Desktop.Models.BaseImpl;
+using OpenShock.Desktop.ModuleBase.StableInterfaces;
 using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp;
-using OpenShock.SDK.CSharp.Models;
-using OpenShock.SDK.CSharp.Utils;
 
 namespace OpenShock.Desktop.Backend;
 
@@ -37,7 +35,8 @@ public sealed class OpenShockApi
         });
     }
     
-    public ObservableVariable<ImmutableArray<OpenShockHub>> Hubs { get; } = new(ImmutableArray<OpenShockHub>.Empty);
+    public ObservableVariable<IReadOnlyList<IOpenShockHub>> Hubs { get; } = new(ImmutableArray<OpenShockHub>.Empty);
+    public ConcurrentDictionary<Guid, HubStatus> HubStates { get; } = new();
     
     public async Task RefreshHubs()
     {
@@ -50,7 +49,7 @@ public sealed class OpenShockApi
         
         response.Switch(success =>
             {
-                Hubs.Value = [..success.Value.Select(SdkDtoMappings.ToSdkHub)];
+                Hubs.Value = [..success.Value.Select(x => x.ToSdkHub(this))];
                 
                 // re-populate config with previous data if present, this also deletes any shockers that are no longer present
                 var shockerList = new Dictionary<Guid, OpenShockConf.ShockerConf>();
@@ -81,19 +80,6 @@ public sealed class OpenShockApi
     public void Logout()
     {
         Hubs.Value = ImmutableArray<OpenShockHub>.Empty;
-    }
-
-    public
-        Task<OneOf<Success<LcgResponse>, NotFound, DeviceOffline, UnauthenticatedError>>
-        GetDeviceGateway(Guid deviceId, CancellationToken cancellationToken = default)
-    {
-        if (Client == null)
-        {
-            _logger.LogError("Client is not initialized!");
-            throw new Exception("Client is not initialized!");
-        }
-        
-        return Client.GetDeviceGateway(deviceId, cancellationToken);
     }
         
 }

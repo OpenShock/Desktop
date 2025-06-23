@@ -1,7 +1,11 @@
-﻿using System.Globalization;
+﻿using System.Collections.Concurrent;
+using System.Globalization;
+using System.Reactive.Subjects;
 using MudBlazor.Extensions;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Models;
+using OpenShock.Desktop.Models.BaseImpl;
+using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.Services;
 using OpenShock.MinimalEvents;
 using OpenShock.SDK.CSharp.Hub;
@@ -22,6 +26,10 @@ public sealed class BackendHubManager
 
     public IAsyncMinimalEventObservable<LogEventArgs> OnRemoteControlledShocker => _onRemoteControlledShocker;
     private readonly AsyncMinimalEvent<LogEventArgs> _onRemoteControlledShocker = new();
+    
+    public Subject<Guid?> OnHubStatusUpdated { get; } = new();
+    
+
 
     public BackendHubManager(ILogger<BackendHubManager> logger,
         ConfigManager configManager,
@@ -31,21 +39,53 @@ public sealed class BackendHubManager
         _configManager = configManager;
         _openShockHubClient = openShockHubClient;
         _openShockApi = openShockApi;
-
-        _openShockHubClient.OnWelcome.SubscribeAsync(s =>
-        {
-            _liveConnectionId = s;
-            return Task.CompletedTask;
-        }).AsTask().Wait();
         
+        _openShockHubClient.OnWelcome.SubscribeAsync(Welcome).AsTask().Wait();;
         _openShockHubClient.OnLog.SubscribeAsync(RemoteActivateShockers).AsTask().Wait();
         _openShockHubClient.OnHubUpdate.SubscribeAsync(DeviceUpdate).AsTask().Wait();
+
+        _openShockHubClient.OnHubStatus.SubscribeAsync(HubStatus).AsTask().Wait();
     }
 
-    private async Task DeviceUpdate(HubUpdateEventArgs hubUpdateEventArgs)
+    private Task Welcome(string connectionId)
     {
-        _logger.LogDebug("Device update received {DeviceId} {UpdateType}", hubUpdateEventArgs.HubId, hubUpdateEventArgs.UpdateType);
-                
+        _liveConnectionId = connectionId;
+        _openShockApi.HubStates.Clear();
+        
+        OnHubStatusUpdated.OnNext(null);
+        return Task.CompletedTask;
+    }
+
+    private Task HubStatus(IReadOnlyList<HubOnlineState> states)
+    {
+        _logger.LogDebug("Hub status update received {Count} hubs", states.Count);
+        
+        foreach (var state in states)
+        {
+            _openShockApi.HubStates[state.Device] = new HubStatus
+            {
+                Online = state.Online
+            };
+            _logger.LogDebug("Hub {HubId} is now {Online}", state.Device, state.Online ? "online" : "offline");
+        }
+        
+        OnHubStatusUpdated.OnNext(null);
+        return Task.CompletedTask;
+    }
+
+    private async Task DeviceUpdate(HubUpdateEventArgs update)
+    {
+        if (update.UpdateType is not HubUpdateType.Created)
+        {
+            if(_openShockApi.Hubs.Value.All(x => x.Id != update.HubId))
+            {
+                _logger.LogDebug("Hub update received for none of our hubs {HubId} {Type}, ignoring", update.HubId, update.UpdateType);
+                return;
+            }
+        }
+        
+        _logger.LogDebug("Device update received {DeviceId} {UpdateType}", update.HubId, update.UpdateType);
+        
         await _openShockApi.RefreshHubs();
     }
 

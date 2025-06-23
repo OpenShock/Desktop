@@ -1,4 +1,5 @@
-﻿using OpenShock.Desktop.Backend;
+﻿using System.Reactive.Linq;
+using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Utils;
 using OpenShock.MinimalEvents;
@@ -13,21 +14,24 @@ public sealed class LiveControlManager
 {
     private readonly ILogger<LiveControlManager> _logger;
     private readonly ConfigManager _configManager;
-    private readonly ILogger<OpenShockLiveControlClient> _liveControlLogger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly OpenShockApi _apiClient;
     private readonly SemaphoreSlim _refreshLock = new(1, maxCount: 1);
 
     public LiveControlManager(
         ILogger<LiveControlManager> logger,
         ConfigManager configManager,
-        ILogger<OpenShockLiveControlClient> liveControlLogger,
+        ILoggerFactory loggerFactory,
         OpenShockHubClient hubClient,
-        OpenShockApi apiClient)
+        OpenShockApi apiClient,
+        BackendHubManager backendHubManager)
     {
         _logger = logger;
         _configManager = configManager;
-        _liveControlLogger = liveControlLogger;
+        _loggerFactory = loggerFactory;
         _apiClient = apiClient;
+
+        backendHubManager.OnHubStatusUpdated.Throttle(TimeSpan.FromMilliseconds(500)).Subscribe(HubStatusUpdated);
 
         hubClient.OnHubStatus.SubscribeAsync(async _ =>
         {
@@ -40,7 +44,12 @@ public sealed class LiveControlManager
             await RefreshConnections();
         }).AsTask().Wait();
     }
-    
+
+    private void HubStatusUpdated(Guid? obj)
+    {
+        RefreshConnections().Wait();
+    }
+
     public IAsyncMinimalEventObservable OnStateUpdated => _onStateUpdated;
     private readonly AsyncMinimalEvent _onStateUpdated = new();
     
@@ -58,80 +67,57 @@ public sealed class LiveControlManager
             _refreshLock.Release();
         }
     }
-
-    // TODO: Should probably make this be dependent on the online status we get via signalr hub.
-    // Right now it will try to get the device gateway everytime there is a status update or hub details update.
+    
     private async Task RefreshInternal()
     {
         _logger.LogDebug("Refreshing live control connections");
 
         // Remove devices that dont exist anymore
+        // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+        // Linq would be horrible for readability here
         foreach (var liveControlClient in LiveControlClients)
         {
-            if (_apiClient.Hubs.Value.Any(x => x.Id == liveControlClient.Key)) continue;
+            // Check if the hub is online
+            var hub = _apiClient.Hubs.Value.FirstOrDefault(x => x.Id == liveControlClient.Key);
+            if (hub is not null && hub.Status.Online) continue; // If so, dont remove it
+            
             if (!LiveControlClients.Remove(liveControlClient.Key, out var removedClient))
                 await removedClient!.DisposeAsync();
         }
 
-        foreach (var device in _apiClient.Hubs.Value)
+        foreach (var device in _apiClient.Hubs.Value.Where(x => x.Status.Online))
         {
+            // Skip hubs that already have a live control client
             if (LiveControlClients.ContainsKey(device.Id)) continue;
 
             _logger.LogTrace("Creating live control client for device [{DeviceId}]", device.Id);
-
-            _logger.LogTrace("Getting device gateway for device [{DeviceId}]", device.Id);
-            var deviceGateway = await _apiClient.GetDeviceGateway(device.Id);
-
-            if (deviceGateway.IsT0)
-            {
-                var gateway = deviceGateway.AsT0.Value;
-                await SetupLiveControlClient(device.Id, gateway);
-
-                continue;
-            }
             
-            deviceGateway.Switch(success =>
-                {
-                },
-                found =>
-                {
-                    _logger.LogError(
-                        "Failed to get device gateway for device [{DeviceId}], not found or no permission",
-                        device.Id);
-                },
-                offline =>
-                {
-                    _logger.LogInformation("Failed to get device gateway for device [{DeviceId}], device offline",
-                        device.Id);
-                },
-                unauthenticated =>
-                {
-                    _logger.LogError(
-                        "Failed to get device gateway for device [{DeviceId}], we are not authenticated",
-                        device.Id);
-                    // TODO: Handle unauthenticated globally
-                });
+            // Adds the new live control client to the list
+            await SetupLiveControlClient(device.Id);
         }
 
         OsTask.Run(_onStateUpdated.InvokeAsyncParallel);
     }
 
-    private async Task SetupLiveControlClient(Guid deviceId, LcgResponse gateway)
+    private async Task SetupLiveControlClient(Guid deviceId)
     {
-        _logger.LogTrace("Got device gateway for device [{DeviceId}] [{Gateway}]", deviceId,
-            gateway.Gateway);
+        if(_apiClient.Client == null)
+        {
+            _logger.LogWarning("API client is not initialized, cannot setup live control client for device [{DeviceId}]", deviceId);
+            return;
+        }
 
-        var client = new OpenShockLiveControlClient(gateway.Gateway, deviceId,
-            _configManager.Config.OpenShock.Token, _liveControlLogger);
+        var client = new OpenShockLiveControlClient(deviceId, _configManager.Config.OpenShock.Token,  _apiClient.Client, _loggerFactory);
         LiveControlClients.Add(deviceId, client);
 
+        // Websocket connection state
         await client.State.Updated.SubscribeAsync(async state =>
         {
             _logger.LogTrace("Live control client for device [{DeviceId}] status updated {Status}",
                 deviceId, state);
             await _onStateUpdated.InvokeAsyncParallel();
         });
-                    
+
         await client.OnHubNotConnected.SubscribeAsync(async () =>
         {
             _logger.LogInformation("Live control client for device [{DeviceId}] ending, device disconnected", deviceId);
@@ -139,6 +125,7 @@ public sealed class LiveControlManager
             await client.DisposeAsync();
         });
 
+        // Honestly, do we even need this? We control when we dispose and remove it, the client doesnt do this on its own
         // When the client shuts down, remove it from the list
         await client.OnDispose.SubscribeAsync(async () =>
         {
@@ -150,9 +137,15 @@ public sealed class LiveControlManager
             await _onStateUpdated.InvokeAsyncParallel();
         });
 
-        await client.InitializeAsync();
+        client.Start();
     }
 
+    /// <summary>
+    /// Control shockers with a specific intensity and control type. This also checks for enabled shockers in the config.
+    /// </summary>
+    /// <param name="shockers"></param>
+    /// <param name="intensity"></param>
+    /// <param name="type"></param>
     public void ControlShockers(IEnumerable<Guid> shockers, byte intensity, ControlType type)
     {
         var enabledShockers = shockers.Where(x =>
@@ -170,6 +163,11 @@ public sealed class LiveControlManager
         }
     }
 
+    /// <summary>
+    /// Control all enabled shockers with a specific intensity and control type.
+    /// </summary>
+    /// <param name="intensity"></param>
+    /// <param name="type"></param>
     public void ControlAllShockers(byte intensity, ControlType type)
     {
         foreach (var (deviceId, liveControlClient) in LiveControlClients)
@@ -186,7 +184,7 @@ public sealed class LiveControlManager
         }
     } 
     
-    private void ControlFrame(IEnumerable<Guid> shockers, IOpenShockLiveControlClient client,
+    private static void ControlFrame(IEnumerable<Guid> shockers, OpenShockLiveControlClient client,
         byte vibrationIntensity, ControlType type)
     {
         foreach (var shocker in shockers)

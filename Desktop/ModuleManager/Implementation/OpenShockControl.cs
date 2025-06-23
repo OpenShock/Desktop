@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using OpenShock.Desktop.Backend;
+using OpenShock.Desktop.Models.BaseImpl;
 using OpenShock.Desktop.ModuleBase.Api;
 using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.Services;
