@@ -1,10 +1,17 @@
-﻿@using OpenShock.Desktop.Logging
+﻿@using System.Diagnostics
+@using OpenShock.Desktop.Logging
 @using Serilog.Events
 @using OpenShock.Desktop.Ui.ErrorHandling
 @using OpenShock.Desktop.Utils
 @implements IDisposable
 
 @page "/dash/logs"
+
+<MudButton OnClick="OpenLogsFolder"
+           Variant="Variant.Filled"
+           StartIcon="@Icons.Material.Filled.FolderOpen"
+           Color="Color.Primary"
+           Style="">Open Logs Folder</MudButton>
 
 <MudTable T="LogStore.LogEntry" RowClass="cursor-pointer" RowClassFunc="RowClassFunc" Items="LogStore.Logs.OrderByDescending(x => x.Time)" OnRowClick="LogRowClick" Breakpoint="Breakpoint.Sm" Hover="true" Dense="true" Height="100%">
     <HeaderContent>
@@ -65,6 +72,15 @@
     private void OnLogAdded()
     {
         InvokeAsync(StateHasChanged);
+    }
+
+    private void OpenLogsFolder()
+    {
+        Process.Start(new ProcessStartInfo {
+            FileName = Constants.LogsFolder,
+            UseShellExecute = true,
+            Verb = "open"
+        });
     }
 
     public void Dispose()

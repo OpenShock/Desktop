@@ -9,10 +9,18 @@ public sealed class AppConfig
     
     public UpdateChannel UpdateChannel { get; set; } = UpdateChannel.Release;
     public SemVersion? LastIgnoredVersion { get; set; } = null;
+    
+    public Theme Theme { get; set; } = Theme.Dark;
 }
 
 public enum UpdateChannel
 {
     Release,
     PreRelease
+}
+
+public enum Theme
+{
+    Dark,
+    Midnight
 }

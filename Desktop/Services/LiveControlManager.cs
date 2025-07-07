@@ -32,15 +32,10 @@ public sealed class LiveControlManager
         _apiClient = apiClient;
 
         backendHubManager.OnHubStatusUpdated.Throttle(TimeSpan.FromMilliseconds(500)).Subscribe(HubStatusUpdated);
-
-        hubClient.OnHubStatus.SubscribeAsync(async _ =>
-        {
-            _logger.LogDebug("Device update received, updating shockers and refreshing connections");
-            await RefreshConnections();
-        }).AsTask().Wait();
+        
         hubClient.OnHubUpdate.SubscribeAsync(async _ =>
         {
-            _logger.LogDebug("Device status received, refreshing connections");
+            _logger.LogDebug("Device update received, updating shockers and refreshing connections");
             await RefreshConnections();
         }).AsTask().Wait();
     }
@@ -81,8 +76,8 @@ public sealed class LiveControlManager
             var hub = _apiClient.Hubs.Value.FirstOrDefault(x => x.Id == liveControlClient.Key);
             if (hub is not null && hub.Status.Online) continue; // If so, dont remove it
             
-            if (!LiveControlClients.Remove(liveControlClient.Key, out var removedClient))
-                await removedClient!.DisposeAsync();
+            if (LiveControlClients.Remove(liveControlClient.Key, out var removedClient))
+                await removedClient.DisposeAsync();
         }
 
         foreach (var device in _apiClient.Hubs.Value.Where(x => x.Status.Online))
@@ -117,24 +112,12 @@ public sealed class LiveControlManager
                 deviceId, state);
             await _onStateUpdated.InvokeAsyncParallel();
         });
-
-        await client.OnHubNotConnected.SubscribeAsync(async () =>
-        {
-            _logger.LogInformation("Live control client for device [{DeviceId}] ending, device disconnected", deviceId);
-            // Dispose the client so it gets removed from the list and co
-            await client.DisposeAsync();
-        });
-
-        // Honestly, do we even need this? We control when we dispose and remove it, the client doesnt do this on its own
-        // When the client shuts down, remove it from the list
+        
         await client.OnDispose.SubscribeAsync(async () =>
         {
-            _logger.LogTrace("Live control client for device [{DeviceId}] disposed, removing from list",
-                deviceId);
             if (!LiveControlClients.Remove(deviceId, out var removedClient)) return;
+            _logger.LogDebug("This shouldnt be reached [{DeviceId}]", deviceId);
             await removedClient.DisposeAsync(); // Dispose incase it was not disposed
-
-            await _onStateUpdated.InvokeAsyncParallel();
         });
 
         client.Start();

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using System.Runtime.InteropServices;
+using Microsoft.AspNetCore.Components;
 using MudBlazor.Services;
 using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
@@ -6,6 +7,7 @@ using OpenShock.Desktop.Logging;
 using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Services.Pipes;
+using OpenShock.Desktop.Ui.Utils;
 using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Hub;
 using Serilog;
@@ -24,7 +26,10 @@ public static class Bootstrap
             .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information)
             .WriteTo.UiLogSink()
             .WriteTo.Console(
-                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.File(Constants.LogsFile, rollingInterval: RollingInterval.Day,
+                outputTemplate:
+                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
         // ReSharper disable once RedundantAssignment
         var isDebug = Environment.GetCommandLineArgs()
@@ -40,6 +45,21 @@ public static class Bootstrap
         }
 
         Log.Logger = loggerConfiguration.CreateLogger();
+
+
+        Log.Information("""
+                        
+                        
+                           ____  ____  _______   _______ __  ______  ________ __    ____  ___________ __ ____________  ____ 
+                          / __ \/ __ \/ ____/ | / / ___// / / / __ \/ ____/ //_/   / __ \/ ____/ ___// //_/_  __/ __ \/ __ \
+                         / / / / /_/ / __/ /  |/ /\__ \/ /_/ / / / / /   / ,<     / / / / __/  \__ \/ ,<   / / / / / / /_/ /
+                        / /_/ / ____/ /___/ /|  /___/ / __  / /_/ / /___/ /| |   / /_/ / /___ ___/ / /| | / / / /_/ / ____/ 
+                        \____/_/   /_____/_/ |_//____/_/ /_/\____/\____/_/ |_|  /_____/_____//____/_/ |_|/_/  \____/_/      
+
+                        {SemVersion} - {RuntimeIdentifier}
+
+                        """, Constants.Version, RuntimeInformation.RuntimeIdentifier);
+
 
         services.AddSerilog(Log.Logger);
 
@@ -58,7 +78,7 @@ public static class Bootstrap
         services.AddSingleton<LiveControlManager>();
 
         services.AddSingleton<AuthService>();
-        
+
         services.AddSingleton<StatusHandler>();
 
         services.AddSingleton<RepositoryManager>();
@@ -69,7 +89,7 @@ public static class Bootstrap
         // }
 
         services.AddSingleton<StartupService>();
-        
+
         services.AddScoped<IComponentActivator, OpenShockModuleComponentActivator>();
     }
 
@@ -80,6 +100,8 @@ public static class Bootstrap
 #endif
 
         services.AddMudServices();
+
+        services.AddSingleton<ThemeDefinition>();
     }
 
     public static void StartOpenShockDesktopServices(this IServiceProvider services, bool headless)
@@ -88,7 +110,8 @@ public static class Bootstrap
         try
         {
             StartOpenShockDesktopServicesInternal(services, headless);
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             logger.LogError(e, "Failed to start OpenShock Desktop services");
             throw;

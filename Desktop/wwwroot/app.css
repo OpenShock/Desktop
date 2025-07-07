@@ -13,17 +13,7 @@ html, body {
 }
 
 body {
-    --mud-palette-background: #212121;
-    background-color: #212121;
     min-width: 600px;
-}
-
-.mud-tabs-toolbar {
-    background-color: #1f1f1f !important;
-}
-
-.mud-tabs-panels {
-    background-color: #272727 !important;
 }
 
 .option-width {
@@ -63,8 +53,6 @@ body {
     flex-basis: 100%;
     flex: 1;
 }
-
-
 
 .loading-wrapper {
     position: fixed;

@@ -26,7 +26,7 @@ public partial class StatePart : ComponentBase, IAsyncDisposable
         {
             WebsocketConnectionState.Connected => Color.Success,
             WebsocketConnectionState.Connecting => Color.Warning,
-            WebsocketConnectionState.WaitingForReconnect => Color.Tertiary,
+            WebsocketConnectionState.WaitingForReconnect => Color.Warning,
             _ => Color.Error
         };
     

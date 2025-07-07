@@ -1,10 +1,9 @@
-﻿@using System.Reflection
-@using OpenShock.Desktop.ModuleManager
-@using OpenShock.Desktop.Ui.Pages.Dash
+﻿@using OpenShock.Desktop.Ui.Pages.Dash
 @using OpenShock.Desktop.Ui.Utils
 @using OpenShock.Desktop.Ui.ErrorHandling
+@inject ThemeDefinition ThemeDefinition
 
-<MudThemeProvider Theme="ThemeDefinition.DesktopTheme" IsDarkMode="true"/>
+<MudThemeProvider Theme="ThemeDefinition.GetCurrentTheme()" IsDarkMode="true"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>

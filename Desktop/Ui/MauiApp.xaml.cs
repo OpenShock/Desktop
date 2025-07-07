@@ -1,4 +1,6 @@
 ﻿using System.Runtime.InteropServices;
+using MudBlazor.Utilities;
+using OpenShock.Desktop.Ui.Utils;
 
 #if WINDOWS 
 namespace OpenShock.Desktop.Ui;
@@ -12,6 +14,9 @@ public partial class MauiApp
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
+        var themeDefinition = activationState!.Context.Services.GetRequiredService<ThemeDefinition>();
+        var backgroundColor =
+            Color.FromArgb(themeDefinition.GetCurrentTheme().PaletteDark.Background.ToString(MudColorOutputFormats.Hex));
         var window = new Window(new MainPage())
         {
             MinimumHeight = 600,
@@ -22,7 +27,7 @@ public partial class MauiApp
                 Icon = ImageSource.FromFile("wwwroot/images/Icon512.png"),
                 Title = "OpenShock",
                 Subtitle = $"{Constants.Version} | {RuntimeInformation.RuntimeIdentifier}",
-                BackgroundColor = Color.FromArgb("212121")
+                BackgroundColor = backgroundColor
             }
         };
         

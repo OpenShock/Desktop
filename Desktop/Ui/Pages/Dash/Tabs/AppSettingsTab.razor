@@ -8,6 +8,7 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject RepositoryManager RepositoryManager
+@inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 
 @page "/dash/settings"
@@ -77,6 +78,18 @@
             }
         </div>
     </div>
+</MudPaper>
+
+<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding-margin">
+    <MudText>Theme <span style="color: var(--mud-palette-dark-lighten)">(Might need a restart to fully apply)</span></MudText>
+    <MudDivider/>
+    
+    <MudRadioGroup @bind-Value="ConfigManager.Config.App.Theme" @bind-Value:after="ThemeUpdated">
+        @foreach (Theme theme in Enum.GetValues(typeof(Theme)))
+        {
+            <MudRadio Value="@theme">@theme</MudRadio>
+        }
+    </MudRadioGroup>
 </MudPaper>
 
 <MudPaper Outlined="true" Class="rounded-lg mud-paper-padding-margin">
@@ -243,7 +256,7 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private List<IAsyncDisposable> _disposables = new();
+    private readonly List<IAsyncDisposable> _disposables = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -369,6 +382,17 @@
         {
             await disposable.DisposeAsync();
         }
+    }
+
+    private void ThemeUpdated()
+    {
+        OnSettingsValueChange();
+        ReloadPage(NavigationManager);
+    }
+
+    private static void ReloadPage(NavigationManager manager)
+    {
+        manager.NavigateTo(manager.Uri, true);
     }
 
 }
