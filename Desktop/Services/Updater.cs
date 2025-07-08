@@ -23,15 +23,13 @@ public sealed class Updater
         typeof(Updater).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
         SemVersionStyles.Strict);
 
-    private Uri? ReleaseDownloadUrl { get; set; }
-
     private readonly ILogger<Updater> _logger;
     private readonly ConfigManager _configManager;
 
     public ObservableVariable<bool> CheckingForUpdate { get; } = new(false);
     public ObservableVariable<bool> UpdateAvailable { get; } = new(false);
     public bool IsPostponed { get; private set; }
-    public SemVersion? LatestVersion { get; private set; }
+    public ReleaseInfo? LatestReleaseInfo { get; private set; }
     public ObservableVariable<double> DownloadProgress { get; } = new(0);
 
 
@@ -55,8 +53,15 @@ public sealed class Updater
             return false;
         }
     }
+    
+    public readonly struct ReleaseInfo
+    {
+        public SemVersion Version { get; init; }
+        public GithubReleaseResponse Response { get; init; }
+        public GithubReleaseResponse.Asset Asset { get; init; }
+    }
 
-    private async Task<(SemVersion, GithubReleaseResponse.Asset)?> GetRelease()
+    private async Task<ReleaseInfo?> GetRelease()
     {
         var updateChannel = _configManager.Config.App.UpdateChannel;
         _logger.LogInformation("Checking GitHub for updates on channel {UpdateChannel}", updateChannel);
@@ -85,7 +90,12 @@ public sealed class Updater
                 return null;
             }
 
-            return (release.Value.Item2, asset);
+            return new ReleaseInfo
+            {
+                Version = release.Value.Item2,
+                Response = release.Value.Item1,
+                Asset = asset
+            };
         }
         catch (Exception e)
         {
@@ -213,20 +223,20 @@ public sealed class Updater
             return;
         }
 
-        var comparison = CurrentVersion.ComparePrecedenceTo(latestVersion.Value.Item1);
+        var comparison = CurrentVersion.ComparePrecedenceTo(latestVersion.Value.Version);
         if (comparison >= 0)
         {
             _logger.LogInformation("OpenShock Desktop is up to date ([{Version}] >= [{LatestVersion}]) ({Comp})", CurrentVersion,
-                latestVersion.Value.Item1, comparison);
+                latestVersion.Value.Version, comparison);
             UpdateAvailable.Value = false;
             return;
         }
-
-        LatestVersion = latestVersion.Value.Item1;
-        ReleaseDownloadUrl = latestVersion.Value.Item2.BrowserDownloadUrl;
+        
+        LatestReleaseInfo = latestVersion.Value;
+        
         UpdateAvailable.Value = true;
         if (_configManager.Config.App.LastIgnoredVersion != null &&
-            _configManager.Config.App.LastIgnoredVersion.ComparePrecedenceTo(latestVersion.Value.Item1) >= 0)
+            _configManager.Config.App.LastIgnoredVersion.ComparePrecedenceTo(latestVersion.Value.Version) >= 0)
         {
             _logger.LogInformation(
                 "OpenShock Desktop is not up to date. Skipping update due to previous postpone");
@@ -236,7 +246,7 @@ public sealed class Updater
 
         _logger.LogWarning(
             "OpenShock Desktop is not up to date. Newest version is [{NewVersion}] but you are on [{CurrentVersion}]!",
-            latestVersion.Value.Item1, CurrentVersion);
+            latestVersion.Value.Version, CurrentVersion);
     }
 
     public async Task DoUpdate()
@@ -244,7 +254,7 @@ public sealed class Updater
         _logger.LogInformation("Starting update...");
 
         DownloadProgress.Value = 0;
-        if (LatestVersion == null || ReleaseDownloadUrl == null)
+        if (LatestReleaseInfo == null)
         {
             _logger.LogError("LatestVersion or LatestDownloadUrl is null. Cannot update");
             return;
@@ -254,7 +264,7 @@ public sealed class Updater
 
         _logger.LogDebug("Downloading new release...");
         var sp = Stopwatch.StartNew();
-        var download = await HttpClient.GetAsync(ReleaseDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
+        var download = await HttpClient.GetAsync(LatestReleaseInfo.Value.Asset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
         var totalBytes = download.Content.Headers.ContentLength ?? 1;
 
         await using (var stream = await download.Content.ReadAsStreamAsync())

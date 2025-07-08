@@ -18,7 +18,7 @@
         await DialogService.ShowAsync<UpdateDialog>("Update", UpdateDialogOptions);
     }
 
-    private List<IAsyncDisposable> _disposables = new();
+    private readonly List<IAsyncDisposable> _disposables = new();
 
     protected override async Task OnInitializedAsync()
     {

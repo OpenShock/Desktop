@@ -3,6 +3,7 @@
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Utils
+@using OpenShock.Desktop.Ui.ErrorHandling
 @implements IAsyncDisposable
 
 @code {
@@ -19,7 +20,7 @@
 
     private void Skip()
     {
-        ConfigManager.Config.App.LastIgnoredVersion = Updater.LatestVersion;
+        ConfigManager.Config.App.LastIgnoredVersion = Updater.LatestReleaseInfo!.Value.Version;
         ConfigManager.Save();
         MudDialog.Close(DialogResult.Ok(true));
     }
@@ -48,10 +49,12 @@
             @if (!_isDownloading)
             {
                 <MudText Typo="Typo.h3">Update Available</MudText>
-                <MudText Typo="Typo.h5">@Updater.LatestVersion?.ToString()</MudText>
+                <MudText Typo="Typo.h5">@Updater.LatestReleaseInfo!.Value.Version.ToString()</MudText>
 
                 <br />
-                <MudText Typo="Typo.body1"> A new version of OpenShock Desktop is available.Would you like to update ?</MudText>
+                <MudText Typo="Typo.body1"> A new version of OpenShock Desktop is available.Would you like to update?</MudText>
+                
+                <CodeBlock Value="@Updater.LatestReleaseInfo!.Value.Response.Body"/>
             }
             else
             {

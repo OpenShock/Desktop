@@ -17,7 +17,10 @@ public class GithubReleaseResponse
     public required bool Prerelease { get; set; }
     
     [JsonPropertyName("assets")]
-    public required ICollection<Asset> Assets { get; set; }
+    public required IReadOnlyList<Asset> Assets { get; set; }
+    
+    [JsonPropertyName("body")]
+    public required string Body { get; set; }
 
     public class Asset
     {
