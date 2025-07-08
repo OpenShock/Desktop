@@ -189,7 +189,7 @@
 
     private ImmutableArray<SemVersion>? GetAvailableVersions()
     {
-        return RepoModule?.Versions.Keys.ToImmutableArray();
+        return RepoModule?.Versions.Keys.OrderByDescending(x => x, SemVersion.PrecedenceComparer).ToImmutableArray();
     }
 
     private Color CurrentButtonColor =>

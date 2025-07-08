@@ -410,21 +410,23 @@ public sealed class ModuleManager : IAsyncDisposable
                 continue;
             }
 
-            var latestReleaseVersion = repoModule.Versions.Keys.GetLatestReleaseVersion();
+            var currentlyPrereleaseInstalled = moduleVersion.Value.IsPrerelease;
+            
+            var latestVersion = currentlyPrereleaseInstalled ? repoModule.Versions.Keys.GetLatestVersion() : repoModule.Versions.Keys.GetLatestReleaseVersion();
          
-            if(latestReleaseVersion == null)
+            if(latestVersion == null)
             {
                 _logger.LogDebug("No releases found for module {ModuleId}", moduleVersion.Key);
                 continue;
             }
 
-            if (moduleVersion.Value.ComparePrecedenceTo(latestReleaseVersion) >= 0) continue;
+            if (moduleVersion.Value.ComparePrecedenceTo(latestVersion) >= 0) continue;
             
-            _logger.LogInformation("Queuing update for module {ModuleId} from {CurrentVersion} to {LatestVersion}", moduleVersion.Key, moduleVersion.Value, latestReleaseVersion);
+            _logger.LogInformation("Queuing update for module {ModuleId} from {CurrentVersion} to {LatestVersion}", moduleVersion.Key, moduleVersion.Value, latestVersion);
                 
             _configManager.Config.Modules.ModuleTasks[moduleVersion.Key] = new InstallModuleTask
             {
-                Version = latestReleaseVersion
+                Version = latestVersion
             };
         }
     }

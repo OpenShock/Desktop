@@ -1,16 +1,24 @@
 ﻿@page "/dash/modules"
 @using System.Collections.Immutable
+@using System.Diagnostics
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
 @inject RepositoryManager RepositoryManager
 @inject ModuleManager ModuleManager
 
+<MudButton OnClick="OpenAppdataFolder"
+           Variant="Variant.Filled"
+           StartIcon="@Icons.Material.Filled.FolderOpen"
+           Color="Color.Primary"
+           Class="mb-2">Open AppData
+</MudButton>
 
 <MudExpansionPanels MultiExpansion="true">
     <MudExpansionPanel Expanded="true">
         <TitleContent>
-            Installed <MudChip T="int">@_installedModules.Count</MudChip>
+            Installed
+            <MudChip T="int">@_installedModules.Count</MudChip>
         </TitleContent>
         <ChildContent>
             <div class="d-flex gap-3 flex-wrap">
@@ -26,7 +34,8 @@
     {
         <MudExpansionPanel>
             <TitleContent>
-                Unknown Loaded <MudChip T="int">@_unknownModules.Count</MudChip>
+                Unknown Loaded
+                <MudChip T="int">@_unknownModules.Count</MudChip>
             </TitleContent>
             <ChildContent>
                 <div class="d-flex gap-3 flex-wrap">
@@ -40,14 +49,15 @@
     }
     <MudExpansionPanel>
         <TitleContent>
-            Available <MudChip T="int">@_installableModules.Count</MudChip>
+            Available
+            <MudChip T="int">@_installableModules.Count</MudChip>
         </TitleContent>
         <ChildContent>
             <div class="d-flex gap-3 flex-wrap">
-            @foreach (var module in _installableModules)
-            {
-                <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
-            }
+                @foreach (var module in _installableModules)
+                {
+                    <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
+                }
             </div>
         </ChildContent>
     </MudExpansionPanel>
@@ -76,6 +86,16 @@
         _installableModules = modulesFromRepos.Where(x => !loadedModules.Keys.Contains(x.Key)).ToImmutableDictionary();
 
         _installedModules = loadedModules.Where(x => x.Value.RepositoryModule != null).ToImmutableDictionary();
+    }
+
+    private void OpenAppdataFolder()
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = Constants.AppdataFolder,
+            UseShellExecute = true,
+            Verb = "open"
+        });
     }
 
 }
