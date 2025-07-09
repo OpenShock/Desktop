@@ -4,8 +4,11 @@
     <pre class="code">
                 @Value
     </pre>
-    <MudIconButton Icon="@Icons.Material.Outlined.FileCopy" Size="Size.Small" Class="copy-code-button"
-                   @onclick="CopyTextToClipboard"/>
+    @if (ShowCopyButton)
+    {
+        <MudIconButton Icon="@Icons.Material.Outlined.FileCopy" Size="Size.Small" Class="copy-code-button"
+                       @onclick="CopyTextToClipboard"/>
+    }
 </MudPaper>
 
 <style>
@@ -35,6 +38,8 @@
 
 @code {
     [Parameter] public required string Value { get; set; }
+    
+    [Parameter] public bool ShowCopyButton { get; set; } = true;
 
     private async Task CopyTextToClipboard()
     {
