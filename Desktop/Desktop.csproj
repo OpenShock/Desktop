@@ -40,7 +40,6 @@
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.81" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.81" />
         <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.81" />
-        <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.7" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
