@@ -25,7 +25,7 @@ jobs:
         uses: oprypin/find-latest-tag@v1
         with:
           repository: ${{ github.repository }}
-          regex: '^\d+\.\d+\.\d+$'
+          regex: '^\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.\d+)*)?$'
           releases-only: false
 
   # Delegate building and containerizing to a single workflow.
