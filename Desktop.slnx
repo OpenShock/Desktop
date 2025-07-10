@@ -2,11 +2,20 @@
   <Configurations>
     <BuildType Name="Debug-Web" />
     <BuildType Name="Debug-Windows" />
+    <BuildType Name="Release-Web" />
     <BuildType Name="Release-Windows" />
   </Configurations>
   <Project Path="Desktop/Desktop.csproj" />
-  <Project Path="ExampleModule/ExampleModule.csproj" />
-  <Project Path="ModuleBase/ModuleBase.csproj">
+  <Project Path="ExampleModule/ExampleModule.csproj">
+    <Configuration Solution="Debug-Web|Any CPU" Project="Debug|Any CPU" />
     <Configuration Solution="Debug-Windows|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Release-Windows|Any CPU" Project="Release|Any CPU" />
+    <Configuration Solution="Release-Web|Any CPU" Project="Release|Any CPU" />
+  </Project>
+  <Project Path="ModuleBase/ModuleBase.csproj">
+    <Configuration Solution="Debug-Web|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Debug-Windows|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Release-Windows|Any CPU" Project="Release|Any CPU" />
+    <Configuration Solution="Release-Web|Any CPU" Project="Release|Any CPU" />
   </Project>
 </Solution>

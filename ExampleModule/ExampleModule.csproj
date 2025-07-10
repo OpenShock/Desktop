@@ -7,17 +7,8 @@
         <OutputType>Library</OutputType>
         <AssemblyName>OpenShock.Desktop.Modules.ExampleModule</AssemblyName>
         <RootNamespace>OpenShock.Desktop.Modules.ExampleModule</RootNamespace>
-        <Configurations>Debug-Web;Release-Windows;Debug-Windows</Configurations>
+        <Configurations>Debug;Release</Configurations>
         <Platforms>AnyCPU</Platforms>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release-Windows' ">
-      <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug-Windows' ">
-      <DebugSymbols Condition=" '$(DebugSymbols)' == '' ">true</DebugSymbols>
-      <Optimize Condition=" '$(Optimize)' == '' ">false</Optimize>
     </PropertyGroup>
 
     <ItemGroup>

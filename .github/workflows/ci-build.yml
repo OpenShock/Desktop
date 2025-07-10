@@ -9,7 +9,7 @@ on:
   workflow_call:
   workflow_dispatch:
 
-name: ci-windows
+name: ci-build
 
 env:
   DOTNET_VERSION: 9.0.x
@@ -17,7 +17,7 @@ env:
 
 jobs:
 
-  build:
+  build-windows-maui:
     runs-on: windows-latest
 
     steps:
@@ -36,24 +36,24 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget
+          key: windows-maui-nuget
           restore-keys: |
-            ${{ runner.os }}-nuget
+            windows-maui-nuget
 
       - name: Publish OpenShock Desktop Windows
-        run: dotnet publish Desktop/Desktop.csproj -c Release-Windows -o ./publish/Desktop
+        run: dotnet publish Desktop/Desktop.csproj -c Release-Windows -o ./publish/Windows-Maui
 
       - name: Upload OpenShock Desktop Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: OpenShock Desktop Windows
-          path: publish/Desktop/*
+          name: OpenShock Desktop Windows MAUI
+          path: publish/Windows-Maui/*
           retention-days: 1
           if-no-files-found: error
   
-  installer:
+  installer-windows-maui:
     runs-on: windows-latest
-    needs: build
+    needs: build-windows-maui
 
     steps:
       - name: Checkout
@@ -65,7 +65,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: OpenShock Desktop Windows
+          name: OpenShock Desktop Windows MAUI
           path: publish/
 
 
@@ -82,3 +82,27 @@ jobs:
           path: Installer/OpenShock_Desktop_Setup.exe
           retention-days: 7
           if-no-files-found: error
+
+
+  build-linux-web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: linux-web-nuget
+          restore-keys: |
+            linux-web-nuget
+
+      - name: Publish OpenShock Web
+        run: dotnet publish Desktop/Desktop.csproj -c Release-Web -o ./publish/Web-Linux
