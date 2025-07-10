@@ -22,7 +22,7 @@
 
     <ItemGroup>
       <PackageReference Include="OpenShock.MinimalEvents" Version="0.0.1" />
-      <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.6" />
+      <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.7" />
     </ItemGroup>
 
 </Project>
