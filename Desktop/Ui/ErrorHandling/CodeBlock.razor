@@ -41,7 +41,9 @@
     
     [Parameter] public bool ShowCopyButton { get; set; } = true;
 
+#pragma warning disable CS1998
     private async Task CopyTextToClipboard()
+#pragma warning restore CS1998
     {
 #if WINDOWS
         await Clipboard.SetTextAsync(Value);
