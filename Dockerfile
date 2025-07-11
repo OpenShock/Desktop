@@ -1,6 +1,6 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim AS runtime
 WORKDIR /app
-MAINTAINER team@openshock.org
+LABEL org.opencontainers.image.authors="team@openshock.org"
 
 EXPOSE 8080
 ENV OPENSHOCK_DATA_FOLDER=/data
