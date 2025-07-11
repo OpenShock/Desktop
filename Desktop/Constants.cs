@@ -8,8 +8,8 @@ namespace OpenShock.Desktop;
 
 public static class Constants
 {
-    public static readonly string AppdataFolder =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "OpenShock", "Desktop");
+    public static readonly string AppdataFolder = Environment.GetEnvironmentVariable("OPENSHOCK_DATA_FOLDER") ??
+                                                  Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify), "OpenShock", "Desktop");
     public static readonly string LogsFolder = Path.Combine(AppdataFolder, "logs");
     public static readonly string LogsFile = Path.Combine(LogsFolder, "log.txt");
     public static readonly string ModuleData = Path.Combine(AppdataFolder, "moduleData");
