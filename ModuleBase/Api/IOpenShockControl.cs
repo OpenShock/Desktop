@@ -28,5 +28,13 @@ public interface IOpenShockControl
     /// <param name="type"></param>
     public void ControlAllShockers(byte intensity, ControlType type);
     
+    /// <summary>
+    /// A shocker has been remotely controlled by another location.
+    /// </summary>
     public IAsyncMinimalEventObservable<RemoteControlledShockerArgs> OnRemoteControlledShocker { get; }
+    
+    /// <summary>
+    /// This OpenShock Desktop instance has controlled a shocker.
+    /// </summary>
+    public IAsyncMinimalEventObservable<RemoteControlledShockerArgs> OnLocalControlledShocker { get; }
 }

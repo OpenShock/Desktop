@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using OpenShock.Desktop.Backend;
-using OpenShock.Desktop.Models.BaseImpl;
 using OpenShock.Desktop.ModuleBase.Api;
 using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.Services;
@@ -14,27 +13,30 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
     private readonly BackendHubManager _backendHubManager;
     private readonly LiveControlManager _liveControlManager;
 
-    private readonly IAsyncDisposable _remoteControlledSubscription;
+    private readonly IAsyncDisposable _onShockerLogSubscription;
     
     public OpenShockControl(BackendHubManager backendHubManager, LiveControlManager liveControlManager)
     {
         _backendHubManager = backendHubManager;
         _liveControlManager = liveControlManager;
         
-        _remoteControlledSubscription = _backendHubManager.OnRemoteControlledShocker.SubscribeAsync(args =>
+        _onShockerLogSubscription = _backendHubManager.OnShockerLog.SubscribeAsync(args =>
         {
-            return _onRemoteControlledShocker.InvokeAsyncParallel(new RemoteControlledShockerArgs()
+            var logEvent = args.LogEventArgs;
+            var sender = logEvent.Sender;
+            
+            var baseArgs = new RemoteControlledShockerArgs()
             {
                 Sender = new ControlLogSender
                 {
-                    Id = args.Sender.Id,
-                    Name = args.Sender.Name,
-                    Image = args.Sender.Image,
-                    AdditionalItems = args.Sender.AdditionalItems.AsReadOnly(),
-                    ConnectionId = args.Sender.ConnectionId,
-                    CustomName = args.Sender.CustomName,
+                    Id = sender.Id,
+                    Name = sender.Name,
+                    Image = sender.Image,
+                    AdditionalItems = sender.AdditionalItems.AsReadOnly(),
+                    ConnectionId = sender.ConnectionId,
+                    CustomName = sender.CustomName,
                 },
-                Logs = args.Logs.Select(log => new ControlLog
+                Logs = logEvent.Logs.Select(log => new ControlLog
                 {
                     Duration = log.Duration,
                     Intensity = log.Intensity,
@@ -46,7 +48,9 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
                     Type = (ControlType)log.Type,
                     ExecutedAt = log.ExecutedAt
                 }).ToImmutableArray()
-            });
+            };
+
+            return args.IsRemote ? _onRemoteControlledShocker.InvokeAsyncParallel(baseArgs) : _onLocalControlledShocker.InvokeAsyncParallel(baseArgs);
         }).AsTask().Result;
     }
     
@@ -68,6 +72,10 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
     public IAsyncMinimalEventObservable<RemoteControlledShockerArgs> OnRemoteControlledShocker =>
         _onRemoteControlledShocker;
     private readonly AsyncMinimalEvent<RemoteControlledShockerArgs> _onRemoteControlledShocker = new();
+    
+    public IAsyncMinimalEventObservable<RemoteControlledShockerArgs> OnLocalControlledShocker =>
+        _onLocalControlledShocker;
+    private readonly AsyncMinimalEvent<RemoteControlledShockerArgs> _onLocalControlledShocker = new();
 
     private bool _disposed;
     
@@ -76,7 +84,7 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
         if (_disposed) return;
         _disposed = true;
         
-        await _remoteControlledSubscription.DisposeAsync();
+        await _onShockerLogSubscription.DisposeAsync();
         GC.SuppressFinalize(this);
     }
     

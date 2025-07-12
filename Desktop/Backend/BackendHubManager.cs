@@ -1,12 +1,6 @@
-﻿using System.Collections.Concurrent;
-using System.Globalization;
-using System.Reactive.Subjects;
-using MudBlazor.Extensions;
+﻿using System.Reactive.Subjects;
 using OpenShock.Desktop.Config;
-using OpenShock.Desktop.Models;
 using OpenShock.Desktop.Models.BaseImpl;
-using OpenShock.Desktop.ModuleBase.Models;
-using OpenShock.Desktop.Services;
 using OpenShock.MinimalEvents;
 using OpenShock.SDK.CSharp.Hub;
 using OpenShock.SDK.CSharp.Hub.Models;
@@ -22,14 +16,12 @@ public sealed class BackendHubManager
     private readonly OpenShockHubClient _openShockHubClient;
     private readonly OpenShockApi _openShockApi;
 
-    private string _liveConnectionId = string.Empty;
+    private string _currentHubConnectionId = string.Empty;
 
-    public IAsyncMinimalEventObservable<LogEventArgs> OnRemoteControlledShocker => _onRemoteControlledShocker;
-    private readonly AsyncMinimalEvent<LogEventArgs> _onRemoteControlledShocker = new();
+    public IAsyncMinimalEventObservable<ShockerLogEventArgs> OnShockerLog => _onShockerLog;
+    private readonly AsyncMinimalEvent<ShockerLogEventArgs> _onShockerLog = new();
     
     public Subject<Guid?> OnHubStatusUpdated { get; } = new();
-    
-
 
     public BackendHubManager(ILogger<BackendHubManager> logger,
         ConfigManager configManager,
@@ -41,7 +33,7 @@ public sealed class BackendHubManager
         _openShockApi = openShockApi;
         
         _openShockHubClient.OnWelcome.SubscribeAsync(Welcome).AsTask().Wait();;
-        _openShockHubClient.OnLog.SubscribeAsync(RemoteActivateShockers).AsTask().Wait();
+        _openShockHubClient.OnLog.SubscribeAsync(OnShockerLogHandler).AsTask().Wait();
         _openShockHubClient.OnHubUpdate.SubscribeAsync(DeviceUpdate).AsTask().Wait();
 
         _openShockHubClient.OnHubStatus.SubscribeAsync(HubStatus).AsTask().Wait();
@@ -49,7 +41,7 @@ public sealed class BackendHubManager
 
     private Task Welcome(string connectionId)
     {
-        _liveConnectionId = connectionId;
+        _currentHubConnectionId = connectionId;
         _openShockApi.HubStates.Clear();
         
         OnHubStatusUpdated.OnNext(null);
@@ -105,15 +97,15 @@ public sealed class BackendHubManager
         });
     }
 
-    private Task RemoteActivateShockers(LogEventArgs logEventArgs)
+    private Task OnShockerLogHandler(LogEventArgs logEventArgs)
     {
-        if (logEventArgs.Sender.ConnectionId == _liveConnectionId)
+        var eventArgs = new ShockerLogEventArgs
         {
-            _logger.LogDebug("Ignoring remote command log cause it was the local connection");
-            return Task.CompletedTask;
-        }
+            LogEventArgs = logEventArgs,
+            IsRemote = logEventArgs.Sender.ConnectionId != _currentHubConnectionId
+        };
 
-        return _onRemoteControlledShocker.InvokeAsyncParallel(logEventArgs);
+        return _onShockerLog.InvokeAsyncParallel(eventArgs);
     }
 
     /// <summary>
@@ -134,5 +126,10 @@ public sealed class BackendHubManager
         var shocksToSend = shocks.Where(x => enabledShockers.Contains(x.Id));
         return _openShockHubClient.Control(shocksToSend, customName);
     }
-    
+}
+
+public readonly struct ShockerLogEventArgs
+{
+    public required LogEventArgs LogEventArgs { get; init; }
+    public required bool IsRemote { get; init; }
 }
