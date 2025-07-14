@@ -74,9 +74,9 @@
         <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
-        <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.38" />
-        <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.38" />
-        <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.38" />
+        <PackageReference Include="OpenShock.SDK.CSharp" Version="0.0.39" />
+        <PackageReference Include="OpenShock.SDK.CSharp.Hub" Version="0.0.39" />
+        <PackageReference Include="OpenShock.SDK.CSharp.Live" Version="0.0.39" />
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
         <PackageReference Include="System.Reactive" Version="6.0.1" />
     </ItemGroup>
