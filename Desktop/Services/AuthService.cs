@@ -17,6 +17,7 @@ public sealed class AuthService
     private readonly OpenShockApi _apiClient;
     private readonly ConfigManager _configManager;
     public SelfResponse? SelfResponse { get; private set; } 
+    public TokenResponse? TokenSelf { get; private set; }
 
     // NotAuthed
     // FailedAuth
@@ -67,6 +68,11 @@ public sealed class AuthService
             var selfResponse = await _apiClient.Client!.GetSelf();
             if (!selfResponse.IsT0) throw new Exception("Failed to get self response");
             SelfResponse = selfResponse.AsT0.Value;
+
+            var tokenSelf = await _apiClient.Client!.GetTokenSelf();
+            if (!tokenSelf.IsT0) throw new Exception("Failed to get token self response");
+            TokenSelf = tokenSelf.AsT0.Value;
+            
 
             _authState.Value = AuthStateType.Authed;
         }

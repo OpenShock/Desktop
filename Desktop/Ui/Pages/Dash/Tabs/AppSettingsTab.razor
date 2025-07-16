@@ -9,6 +9,7 @@
 @inject ISnackbar Snackbar
 @inject RepositoryManager RepositoryManager
 @inject NavigationManager NavigationManager
+@inject AuthService AuthService
 @implements IAsyncDisposable
 
 @page "/dash/settings"
@@ -26,6 +27,20 @@
         <span class="d-flex align-center">
             <MudText>Runtime: </MudText>
             <MudChip Value="RuntimeInformation.RuntimeIdentifier"></MudChip>    
+        </span>
+    </div>
+    
+    
+    <div class="d-flex gap-5 align-center pt-2">
+        <span class="d-flex align-center">
+            <MudText>Permissions: </MudText>
+            @if (AuthService.TokenSelf is not null)
+            {
+                @foreach (var permission in AuthService.TokenSelf.Permissions)
+                {
+                    <MudChip Value="permission"></MudChip>
+                }
+            }
         </span>
     </div>
 </MudPaper>
