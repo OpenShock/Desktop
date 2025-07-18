@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using OpenShock.Desktop.ModuleBase.Models;
 
 namespace OpenShock.Desktop.ModuleBase;
 

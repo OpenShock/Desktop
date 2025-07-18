@@ -5,6 +5,7 @@
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
+@using OpenShock.SDK.CSharp.Models
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject RepositoryManager RepositoryManager
@@ -34,11 +35,12 @@
     <div class="d-flex gap-5 align-center pt-2">
         <span class="d-flex align-center">
             <MudText>Permissions: </MudText>
+            <br/>
             @if (AuthService.TokenSelf is not null)
             {
                 @foreach (var permission in AuthService.TokenSelf.Permissions)
                 {
-                    <MudChip Value="permission"></MudChip>
+                    <MudChip Value="PermissionTypeBindings.PermissionTypeToName[permission].Name"></MudChip>
                 }
             }
         </span>

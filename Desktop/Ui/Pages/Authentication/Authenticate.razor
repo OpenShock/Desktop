@@ -1,6 +1,4 @@
 @inject ConfigManager ConfigManager
-@inject NavigationManager NavigationManager
-@inject ISnackbar Snackbar
 @inject AuthService AuthService
 @inject PipeServerService PipeService
 @layout NotAuthedLayout
@@ -9,8 +7,6 @@
 @using OpenShock.Desktop.Services.Pipes
 @inherits LayoutComponentBase
 @implements IAsyncDisposable
-@inject ILogger<Authenticate> Logger
-
 
 <MudDialog>
     <DialogContent>
