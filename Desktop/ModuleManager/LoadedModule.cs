@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using OpenShock.Desktop.ModuleBase;
+using OpenShock.SDK.CSharp.Models;
 using Semver;
 using Module = OpenShock.Desktop.ModuleManager.Repository.Module;
 
@@ -15,6 +16,8 @@ public sealed class LoadedModule
     
     public required Module? RepositoryModule { get; set; }
     public required SemVersion? AvailableVersion { get; set; }
+    
+    public required IReadOnlyList<PermissionType> RequiredPermissions { get; init; } = [];
     
     
     public string Id => ModuleAttribute.Id;

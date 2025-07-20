@@ -188,6 +188,7 @@ public sealed class ModuleManager : IAsyncDisposable
         var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleDll);
 
         var moduleAttribute = assembly.GetCustomAttribute<DesktopModuleAttribute>();
+        var requiredPermissionsAttribute = assembly.GetCustomAttribute<RequiredPermissionsAttribute>();
         
         if (moduleAttribute is null)
         {
@@ -219,7 +220,6 @@ public sealed class ModuleManager : IAsyncDisposable
         var module = (DesktopModuleBase?)ActivatorUtilities.CreateInstance(_serviceProvider, moduleAttribute.ModuleType);
         if (module is null) throw new Exception("Failed to instantiate module!");
         
-        
         var loadedModule = new LoadedModule
         {
             LoadContext = assemblyLoadContext,
@@ -228,7 +228,8 @@ public sealed class ModuleManager : IAsyncDisposable
             Module = module,
             Version = loadedModuleVersion,
             AvailableVersion = null,
-            RepositoryModule = null
+            RepositoryModule = null,
+            RequiredPermissions = requiredPermissionsAttribute?.Permissions.Select(x => x.GetPermissionType()).ToArray() ?? []
         };
         
         module.SetContext(new ModuleInstanceManager(loadedModule, _serviceProvider.GetRequiredService<ILoggerFactory>(), _serviceProvider)
