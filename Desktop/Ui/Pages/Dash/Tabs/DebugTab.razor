@@ -1,0 +1,63 @@
+﻿@page "/dash/debug"
+@using System.Runtime.InteropServices
+@using OpenShock.Desktop.ModuleManager
+@using OpenShock.Desktop.Services
+@using OpenShock.SDK.CSharp.Models
+@inject AuthService AuthService
+@inject ModuleManager ModuleManager
+
+<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
+    <MudText>Information</MudText>
+    <MudDivider/>
+
+    <div class="d-flex gap-5 align-center pt-2">
+        <span class="d-flex align-center">
+            <MudText>Version: </MudText>
+            <MudChip Value="Constants.Version"></MudChip>    
+        </span>
+
+        <span class="d-flex align-center">
+            <MudText>Runtime: </MudText>
+            <MudChip Value="RuntimeInformation.RuntimeIdentifier"></MudChip>    
+        </span>
+    </div>
+</MudPaper>
+
+<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
+    <MudText>Token</MudText>
+    <MudDivider/>
+
+    <div class="d-flex gap-5 align-center pt-2">
+        <span class="d-flex align-center">
+            <MudText>Permissions: </MudText>
+            <br/>
+            @if (AuthService.TokenSelf is not null)
+            {
+                @foreach (var permission in AuthService.TokenSelf.Permissions)
+                {
+                    <MudChip Value="PermissionTypeBindings.PermissionTypeToName[permission].Name"></MudChip>
+                }
+            }
+        </span>
+    </div>
+</MudPaper>
+
+<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
+    <MudText>Modules</MudText>
+    <MudDivider/>
+
+    <div class="d-flex gap-5 align-center pt-2">
+        <span class="d-flex align-center">
+            <MudText>Required Permissions: </MudText>
+            <br/>
+            @foreach (var permission in ModuleManager.RequiredPermissions)
+            {
+                <MudChip Value="PermissionTypeBindings.PermissionTypeToName[permission].Name"></MudChip>
+            }
+        </span>
+    </div>
+</MudPaper>
+
+@code {
+
+}

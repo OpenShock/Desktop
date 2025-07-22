@@ -16,38 +16,6 @@
 @page "/dash/settings"
 
 <MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
-    <MudText>Information</MudText>
-    <MudDivider/>
-    
-    <div class="d-flex gap-5 align-center pt-2">
-        <span class="d-flex align-center">
-            <MudText>Version: </MudText>
-            <MudChip Value="Constants.Version"></MudChip>    
-        </span>
-
-        <span class="d-flex align-center">
-            <MudText>Runtime: </MudText>
-            <MudChip Value="RuntimeInformation.RuntimeIdentifier"></MudChip>    
-        </span>
-    </div>
-    
-    
-    <div class="d-flex gap-5 align-center pt-2">
-        <span class="d-flex align-center">
-            <MudText>Permissions: </MudText>
-            <br/>
-            @if (AuthService.TokenSelf is not null)
-            {
-                @foreach (var permission in AuthService.TokenSelf.Permissions)
-                {
-                    <MudChip Value="PermissionTypeBindings.PermissionTypeToName[permission].Name"></MudChip>
-                }
-            }
-        </span>
-    </div>
-</MudPaper>
-
-<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding-margin">
     <MudText>Desktop App</MudText>
     <MudDivider/>
 
@@ -237,6 +205,8 @@
 
 </MudPaper>
 
+<MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.BugReport"OnClick="GoToDebugTab">Debug</MudButton>
+
 <style>
 
     .mud-table-cell-custom-group {
@@ -404,12 +374,17 @@
     private void ThemeUpdated()
     {
         OnSettingsValueChange();
-        ReloadPage(NavigationManager);
+        ReloadPage();
     }
 
-    private static void ReloadPage(NavigationManager manager)
+    private void ReloadPage()
     {
-        manager.NavigateTo(manager.Uri, true);
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+    }
+    
+    private void GoToDebugTab()
+    {
+        NavigationManager.NavigateTo("/dash/debug");
     }
 
 }

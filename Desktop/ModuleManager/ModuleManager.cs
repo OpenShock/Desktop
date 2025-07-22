@@ -14,6 +14,7 @@ using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Utils;
 using OpenShock.MinimalEvents;
+using OpenShock.SDK.CSharp.Models;
 using Semver;
 
 namespace OpenShock.Desktop.ModuleManager;
@@ -26,6 +27,7 @@ public sealed class ModuleManager : IAsyncDisposable
     private readonly ILogger<ModuleManager> _logger;
     private readonly RepositoryManager _repositoryManager;
     private readonly ConfigManager _configManager;
+    private readonly IAsyncDisposable _repositoryUpdatedSubscription;
     
     public IMinimalEventObservable ModulesLoaded => _modulesLoaded;
     private readonly MinimalEvent _modulesLoaded = new();
@@ -33,6 +35,11 @@ public sealed class ModuleManager : IAsyncDisposable
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
     private static readonly HttpClient HttpClient;
+    
+    public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
+
+    public IEnumerable<PermissionType> RequiredPermissions =>
+        Modules.SelectMany(x => x.Value.RequiredPermissions).Distinct();
 
     static ModuleManager()
     {
@@ -60,9 +67,6 @@ public sealed class ModuleManager : IAsyncDisposable
             return Task.CompletedTask;
         }).Result;
     }
-
-    public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
-    private readonly IAsyncDisposable _repositoryUpdatedSubscription;
 
     #region Tasks
 
@@ -188,7 +192,7 @@ public sealed class ModuleManager : IAsyncDisposable
         var assembly = assemblyLoadContext.LoadFromAssemblyPath(moduleDll);
 
         var moduleAttribute = assembly.GetCustomAttribute<DesktopModuleAttribute>();
-        var requiredPermissionsAttribute = assembly.GetCustomAttribute<RequiredPermissionsAttribute>();
+        var requiredPermissionsAttribute = assembly.GetCustomAttributes<RequiredPermissionAttribute>();
         
         if (moduleAttribute is null)
         {
@@ -229,7 +233,7 @@ public sealed class ModuleManager : IAsyncDisposable
             Version = loadedModuleVersion,
             AvailableVersion = null,
             RepositoryModule = null,
-            RequiredPermissions = requiredPermissionsAttribute?.Permissions.Select(x => x.GetPermissionType()).ToArray() ?? []
+            RequiredPermissions = requiredPermissionsAttribute.Select(x => x.Permission).Select(x => x.GetPermissionType()).ToArray()
         };
         
         module.SetContext(new ModuleInstanceManager(loadedModule, _serviceProvider.GetRequiredService<ILoggerFactory>(), _serviceProvider)

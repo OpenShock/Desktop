@@ -2,13 +2,13 @@
 
 namespace OpenShock.Desktop.ModuleBase;
 
-[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
-public sealed class RequiredPermissionsAttribute : Attribute
+[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+public sealed class RequiredPermissionAttribute : Attribute
 {
-    public IReadOnlyList<TokenPermissions> Permissions { get; init; }
+    public TokenPermissions Permission { get; init; }
 
-    public RequiredPermissionsAttribute(params IReadOnlyList<TokenPermissions> permissions)
+    public RequiredPermissionAttribute(TokenPermissions permission)
     {
-        Permissions = permissions;
+        Permission = permission;
     }
 }

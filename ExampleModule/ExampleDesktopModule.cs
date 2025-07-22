@@ -1,10 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 using OpenShock.Desktop.ModuleBase;
+using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.ModuleBase.Navigation;
 using OpenShock.Desktop.Modules.ExampleModule;
 
 [assembly:DesktopModule(typeof(ExampleDesktopModule), "openshock.desktop.modules.examplemodule", "Example Module")]
+[assembly: RequiredPermission(TokenPermissions.Devices_Auth)]
+[assembly: RequiredPermission(TokenPermissions.Devices_Edit)]
 namespace OpenShock.Desktop.Modules.ExampleModule;
 
 public class ExampleDesktopModule : DesktopModuleBase
