@@ -22,13 +22,14 @@ public static class MauiProgram
         {
             Console.Write(RuntimeInformation.RuntimeIdentifier);
             return CreateMauiAppInternal();
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             Console.WriteLine(e);
             throw;
         }
     }
-    
+
     private static Microsoft.Maui.Hosting.MauiApp CreateMauiAppInternal()
     {
         var builder = Microsoft.Maui.Hosting.MauiApp.CreateBuilder();
@@ -49,6 +50,19 @@ public static class MauiProgram
                 windowsLifecycleBuilder.OnWindowCreated(window =>
                 {
                     var appWindow = WindowUtils.GetAppWindow(window);
+                    
+                    // On first launch, hide the window if the user has chosen to start minimized
+                    if (_config?.App.MinimizeOnLaunch ?? false)
+                    {
+                        void HideOnFirstLaunch(object? sender, Microsoft.UI.Xaml.WindowActivatedEventArgs args)
+                        {
+                            appWindow.Hide();
+
+                            window.Activated -= HideOnFirstLaunch;
+                        }
+
+                        window.Activated += HideOnFirstLaunch;
+                    }
 
                     _pipeServerService?.OnMessageReceived.SubscribeAsync(_ =>
                     {
@@ -56,7 +70,7 @@ public static class MauiProgram
 
                         return Task.CompletedTask;
                     }).AsTask().Wait();
-
+                    
                     //When user execute the closing method, we can push a display alert. If user click Yes, close this application, if click the cancel, display alert will dismiss.
                     appWindow.Closing += async (s, e) =>
                     {
@@ -71,9 +85,9 @@ public static class MauiProgram
                         if (Application.Current == null) return;
 
                         var page = Application.Current.Windows[0].Page;
-                        
-                        if(page == null) return;
-                        
+
+                        if (page == null) return;
+
                         var result = await page.DisplayAlert(
                             "Close?",
                             "Do you want to close OpenShock?",
@@ -96,7 +110,7 @@ public static class MauiProgram
 
         _config = app.Services.GetRequiredService<ConfigManager>().Config;
         _pipeServerService = app.Services.GetRequiredService<PipeServerService>();
-        
+
         app.Services.StartOpenShockDesktopServices(false);
 
         return app;
