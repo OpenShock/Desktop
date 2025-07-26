@@ -21,6 +21,8 @@
 
     <div class="d-flex gap-5" style="align-items: center">
 
+        <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.MinimizeOnLaunch"
+                     Label="Minimize On Launch" @bind-Value:after="OnSettingsValueChange"/>
         <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.CloseToTray"
                      Label="Close to Tray" @bind-Value:after="OnSettingsValueChange"/>
         <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.DiscordPreview"
