@@ -5,6 +5,7 @@ namespace OpenShock.Desktop.Config;
 public sealed class AppConfig
 {
     public bool CloseToTray { get; set; } = true;
+    public bool MinimizeOnLaunch { get; set; } = false;
     public bool DiscordPreview { get; set; } = false;
     
     public UpdateChannel UpdateChannel { get; set; } = UpdateChannel.Release;
