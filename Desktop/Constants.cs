@@ -2,6 +2,7 @@
 using System.Net.Mime;
 using System.Reflection;
 using OpenShock.Desktop.Ui.Utils;
+using OpenShock.SDK.CSharp.Models;
 using Semver;
 
 namespace OpenShock.Desktop;
@@ -17,6 +18,11 @@ public static class Constants
     
     public static readonly SemVersion Version = SemVersion.Parse(typeof(Constants).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, SemVersionStyles.Strict);
     public static readonly SemVersion VersionWithoutMetadata = Version.WithoutMetadata();
+    
+    public static readonly ImmutableArray<PermissionType> BasePermissions = [
+        PermissionType.Shockers_Use,
+        PermissionType.Shockers_Pause
+    ];
 
     public static readonly ImmutableArray<Uri> BuiltInModuleRepositories = [
         ..new List<Uri>

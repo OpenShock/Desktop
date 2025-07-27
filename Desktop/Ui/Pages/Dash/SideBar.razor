@@ -1,10 +1,12 @@
 ﻿@using Microsoft.AspNetCore.SignalR.Client
 @using OpenShock.Desktop.Backend
+@using OpenShock.Desktop.ModuleBase.Models
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Ui.Utils
 @using OpenShock.SDK.CSharp.Hub
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
+@using OpenShock.SDK.CSharp.Models
 @using StatePart = OpenShock.Desktop.Ui.Pages.Dash.Components.StatePart
 @inject OpenShockApi Api
 @inject OpenShockHubClient ApiHubClient
@@ -12,6 +14,7 @@
 @inject LiveControlManager LiveControlManager
 @inject StatusHandler StatusHandler
 @inject ModuleManager ModuleManager
+@inject AuthService AuthService
 @implements IAsyncDisposable
 
 <MudPaper Width="250px" Height="100%" Elevation="0" Class="flex-none">
@@ -22,19 +25,21 @@
             <div class="d-flex" style="align-items: center">
                 @* ReSharper disable once Html.PathError *@
                 <a href="/dash/dashboard">
-                    <MudImage Src="images/NavbarLogoSpin.svg" Alt="Logo" Height="45" Width="218" Class="mx-4 my-2" Style="vertical-align: bottom;"/>
+                    <MudImage Src="images/NavbarLogoSpin.svg" Alt="Logo" Height="45" Width="218" Class="mx-4 my-2"
+                              Style="vertical-align: bottom;"/>
                 </a>
             </div>
             <MudDivider Style="margin-bottom: 5px" DividerType="DividerType.Middle"/>
         </div>
 
 
-        <MudNavMenu style="align-self: flex-start; overflow-y: auto" Class="flex-auto flex-grow-1" Margin="Margin.Dense" Color="Color.Primary" Bordered="true">
+        <MudNavMenu style="align-self: flex-start; overflow-y: auto" Class="flex-auto flex-grow-1" Margin="Margin.Dense"
+                    Color="Color.Primary" Bordered="true">
 
             <MudNavLink Icon="@Icons.Material.Filled.ViewModule" Href="/dash/modules">Manage Modules</MudNavLink>
-            
+
             <MudDivider Style="margin-bottom: 5px; margin-top: 5px;" DividerType="DividerType.Middle"/>
-            
+
             @foreach (var modules in ModuleManager.Modules)
             {
                 <ModuleNavComponent LoadedModule="@modules.Value"></ModuleNavComponent>
@@ -42,16 +47,47 @@
         </MudNavMenu>
 
         <div class="flex-none" style="align-self: flex-end">
+            @if (AuthService.MissingPermissions)
+            {
+                <MudTooltip
+                    Arrow="true" Placement="Placement.Right">
+                    <ChildContent>
+                        <div class="mb-2 pa-4 flex row gap-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning"/>
+                            <MudText Typo="Typo.body2" Class="mt-1">Permissions Required</MudText>
+                        </div>
+                    </ChildContent>
+                    <TooltipContent>
+                        <MudText Typo="Typo.body2">Addition API Token Permissions Required</MudText>
+                        <MudText Typo="Typo.caption">for one or more installed modules.</MudText>
+                        <br/>
+                        <br/>
+                        <br/>
+                        @foreach (var perm in PermissionInfos)
+                            {
+                                @if (perm.Missing)
+                                {
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Warning">@perm.Permission</MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.subtitle2">@perm.Permission</MudText>
+                                }
+                            }
+                        <br/>
+                    </TooltipContent>
+                </MudTooltip>
+            }
+
             <MudDivider DividerType="DividerType.Middle"/>
             <div Class="pa-4">
-
-
                 <div class="d-flex gap-5" style="flex-wrap: wrap; margin-bottom: 10px;">
 
                     <div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
                         <MudText Style="font-size: 10pt; text-align: center">SignalR</MudText>
                         <MudTooltip Arrow="true" Placement="Placement.Top" Text="@ApiHubClient.State.ToString()">
-                            <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@GetConnectionStateColor(ApiHubClient.State)"
+                            <MudIcon Icon="@Icons.Material.Filled.Wifi"
+                                     Color="@GetConnectionStateColor(ApiHubClient.State)"
                                      Class="d-block ma-auto"/>
                         </MudTooltip>
                     </div>
@@ -64,10 +100,12 @@
                         }
                         else
                         {
-                            <div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
+                            <div style="display: flex; flex-direction: column"
+                                 class="child-div-align-center flex-grow-1">
                                 <MudText Style="font-size: 10pt; text-align: center">@device.Name.Truncate(13)</MudText>
                                 <MudTooltip Arrow="true" Placement="Placement.Top" Text="Offline">
-                                    <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@Color.Dark"/>
+                                    <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@Color.Dark"
+                                             Class="d-block ma-auto"/>
                                 </MudTooltip>
                             </div>
                         }
@@ -83,12 +121,27 @@
 
 @code {
     private IAsyncDisposable _statusSubscription = null!;
+    private IAsyncDisposable _authStateSubscription = null!;
 
     protected override async Task OnInitializedAsync()
     {
         _statusSubscription = await StatusHandler.OnWebsocketStatusChanged.SubscribeAsync(() => InvokeAsync(StateHasChanged));
+        _authStateSubscription = await AuthService.AuthState.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
-    
+
+    private struct PermissionInfo
+    {
+        public string Permission { get; set; }
+        public bool Missing { get; set; }
+    }
+
+    private IEnumerable<PermissionInfo> PermissionInfos => Constants.BasePermissions.Concat(ModuleManager.RequiredPermissions).Distinct()
+        .Select(x => new PermissionInfo
+        {
+            Permission = PermissionTypeBindings.PermissionTypeToName[x].Name,
+            Missing = !(AuthService.TokenSelf?.Permissions.Contains(x) ?? false)
+        });
+
 
     private static Color GetConnectionStateColor(HubConnectionState state) =>
         state switch
@@ -101,12 +154,13 @@
         };
 
     private bool _disposed = false;
-    
+
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
         _disposed = true;
         await _statusSubscription.DisposeAsync();
+        await _authStateSubscription.DisposeAsync();
     }
 
 }

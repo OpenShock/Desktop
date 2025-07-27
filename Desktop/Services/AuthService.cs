@@ -16,6 +16,7 @@ public sealed class AuthService
     private readonly LiveControlManager _liveControlManager;
     private readonly OpenShockApi _apiClient;
     private readonly ConfigManager _configManager;
+    private readonly ModuleManager.ModuleManager _moduleManager;
     public SelfResponse? SelfResponse { get; private set; } 
     public TokenResponse? TokenSelf { get; private set; }
 
@@ -23,7 +24,8 @@ public sealed class AuthService
     // FailedAuth
     // Authed
     
-
+    public bool MissingPermissions { get; private set; }
+    
     public IObservableVariable<AuthStateType> AuthState => _authState;
     private readonly ObservableVariable<AuthStateType> _authState = new(AuthStateType.NotAuthed);
 
@@ -32,7 +34,8 @@ public sealed class AuthService
         OpenShockHubClient hubClient,
         LiveControlManager liveControlManager,
         OpenShockApi apiClient,
-        ConfigManager configManager)
+        ConfigManager configManager,
+        ModuleManager.ModuleManager moduleManager)
     {
         _logger = logger;
         _backendHubManager = backendHubManager;
@@ -40,6 +43,7 @@ public sealed class AuthService
         _liveControlManager = liveControlManager;
         _apiClient = apiClient;
         _configManager = configManager;
+        _moduleManager = moduleManager;
     }
 
     private readonly SemaphoreSlim _authLock = new(1, 1);
@@ -73,11 +77,21 @@ public sealed class AuthService
             if (!tokenSelf.IsT0) throw new Exception("Failed to get token self response");
             TokenSelf = tokenSelf.AsT0.Value;
             
-
             _authState.Value = AuthStateType.Authed;
+
+            MissingPermissions = !_moduleManager.RequiredPermissions.Concat(Constants.BasePermissions).All(x => TokenSelf.Permissions.Contains(x));
+            if (MissingPermissions)
+            {
+                _logger.LogWarning("Missing permissions for modules: {MissingPermissions}", 
+                    string.Join(", ", _moduleManager.RequiredPermissions
+                        .Concat(Constants.BasePermissions)
+                        .Where(x => !TokenSelf.Permissions.Contains(x))
+                        .Select(x => PermissionTypeBindings.PermissionTypeToName[x].Name)));
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to authenticate");
             _authState.Value = AuthStateType.FailedAuth;
         }
         finally
@@ -101,6 +115,8 @@ public sealed class AuthService
             await _hubClient.StopAsync();
             _apiClient.Logout();
             await _liveControlManager.RefreshConnections();
+
+            TokenSelf = null;
 
             _logger.LogInformation("Logged out");
         }

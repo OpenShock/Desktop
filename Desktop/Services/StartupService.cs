@@ -148,7 +148,6 @@ public sealed class StartupService
             catch (Exception e)
             {
                 _logger.LogError(e, "Error while starting module {Module}", moduleManagerModule.Key);
-                ;
             }
         }
 

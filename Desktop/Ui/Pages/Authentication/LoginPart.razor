@@ -5,11 +5,13 @@
 @using OneOf.Types
 @using OpenShock.Desktop.Backend
 @using OpenShock.Desktop.Config
+@using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.Utils
 @using OpenShock.SDK.CSharp.Models
 @using OpenShock.SDK.CSharp.Utils
 
 @inject ConfigManager ConfigManager
+@inject ModuleManager ModuleManager
 @inject ISnackbar Snackbar
 @inject ILogger<LoginPart> Logger
 
@@ -182,7 +184,10 @@
         
         Logger.LogTrace("Open browser for token");
 
-        var requestUri = new Uri(root.Data!.ShortLinkUrl, "/t/?name=OpenShock%20Desktop&redirect_uri=openshock:token/%&permissions=shockers.use,shockers.pause");
+        
+        var permissionString = string.Join(',', Constants.BasePermissions.Concat(ModuleManager.RequiredPermissions).Select(x => PermissionTypeBindings.PermissionTypeToName[x].Name));
+        
+        var requestUri = new Uri(root.Data!.ShortLinkUrl, $"/t/?name=OpenShock%20Desktop&redirect_uri=openshock:token/%&permissions={permissionString}");
         UiUtils.OpenUrl(requestUri.ToString());
     }
 
