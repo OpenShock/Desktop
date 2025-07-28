@@ -439,6 +439,9 @@
     private void OnVRCAutoStartChange()
     {
         ConfigManager.Save();
+        string vrcxPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VRCX/startup");
+        if (!Directory.Exists(vrcxPath))
+            return;
         if (ConfigManager.Config.App.VRCAutoStart)
         {
 #if WINDOWS
@@ -466,7 +469,7 @@
         else if (!ConfigManager.Config.App.VRCAutoStart)
         {
             string exePath = Environment.ProcessPath!;
-            string startupFileTarget = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VRCX/startup"), Path.GetFileName(exePath) + ".lnk");
+            string startupFileTarget = Path.Combine(vrcxPath, Path.GetFileName(exePath) + ".lnk");
             File.Delete(startupFileTarget);
         }
     }
