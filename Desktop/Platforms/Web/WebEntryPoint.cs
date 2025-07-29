@@ -32,7 +32,7 @@ public static class WebEntryPoint
             .AddInteractiveServerComponents();
 
         builder.Services.AddOpenShockDesktopServices();
-        builder.Services.AddCommonBlazorServices(builder.Logging);
+        builder.Services.AddCommonBlazorServices();
 
 #if WINDOWS
             builder.Services.AddWindowsServices();
