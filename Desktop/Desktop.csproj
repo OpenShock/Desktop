@@ -50,7 +50,7 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
-        <PackageReference Include="Photino.Blazor" Version="2.7.0" />
+        <PackageReference Include="Photino.Blazor" Version="4.0.13" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Web' Or '$(Configuration)' == 'Release-Web' ">

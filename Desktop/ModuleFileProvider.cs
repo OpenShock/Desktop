@@ -17,7 +17,7 @@ namespace OpenShock.Desktop;
 /// </summary>
 public sealed class ModuleFileProvider : IFileProvider, IDisposable
 {
-    private readonly ModuleManager.ModuleManager _moduleManager;
+    private ModuleManager.ModuleManager? _moduleManager;
 
     private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars()
         .Where(c => c != '/' && c != '\\').ToArray();
@@ -25,7 +25,7 @@ public sealed class ModuleFileProvider : IFileProvider, IDisposable
     private Assembly[] _assemblies = [];
 
     private FrozenDictionary<string, EmbeddedResourceFileInfo> _files = FrozenDictionary<string, EmbeddedResourceFileInfo>.Empty;
-
+    
     /// <summary>
     /// Initializes a new instance of the <see cref="ModuleFileProvider" />
     /// </summary>
@@ -36,9 +36,34 @@ public sealed class ModuleFileProvider : IFileProvider, IDisposable
         _modulesLoadedSubscription = _moduleManager.ModulesLoaded.Subscribe(UpdateAssemblies);
         UpdateAssemblies();
     }
+    
+    /// <summary>
+    /// Set module manager later when using this!
+    /// </summary>
+    public ModuleFileProvider()
+    {
+    }
+    
+    public void SetModuleManager(ModuleManager.ModuleManager moduleManager)
+    {
+        if (_moduleManager != null)
+        {
+            _modulesLoadedSubscription.Dispose();
+        }
+        
+        _moduleManager = moduleManager;
+        
+        _modulesLoadedSubscription = _moduleManager.ModulesLoaded.Subscribe(UpdateAssemblies);
+        UpdateAssemblies();
+    }
+    
 
     private void UpdateAssemblies()
     {
+        if (_moduleManager == null)
+        {
+            throw new InvalidOperationException("ModuleManager is not set. Use SetModuleManager() to set it.");
+        }
         _assemblies = _moduleManager.Modules.Select(x => x.Value.Assembly).Distinct().ToArray();
         SetupFileList();
     }
@@ -281,7 +306,7 @@ public sealed class ModuleFileProvider : IFileProvider, IDisposable
     #endregion
 
     private bool _disposed;
-    private readonly IDisposable _modulesLoadedSubscription;
+    private IDisposable _modulesLoadedSubscription;
 
     public void Dispose()
     {

@@ -1,20 +1,47 @@
 ﻿#if PHOTINO
-using OpenShock.ShockOsc.Cli;
-using OpenShock.ShockOsc.Services;
-using OpenShock.ShockOsc.Ui;
-using OpenShock.ShockOsc.Utils;
+using Microsoft.Extensions.FileProviders;
+using OpenShock.Desktop.Cli;
+using OpenShock.Desktop.Ui;
 using Photino.Blazor;
 
-namespace OpenShock.ShockOsc.Platforms.Photino;
+namespace OpenShock.Desktop.Platforms.Photino;
 
 public static class PhotinoEntryPoint
 {
+    private static readonly ModuleFileProvider ModuleFileProvider = new ModuleFileProvider();
+    
+    // [STAThread]
+    // static void Main(string[] args)
+    // {
+    //     var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
+    //     appBuilder.Services
+    //         .AddLogging();
+    //
+    //     // register root component
+    //     appBuilder.RootComponents.Add<Main>("#app");
+    //
+    //     var app = appBuilder.Build();
+    //
+    //     // customize window
+    //     app.MainWindow
+    //         .SetIconFile("wwwroot/images/Icon512.png")
+    //         .SetTitle("OpenShock Desktop");
+    //
+    //     AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
+    //     {
+    //         app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
+    //     };
+    //
+    //     app.Run();
+    // }
+    
+    
     [STAThread]
     public static void Main(string[] args)
     {
         ParseHelper.Parse<CliOptions>(args, Start);
     }
-
+    
     private static void Start(CliOptions config)
     {
         if (config.Headless)
@@ -22,15 +49,21 @@ public static class PhotinoEntryPoint
             Console.WriteLine("Running in headless mode.");
 
             var host = HeadlessProgram.SetupHeadlessHost();
-            OsTask.Run(host.Services.GetRequiredService<AuthService>().Authenticate);
             host.Run();
 
             return;
         }
 
-        var builder = PhotinoBlazorAppBuilder.CreateDefault();
-        builder.Services.AddShockOscServices();
+        
+        var compositeFileProvider = new CompositeFileProvider(
+            new PhysicalFileProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot")),
+            ModuleFileProvider);
+        
+        var builder = PhotinoBlazorAppBuilder.CreateDefault(compositeFileProvider);
+
+        builder.Services.AddOpenShockDesktopServices();
         builder.Services.AddCommonBlazorServices();
+
         
         builder.Services.Configure((Action<PhotinoBlazorAppConfiguration>) (opts =>
         {
@@ -43,12 +76,19 @@ public static class PhotinoEntryPoint
 
         app.MainWindow
             .SetIconFile("wwwroot/images/Icon512.png")
-            .SetTitle("ShockOSC");
+            .SetTitle("OpenShock Desktop");
         
         app.MainWindow.MinHeight = 600;
         app.MainWindow.MinWidth = 1000;
         
-        app.Services.StartShockOscServices(true);
+        app.Services.StartOpenShockDesktopServices(true);
+        
+        ModuleFileProvider.SetModuleManager(app.Services.GetRequiredService<ModuleManager.ModuleManager>());
+        
+        AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
+        {
+            app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
+        };
         
         app.Run();
     }

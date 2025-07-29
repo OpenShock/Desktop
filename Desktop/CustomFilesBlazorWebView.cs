@@ -1,4 +1,4 @@
-﻿#if PHOTINO || MAUI
+﻿#if MAUI
 using Microsoft.AspNetCore.Components.WebView.Maui;
 using Microsoft.Extensions.FileProviders;
 

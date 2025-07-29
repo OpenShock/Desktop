@@ -164,3 +164,34 @@ jobs:
             type=gha
           cache-to: |
             type=gha
+                    
+  build-linux-photino:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: linux-photino-nuget
+          restore-keys: |
+            linux-photino-nuget
+
+      - name: Publish OpenShock Photino
+        run: dotnet publish Desktop/Desktop.csproj -c Release-Photino -o ./publish/Photino-Linux
+
+      - name: Upload OpenShock Desktop Photino Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenShock Desktop Photino Linux
+          path: publish/Photino-Linux/*
+          retention-days: 7
+          if-no-files-found: error

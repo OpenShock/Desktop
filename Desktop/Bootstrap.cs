@@ -93,9 +93,9 @@ public static class Bootstrap
         services.AddScoped<IComponentActivator, OpenShockModuleComponentActivator>();
     }
 
-    public static void AddCommonBlazorServices(this IServiceCollection services, ILoggingBuilder builderLogging)
+    public static void AddCommonBlazorServices(this IServiceCollection services)
     {
-#if DEBUG_WINDOWS || DEBUG_PHOTINO
+#if DEBUG_WINDOWS
         services.AddBlazorWebViewDeveloperTools();
 #endif
 
