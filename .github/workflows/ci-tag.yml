@@ -7,11 +7,6 @@
 
 name: ci-tag
 
-env:
-  DOTNET_VERSION: 9.0.x
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/api
-
 jobs:
 
   # Pre-job to find the latest tag
@@ -27,9 +22,11 @@ jobs:
           repository: ${{ github.repository }}
           regex: '^\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.\d+)*)?$'
           releases-only: false
+      - name: Set output
+        run: echo "latest-tag=${{ steps.latest-tag.outputs.tag }}"
 
   # Delegate building and containerizing to a single workflow.
-  build-and-containerize:
+  build:
     needs: get-latest-tag
     uses: ./.github/workflows/ci-build.yml
     with:
