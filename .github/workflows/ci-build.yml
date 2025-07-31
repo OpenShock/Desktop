@@ -8,10 +8,6 @@ on:
     types: [ opened, reopened, synchronize ]
   workflow_call:
     inputs:
-      platforms:
-        description: 'Platforms to build for'
-        required: false
-        type: string
       latest:
         description: 'Tag image as latest'
         required: false
@@ -99,36 +95,12 @@ jobs:
           if-no-files-found: error
 
 
-  build-linux-web:
+  build-linux-web-containers:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup .NET SDK ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: linux-web-nuget
-          restore-keys: |
-            linux-web-nuget
-
-      - name: Publish OpenShock Web
-        run: dotnet publish Desktop/Desktop.csproj -c Release-Web -o ./publish/Web-Linux
-        
-      - name: Upload OpenShock Desktop Web Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenShock Desktop Web Linux
-          path: publish/Web-Linux/*
-          retention-days: 7
-          if-no-files-found: error
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -165,11 +137,19 @@ jobs:
           push: ${{ inputs.latest || inputs.rc || (github.ref_protected && github.event_name != 'pull_request') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: ${{ inputs.platforms || 'linux/amd64' }}
+          platforms: 'linux/amd64,linux/arm64'
           cache-from: |
             type=gha
           cache-to: |
             type=gha
+            
+      - name: Upload OpenShock Desktop Web Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenShock Desktop Web Linux
+          path: publish/Web-Linux/*
+          retention-days: 7
+          if-no-files-found: error
                     
   build-linux-photino:
     runs-on: ubuntu-latest
