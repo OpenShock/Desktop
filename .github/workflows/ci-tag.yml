@@ -3,7 +3,6 @@
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
       - '[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-preview.[0-9]+'
 
 name: ci-tag
 
@@ -22,7 +21,7 @@ jobs:
         with:
           repository: ${{ github.repository }}
           # Ignore preview or RC tags when searching for the latest
-          regex: '^\d+\.\d+\.\d+$'
+          regex: '^[0-9]+.[0-9]+.[0-9]+$'
           releases-only: false
       - name: Set output
         run: echo "latest-tag=${{ steps.latest-tag.outputs.tag }}"
@@ -39,7 +38,7 @@ jobs:
         continue-on-error: true
         with:
           repository: ${{ github.repository }}
-          regex: '^\d+\.\d+\.\d+-rc\.\d+$'
+          regex: '^[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+$'
           releases-only: false
       - name: Set output
         run: echo "latest-rc=${{ steps.latest-rc.outputs.tag }}"
