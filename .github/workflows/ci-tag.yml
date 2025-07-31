@@ -18,17 +18,37 @@ jobs:
       - name: Find latest tag
         id: latest-tag
         uses: oprypin/find-latest-tag@v1
+        continue-on-error: true
         with:
           repository: ${{ github.repository }}
-          regex: '^\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.\d+)*)?$'
+          # Ignore preview or RC tags when searching for the latest
+          regex: '^\d+\.\d+\.\d+$'
           releases-only: false
       - name: Set output
         run: echo "latest-tag=${{ steps.latest-tag.outputs.tag }}"
 
+  # Pre-job to find the latest RC tag
+  get-latest-rc-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      latest-rc: ${{ steps.latest-rc.outputs.tag }}
+    steps:
+      - name: Find latest RC tag
+        id: latest-rc
+        uses: oprypin/find-latest-tag@v1
+        continue-on-error: true
+        with:
+          repository: ${{ github.repository }}
+          regex: '^\d+\.\d+\.\d+-rc\.\d+$'
+          releases-only: false
+      - name: Set output
+        run: echo "latest-rc=${{ steps.latest-rc.outputs.tag }}"
+
   # Delegate building and containerizing to a single workflow.
   build:
-    needs: get-latest-tag
+    needs: [get-latest-tag, get-latest-rc-tag]
     uses: ./.github/workflows/ci-build.yml
     with:
       platforms: linux/amd64,linux/arm64
       latest: ${{ needs.get-latest-tag.outputs.latest-tag == github.ref_name }}
+      rc: ${{ needs.get-latest-rc-tag.outputs.latest-rc == github.ref_name }}
