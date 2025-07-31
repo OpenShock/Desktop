@@ -71,8 +71,8 @@ public class ModuleConfig<T> : IModuleConfig<T> where T : new()
                 {
                     _logger.LogCritical(e, "Error during deserialization/loading of config");
                     _logger.LogWarning("Attempting to move old config and generate a new one");
-                    var configName = Path.GetFileName(_configPath);
-                    File.Move(configName, $"{configName}.old");
+                    var backupPath = _configPath + ".old";
+                    File.Move(_configPath, backupPath);
                 }
             }
         }
