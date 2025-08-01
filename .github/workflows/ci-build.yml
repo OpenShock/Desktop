@@ -8,6 +8,10 @@ on:
     types: [ opened, reopened, synchronize ]
   workflow_call:
     inputs:
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        type: string
       latest:
         description: 'Tag image as latest'
         required: false
@@ -137,19 +141,11 @@ jobs:
           push: ${{ inputs.latest || inputs.rc || (github.ref_protected && github.event_name != 'pull_request') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: 'linux/amd64,linux/arm64'
+          platforms: ${{ inputs.platforms || 'linux/amd64' }}
           cache-from: |
             type=gha
           cache-to: |
             type=gha
-            
-      - name: Upload OpenShock Desktop Web Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenShock Desktop Web Linux
-          path: publish/Web-Linux/*
-          retention-days: 7
-          if-no-files-found: error
                     
   build-linux-photino:
     runs-on: ubuntu-latest

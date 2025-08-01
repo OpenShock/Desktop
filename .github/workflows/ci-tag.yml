@@ -48,5 +48,6 @@ jobs:
     needs: [get-latest-tag, get-latest-rc-tag]
     uses: ./.github/workflows/ci-build.yml
     with:
+      platforms: linux/amd64,linux/arm64
       latest: ${{ needs.get-latest-tag.outputs.latest-tag == github.ref_name }}
       rc: ${{ needs.get-latest-rc-tag.outputs.latest-rc == github.ref_name }}
