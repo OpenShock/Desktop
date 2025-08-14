@@ -51,7 +51,7 @@ public abstract class DesktopModuleBase
     /// <summary>
     /// Called after <see cref="Setup"/> to allow the module to start any necessary services or perform additional initialization.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>A <see cref="Task"/> that represents the completion of any startup logic or initialization performed by the module.</returns>
     public virtual Task Start()
     {
         return Task.CompletedTask;
