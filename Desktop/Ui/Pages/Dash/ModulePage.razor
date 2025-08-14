@@ -1,23 +1,28 @@
 ﻿@using OpenShock.Desktop.ModuleManager
 
 @inject ModuleManager ModuleManager
+@page "/dash/module/{module}"
 @page "/dash/module/{module}/{component}"
 
-@if (LoadedModule == null)
+@if (_loadedModule == null)
 {
     <MudPaper Outlined="true" Class="mud-paper-padding">
         <MudText Typo="Typo.h6">Module not found [@Module]</MudText>
     </MudPaper>
 }
-else if (ComponentType == null)
+else if (_loadedModule.Module.RootComponent is not null)
+{
+    <DynamicComponent Type="_loadedModule.Module.RootComponent"></DynamicComponent>
+}
+else if (_componentType is not null)
+{
+    <DynamicComponent Type="_componentType"></DynamicComponent>
+}
+else
 {
     <MudPaper Outlined="true" Class="mud-paper-padding">
         <MudText Typo="Typo.h6">Sub Component not found [@Module] [@Component]</MudText>
     </MudPaper>
-}
-else
-{
-    <DynamicComponent Type="ComponentType"></DynamicComponent>
 }
 
 @code {
@@ -25,9 +30,20 @@ else
 
     [Parameter] public string? Component { get; set; }
 
-    private LoadedModule? LoadedModule => string.IsNullOrWhiteSpace(Module) ? null : ModuleManager.Modules.GetValueOrDefault(Module);
+    private LoadedModule? _loadedModule;
 
-    private Type? ComponentType => LoadedModule?.Module.NavigationComponents.FirstOrDefault(x => x.Name.Equals(Component, StringComparison.InvariantCultureIgnoreCase))
-        ?.ComponentType;
+    private Type? _componentType;
 
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        await base.SetParametersAsync(parameters);
+        SetupVariables();
+    }
+
+    private void SetupVariables()
+    {
+        _loadedModule = string.IsNullOrWhiteSpace(Module) ? null : ModuleManager.Modules.GetValueOrDefault(Module);
+        _componentType = _loadedModule?.Module.NavigationComponents.FirstOrDefault(x => x.Name.Equals(Component, StringComparison.InvariantCultureIgnoreCase))
+            ?.ComponentType;
+    }
 }
