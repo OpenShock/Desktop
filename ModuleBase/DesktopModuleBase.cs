@@ -42,7 +42,7 @@ public abstract class DesktopModuleBase
     /// <summary>
     /// During startup, this method is called to allow the module to perform any necessary setup.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>A <see cref="Task"/> that represents the completion of any asynchronous setup operations required by the module.</returns>
     public virtual Task Setup()
     {
         return Task.CompletedTask;
