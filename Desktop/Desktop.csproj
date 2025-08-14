@@ -40,7 +40,6 @@
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.100" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.100" />
         <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.100" />
-        <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.8" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
@@ -61,6 +60,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.8" />
         <PackageReference Include="AspNetCore.SassCompiler" Version="1.90.0" />
         <PackageReference Include="CommandLineParser" Version="2.9.1"/>
         <PackageReference Include="dnlib" Version="4.5.0" />
