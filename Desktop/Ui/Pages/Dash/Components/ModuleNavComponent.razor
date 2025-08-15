@@ -2,11 +2,11 @@
 
 @if (LoadedModule.Module.RootComponent is not null)
 {
-    <MudNavLink Icon="@LoadedModule.Module.IconPath" Href="@("/dash/module/" + LoadedModule.Id)">@LoadedModule.Name</MudNavLink>
+    <ModuleNavLink Icon="LoadedModule.Module.Icon" Href="@("/dash/module/" + LoadedModule.Id)">@LoadedModule.Name</ModuleNavLink>
 }
 else
 {
-    <ModuleNavGroup IconImage="@LoadedModule.Module.IconPath" Title="@LoadedModule.Name">
+    <ModuleNavGroup Icon="@LoadedModule.Module.Icon" Title="@LoadedModule.Name">
         @foreach (var subComponent in LoadedModule.Module.NavigationComponents)
         {
             <ModuleNavLink Icon="@subComponent.Icon" Href="@("/dash/module/" + LoadedModule.Id + "/" + subComponent.Name)">@(subComponent.Name)</ModuleNavLink>

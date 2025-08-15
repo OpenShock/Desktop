@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using MudBlazor.State;
 using MudBlazor.Utilities;
+using OpenShock.Desktop.ModuleBase;
 
 namespace OpenShock.Desktop.Ui.Pages.Dash.Components;
 
@@ -71,7 +72,7 @@ namespace OpenShock.Desktop.Ui.Pages.Dash.Components;
         /// </remarks>
         [Parameter]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public string? IconImage { get; set; }
+        public IconOneOf? Icon { get; set; }
         
         /// <summary>
         /// The CSS classes applied to this nav group title.

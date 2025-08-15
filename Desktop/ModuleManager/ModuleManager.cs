@@ -223,6 +223,13 @@ public sealed class ModuleManager : IAsyncDisposable
         
         var module = (DesktopModuleBase?)ActivatorUtilities.CreateInstance(_serviceProvider, moduleAttribute.ModuleType);
         if (module is null) throw new Exception("Failed to instantiate module!");
+
+#pragma warning disable CS0618
+        if (module.IconPath is not null)
+        {
+            module.Icon = IconOneOf.FromPath(module.IconPath);
+        }
+#pragma warning restore CS0618
         
         var loadedModule = new LoadedModule
         {

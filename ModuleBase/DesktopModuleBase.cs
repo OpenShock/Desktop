@@ -12,7 +12,13 @@ public abstract class DesktopModuleBase
     /// <summary>
     /// Icon path for the module, used in navigation and other UI components.
     /// </summary>
+    [Obsolete("Use Icon property instead. This property will be removed in a future version.")]
     public virtual string? IconPath { get; } = null;
+    
+    /// <summary>
+    /// Main icon for the module, used in navigation and other UI components.
+    /// </summary>
+    public virtual IconOneOf? Icon { get; set; } = null;
     
     /// <summary>
     /// Main interface for modules to interact with OpenShock Desktop.
