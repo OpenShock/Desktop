@@ -1,5 +1,6 @@
 ﻿@using System.Collections.Immutable
 @using OpenShock.Desktop.Config
+@using OpenShock.Desktop.ModuleBase
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Utils
@@ -10,7 +11,15 @@
 @inject ISnackbar Snackbar
 
 <MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10" Outlined="true">
-    <img src="@_moduleIcon" alt="@_moduleName" class="icon rounded-lg"/>
+    @switch (_moduleIcon?.Index)
+    {
+        case 0:
+            <img src="@_moduleIcon.AsT0" alt="Module Icon" class="icon rounded-lg"/>
+            break;
+        case 1:
+            <MudIcon Icon="@_moduleIcon.AsT1"/>
+            break;
+    }
 
     <div class="d-flex flex-column justify-space-evenly overflow-hidden">
         <MudText Typo="Typo.h4">@_moduleName</MudText>
@@ -112,7 +121,7 @@
     [Parameter] public required string ModuleId { get; init; }
 
     private string _moduleName = null!;
-    private string? _moduleIcon;
+    private IconOneOf? _moduleIcon;
 
     private SemVersion? LatestVersion => RepoModule?.Versions.Keys.Where(x => x.IsRelease).OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
     private SemVersion? LatestPreReleaseVersion => RepoModule?.Versions.Keys.Where(x => !x.IsRelease).OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
@@ -127,7 +136,13 @@
         }
 
         _moduleName = RepoModule?.Name ?? (LoadedModule?.Name ?? "error");
-        _moduleIcon = RepoModule?.IconUrl?.ToString() ?? LoadedModule?.Module.IconPath;
+        if (RepoModule?.IconUrl is not null)
+        {
+            _moduleIcon = IconOneOf.FromPath(RepoModule.IconUrl.ToString());
+        }
+        {
+            _moduleIcon = LoadedModule?.Module.Icon;
+        }
         _availableVersions = GetAvailableVersions();
     }
 

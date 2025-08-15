@@ -48,7 +48,7 @@ public sealed class ModuleFileProvider : IFileProvider, IDisposable
     {
         if (_moduleManager != null)
         {
-            _modulesLoadedSubscription.Dispose();
+            _modulesLoadedSubscription?.Dispose();
         }
         
         _moduleManager = moduleManager;
@@ -306,13 +306,13 @@ public sealed class ModuleFileProvider : IFileProvider, IDisposable
     #endregion
 
     private bool _disposed;
-    private IDisposable _modulesLoadedSubscription;
+    private IDisposable? _modulesLoadedSubscription;
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
         
-        _modulesLoadedSubscription.Dispose();
+        _modulesLoadedSubscription?.Dispose();
     }
 }

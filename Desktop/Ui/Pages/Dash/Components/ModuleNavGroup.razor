@@ -11,16 +11,21 @@
             aria-controls="@_navigationContext.MenuId"
             aria-expanded="@_navigationContext.Expanded.ToString().ToLowerInvariant()"
             aria-label="Toggle Module Navigation">
-        @if (!string.IsNullOrEmpty(IconImage))
+        @switch (Icon?.Index)
         {
-            <img src="@IconImage" alt="Module Icon" style="width: 24px; height: 24px">
+            case 0:
+                <img src="@Icon.AsT0" alt="Module Icon" style="width: 24px; height: 24px">
+                break;
+            case 1:
+                <MudIcon Icon="@Icon.AsT1"/>
+                break;
         }
         <div Class="mud-nav-link-text">
             @Title
         </div>
         @if (!HideExpandIcon)
         {
-            <MudIcon Disabled="@Disabled" Icon="@ExpandIcon" Class="@ExpandIconClassname" />
+            <MudIcon Disabled="@Disabled" Icon="@ExpandIcon" Class="@ExpandIconClassname"/>
         }
     </button>
     <MudCollapse aria-hidden="@((_navigationContext.Expanded is false).ToString().ToLowerInvariant())"

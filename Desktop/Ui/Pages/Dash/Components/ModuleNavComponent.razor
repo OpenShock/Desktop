@@ -1,11 +1,18 @@
 ﻿@using OpenShock.Desktop.ModuleManager
 
-<ModuleNavGroup IconImage="@LoadedModule.Module.IconPath" Title="@LoadedModule.Name">
-    @foreach (var subComponent in LoadedModule.Module.NavigationComponents)
-    {
-        <ModuleNavLink Icon="@subComponent.Icon" Href="@("/dash/module/" + LoadedModule.Id + "/" + subComponent.Name)">@(subComponent.Name)</ModuleNavLink>
-    }
-</ModuleNavGroup>
+@if (LoadedModule.Module.RootComponent is not null)
+{
+    <ModuleNavLink Icon="LoadedModule.Module.Icon" Href="@("/dash/module/" + LoadedModule.Id)">@LoadedModule.Name</ModuleNavLink>
+}
+else
+{
+    <ModuleNavGroup Icon="@LoadedModule.Module.Icon" Title="@LoadedModule.Name">
+        @foreach (var subComponent in LoadedModule.Module.NavigationComponents)
+        {
+            <ModuleNavLink Icon="@subComponent.Icon" Href="@("/dash/module/" + LoadedModule.Id + "/" + subComponent.Name)">@(subComponent.Name)</ModuleNavLink>
+        }
+    </ModuleNavGroup>
+}
 
 
 @code {
