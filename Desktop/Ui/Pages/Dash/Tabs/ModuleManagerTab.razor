@@ -47,7 +47,7 @@
             </ChildContent>
         </MudExpansionPanel>
     }
-    <MudExpansionPanel>
+    <MudExpansionPanel @bind-Expanded="OpenAvailableModules">
         <TitleContent>
             Available
             <MudChip T="int">@_installableModules.Count</MudChip>
@@ -65,6 +65,10 @@
 
 @code {
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public bool OpenAvailableModules { get; set; } = false;
+    
     private ImmutableDictionary<string, LoadedModule> _unknownModules = null!;
     private ImmutableDictionary<string, Module> _installableModules = null!;
     private ImmutableDictionary<string, LoadedModule> _installedModules = null!;

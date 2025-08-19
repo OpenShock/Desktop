@@ -15,9 +15,23 @@
 @inject OpenShockHubClient ApiHubClient
 @inject ISnackbar Snackbar
 @inject ConfigManager ConfigManager
+@inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 
 @page "/dash/dashboard"
+
+@* ShockOSC download notice (dismissible) *@
+@if (!ConfigManager.Config.App.ShockOscNoticeDismissed)
+{
+    <div style="padding-bottom: 20px;">
+        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Elevation="0" ShowCloseIcon="true" CloseIconClicked="DismissShockOscNotice" Class="alert-center-icon">
+            <div class="d-flex" style="align-items: center; gap: 12px; flex-wrap: wrap;">
+                <MudText Typo="Typo.body2">New here? For VRChat integration download and install ShockOSC.</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Download" OnClick="GoToModuleManager">Go to Moudle Manager</MudButton>
+            </div>
+        </MudAlert>
+    </div>
+}
 
 <div class="dashboard-box">
     <MudPaper Outlined="true" Elevation="1" Class="rounded-lg mud-paper-padding item" Style="text-align: center">
@@ -108,6 +122,7 @@
 
     private void OpenOpenShock() => UiUtils.OpenUrl("https://openshock.org", Snackbar);
     private void OpenGithub() => UiUtils.OpenUrl("https://github.com/OpenShock/Desktop", Snackbar);
+    private void GoToModuleManager() => NavigationManager.NavigateTo("/dash/modules?OpenAvailableModules=true");
     private IAsyncDisposable _statusSubscription = null!;
     
     protected override async Task OnInitializedAsync()
@@ -125,6 +140,13 @@
             HubConnectionState.Disconnected => Color.Error,
             _ => Color.Error
         };
+    
+    private async Task DismissShockOscNotice()
+    {
+        ConfigManager.Config.App.ShockOscNoticeDismissed = true;
+        ConfigManager.Save();
+        await InvokeAsync(StateHasChanged);
+    }
     
     private bool _disposed = false;
     

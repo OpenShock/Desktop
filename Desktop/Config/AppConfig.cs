@@ -13,6 +13,8 @@ public sealed class AppConfig
     public SemVersion? LastIgnoredVersion { get; set; } = null;
     
     public Theme Theme { get; set; } = Theme.Dark;
+    
+    public bool ShockOscNoticeDismissed { get; set; } = false;
 }
 
 public enum UpdateChannel
