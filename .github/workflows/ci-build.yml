@@ -34,6 +34,7 @@ jobs:
 
   build-windows-maui:
     runs-on: windows-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -69,6 +70,7 @@ jobs:
   installer-windows-maui:
     runs-on: windows-latest
     needs: build-windows-maui
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -101,6 +103,7 @@ jobs:
 
   build-linux-web-containers:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -149,6 +152,7 @@ jobs:
                     
   build-linux-photino:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
