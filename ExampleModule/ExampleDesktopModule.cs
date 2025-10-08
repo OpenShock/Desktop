@@ -12,7 +12,7 @@ namespace OpenShock.Desktop.Modules.ExampleModule;
 
 public class ExampleDesktopModule : DesktopModuleBase
 {
-    public override string IconPath => "OpenShock/Desktop/Modules/ExampleModule/Icon.svg";
+    public override IconOneOf? Icon { get; set; } = IconOneOf.FromPath("OpenShock/Desktop/Modules/ExampleModule/Icon.svg");
 
     public ExampleDesktopModule()
     {
