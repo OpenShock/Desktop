@@ -4,6 +4,8 @@
 
 <h1><b>OpenShock Desktop</b></h1>
 
+[![Download Installer](https://custom-icon-badges.demolab.com/badge/-Download-e14a6d?style=for-the-badge&logo=download&logoColor=white "Download Installer")](https://github.com/OpenShock/Desktop/releases/latest/download/OpenShock_Desktop_Setup.exe)
+
 [![Release Version](https://img.shields.io/github/v/release/OpenShock/Desktop?style=for-the-badge&color=e14a6d)](https://github.com/OpenShock/Desktop/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/OpenShock/Desktop/total?style=for-the-badge&color=e14a6d)](https://github.com/OpenShock/Desktop/releases/latest)
 [![Discord](https://img.shields.io/discord/1078124408775901204?style=for-the-badge&color=e14a6d&label=OpenShock%20Discord&logo=discord)](https://openshock.net/discord)
