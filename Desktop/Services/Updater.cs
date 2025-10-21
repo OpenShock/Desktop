@@ -269,7 +269,11 @@ public sealed class Updater
 
         await using (var stream = await download.Content.ReadAsStreamAsync())
         {
-            await using var fStream = new FileStream(_setupFilePath, FileMode.OpenOrCreate);
+            await using var fStream = new FileStream(
+                _setupFilePath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None);
             var relativeProgress = new Progress<long>(downloadedBytes =>
                 DownloadProgress.Value = ((double)downloadedBytes / totalBytes) * 100);
             
