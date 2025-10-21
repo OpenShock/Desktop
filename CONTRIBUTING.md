@@ -1,0 +1,1 @@
+Document can be found at https://wiki.openshock.org/dev/contributing/
