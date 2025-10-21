@@ -85,7 +85,9 @@ jobs:
           name: OpenShock Desktop Windows MAUI
           path: publish/
 
-
+      - name: Install NSIS
+        run: choco install nsis -y
+        
       - name: Create nsis installer
         uses: joncloud/makensis-action@publish
         with:
