@@ -100,7 +100,7 @@ public sealed class ModuleManager : IAsyncDisposable
             {
                 _logger.LogInformation("Removing module {ModuleId}", moduleTask.Key);
                 RemoveModule(moduleTask.Key);
-                return Task.FromResult(Task.CompletedTask);
+                return Task.CompletedTask;
             });
     }
 
