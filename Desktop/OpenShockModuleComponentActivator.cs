@@ -55,7 +55,7 @@ public class OpenShockModuleComponentActivator : IComponentActivator
                 _logger.LogWarning(
                     "Property {PropertyName} on component {ComponentType} has already been set, skipping injection",
                     prop.Name, componentType.Name);
-                return;
+                continue;
             }
 
             var service = module.Module.ModuleServiceProvider.GetService(prop.PropertyType);
