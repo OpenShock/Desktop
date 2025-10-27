@@ -60,7 +60,7 @@ jobs:
         run: dotnet publish Desktop/Desktop.csproj -c Release-Windows -o ./publish/Windows-Maui
 
       - name: Upload OpenShock Desktop Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: OpenShock Desktop Windows MAUI
           path: publish/Windows-Maui/*
@@ -95,7 +95,7 @@ jobs:
           additional-plugin-paths: ${{ github.workspace }}/Installer/Plugins
           
       - name: Upload OpenShock Desktop Windows Setup
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: OpenShock_Desktop_Setup
           path: Installer/OpenShock_Desktop_Setup.exe
@@ -177,7 +177,7 @@ jobs:
         run: dotnet publish Desktop/Desktop.csproj -c Release-Photino -o ./publish/Photino-Linux
 
       - name: Upload OpenShock Desktop Photino Linux artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: OpenShock Desktop Photino Linux
           path: publish/Photino-Linux/*
