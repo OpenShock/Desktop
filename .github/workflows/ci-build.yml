@@ -80,7 +80,7 @@ jobs:
             Installer
 
       - name: Download artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: OpenShock Desktop Windows MAUI
           path: publish/
