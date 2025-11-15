@@ -45,9 +45,14 @@ public sealed class PipeServerService
         _logger.LogInformation("[{Id}] Pipe connected!", id);
 
         using var reader = new StreamReader(pipeServerStream);
-        while (pipeServerStream.IsConnected && !reader.EndOfStream)
+        while (pipeServerStream.IsConnected)
         {
             var line = await reader.ReadLineAsync();
+            if (line is null)
+            {
+                _logger.LogInformation("[{Id}] Pipe receive end of stream!", id);
+                break;
+            }
             if (string.IsNullOrEmpty(line))
             {
                 _logger.LogWarning("[{Id}] Received empty pipe message. Skipping...", id);

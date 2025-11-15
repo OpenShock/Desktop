@@ -1,28 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
-    <Import Project="../Shared.props" />
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <Configurations>Debug;Release</Configurations>
-        <AssemblyName>OpenShock.Desktop.ModuleBase</AssemblyName>
-        <RootNamespace>OpenShock.Desktop.ModuleBase</RootNamespace>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Title>OpenShock ModuleBase</Title>
-        <PackageIcon>Icon512.png</PackageIcon>
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <Description>OpenShock Desktop Module Framework Base. Install to make a module for OpenShock Desktop</Description>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <InternalsVisibleTo Include="OpenShock.Desktop" />
-        <None Include=".\README.md" Pack="true" PackagePath="\"/>
-        <None Include="..\Desktop\wwwroot\images\Icon512.png" Pack="true" PackagePath="$(PackageIcon)" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="OpenShock.MinimalEvents" Version="0.0.1" />
-      <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="9.0.9" />
-    </ItemGroup>
-
+  <Import Project="../Shared.props" />
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Configurations>Debug;Release</Configurations>
+    <AssemblyName>OpenShock.Desktop.ModuleBase</AssemblyName>
+    <RootNamespace>OpenShock.Desktop.ModuleBase</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Title>OpenShock ModuleBase</Title>
+    <PackageIcon>Icon512.png</PackageIcon>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Description>OpenShock Desktop Module Framework Base. Install to make a module for OpenShock Desktop</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="OpenShock.Desktop" />
+    <None Include=".\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\Desktop\wwwroot\images\Icon512.png" Pack="true" PackagePath="$(PackageIcon)" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenShock.MinimalEvents" Version="0.0.1" />
+    <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
+  </ItemGroup>
 </Project>

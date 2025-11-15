@@ -88,7 +88,7 @@ public static class MauiProgram
 
                         if (page == null) return;
 
-                        var result = await page.DisplayAlert(
+                        var result = await page.DisplayAlertAsync(
                             "Close?",
                             "Do you want to close OpenShock?",
                             "Yes",
