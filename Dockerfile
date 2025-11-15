@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:9.0-bookworm-slim AS build
+﻿FROM mcr.microsoft.com/dotnet/sdk:10.0-bookworm-slim AS build
 WORKDIR /src
 COPY --link Desktop/*.csproj Desktop/
 COPY --link ModuleBase/*.csproj ModuleBase/
