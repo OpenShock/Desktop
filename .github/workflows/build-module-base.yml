@@ -42,7 +42,7 @@ jobs:
         run: dotnet build ModuleBase/ModuleBase.csproj -c Release -o ./publish/ModuleBase
 
       - name: Upload OpenShock Desktop Module Base artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: OpenShock Desktop Module Base
           path: ./publish/ModuleBase/**
