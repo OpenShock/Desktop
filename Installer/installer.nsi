@@ -29,6 +29,7 @@
 ;General
 
     Unicode True
+    RequestExecutionLevel user
     Name "OpenShock Desktop"
     OutFile "OpenShock_Desktop_Setup.exe"
     InstallDir "$LocalAppdata\OpenShock\Desktop"
