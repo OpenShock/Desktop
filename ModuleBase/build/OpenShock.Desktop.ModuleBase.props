@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <OpenShockPackModule Condition="'$(OpenShockPackModule)' == ''">true</OpenShockPackModule>
+    <!-- OpenShockModuleOutputDir defaults to PublishDir; set in target if not overridden -->
+    <OpenShockModuleId Condition="'$(OpenShockModuleId)' == ''">$(AssemblyName)</OpenShockModuleId>
+  </PropertyGroup>
+</Project>

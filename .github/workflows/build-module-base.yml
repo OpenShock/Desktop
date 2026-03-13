@@ -17,6 +17,17 @@ env:
 
 jobs:
 
+  check-host-deps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check host dependency list is in sync
+        run: bash scripts/sync-host-deps.sh
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
