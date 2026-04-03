@@ -91,6 +91,11 @@
        Use this when a module needs a different version of a host-provided package.
        Example: <OpenShockBundleOverride Include="Newtonsoft.Json" /> -->
 
+  <!-- Modules can include extra directories from the publish output.
+       Each item specifies a directory name relative to the publish dir.
+       The directory and its contents will be placed under libs/{DirName}/ in the ZIP.
+       Example: <OpenShockExtraDir Include="x64" /> -->
+
   <UsingTask TaskName="PackOpenShockModuleTask"
              TaskFactory="RoslynCodeTaskFactory"
              AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
@@ -101,6 +106,7 @@
       <OutputDir Required="true" ParameterType="System.String" />
       <HostAssemblies Required="true" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
       <BundleOverrides Required="false" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
+      <ExtraDirs Required="false" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
       <DepsJsonPath Required="false" ParameterType="System.String" />
     </ParameterGroup>
     <Task>
@@ -238,6 +244,28 @@ if (Directory.Exists(runtimesDir))
     }
 }
 
+// Collect extra native directories specified by the module
+if (ExtraDirs != null)
+{
+    foreach (var item in ExtraDirs)
+    {
+        var dirName = item.ItemSpec;
+        var dirPath = Path.Combine(publishDir, dirName);
+        if (Directory.Exists(dirPath))
+        {
+            foreach (var file in Directory.GetFiles(dirPath, "*", SearchOption.AllDirectories))
+            {
+                var relativePath = file.Substring(dirPath.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                nativeFiles.Add((Path.Combine(dirName, Path.GetDirectoryName(relativePath) ?? "").TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), file));
+            }
+        }
+        else
+        {
+            Log.LogWarning("Extra directory '{0}' not found in publish output", dirPath);
+        }
+    }
+}
+
 // Create staging directory
 var moduleIdLower = ModuleId.ToLowerInvariant();
 var stagingBase = Path.Combine(publishDir, "_module_staging");
@@ -319,6 +347,7 @@ Log.LogMessage(Microsoft.Build.Framework.MessageImportance.Normal,
       OutputDir="$(OpenShockModuleOutputDir)"
       HostAssemblies="@(OpenShockHostAssembly)"
       BundleOverrides="@(OpenShockBundleOverride)"
+      ExtraDirs="@(OpenShockExtraDir)"
       DepsJsonPath="$(PublishDir)$(AssemblyName).deps.json" />
   </Target>
 
