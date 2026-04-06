@@ -4,8 +4,9 @@
 # against the full (direct + transitive) dependency tree of the host app.
 #
 # Uses a temporary project with the same PackageReferences as Desktop.csproj and
-# Shared.props, then runs `dotnet list package --include-transitive` to resolve
-# the complete dependency graph.
+# ModuleBase.csproj (with versions resolved from Directory.Packages.props), then
+# runs `dotnet list package --include-transitive` to resolve the complete
+# dependency graph.
 #
 # Usage:
 #   ./scripts/sync-host-deps.sh          # Check only (CI mode, exits 1 if out of sync)
@@ -22,11 +23,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 DESKTOP_CSPROJ="$REPO_ROOT/Desktop/Desktop.csproj"
-SHARED_PROPS="$REPO_ROOT/Shared.props"
+BUILD_PROPS="$REPO_ROOT/Directory.Build.props"
+PACKAGES_PROPS="$REPO_ROOT/Directory.Packages.props"
 TARGETS_FILE="$REPO_ROOT/ModuleBase/build/OpenShock.Desktop.ModuleBase.targets"
 MODULEBASE_CSPROJ="$REPO_ROOT/ModuleBase/ModuleBase.csproj"
 
-for f in "$DESKTOP_CSPROJ" "$SHARED_PROPS" "$TARGETS_FILE" "$MODULEBASE_CSPROJ"; do
+for f in "$DESKTOP_CSPROJ" "$BUILD_PROPS" "$PACKAGES_PROPS" "$TARGETS_FILE" "$MODULEBASE_CSPROJ"; do
   if [[ ! -f "$f" ]]; then
     echo "ERROR: File not found: $f" >&2
     exit 1
@@ -34,8 +36,11 @@ for f in "$DESKTOP_CSPROJ" "$SHARED_PROPS" "$TARGETS_FILE" "$MODULEBASE_CSPROJ";
 done
 
 # Packages that don't produce runtime assemblies (build tools, analyzers, etc.)
+# or that are managed manually in the targets file (e.g. ModuleBase, which is
+# always host-provided regardless of version).
 SKIP_PACKAGES=(
   "AspNetCore.SassCompiler"
+  "OpenShock.Desktop.ModuleBase"
 )
 
 is_skipped() {
@@ -50,11 +55,19 @@ is_skipped() {
   return 1
 }
 
-# Extract PackageReference Include="name" Version="ver" and Update="name" Version="ver"
-extract_package_refs() {
+# Build the central version map from Directory.Packages.props
+declare -A PACKAGE_VERSIONS
+while IFS='=' read -r name version; do
+  [[ -z "$name" ]] && continue
+  PACKAGE_VERSIONS["$name"]="$version"
+done < <(grep -Eo 'PackageVersion\s+Include="[^"]+"\s+Version="[^"]+"' "$PACKAGES_PROPS" 2>/dev/null | \
+         sed -E 's/PackageVersion\s+Include="([^"]+)"\s+Version="([^"]+)"/\1=\2/' || true)
+
+# Extract PackageReference Include="name" (no Version, since CPM) from a project file
+extract_package_ref_names() {
   local file="$1"
-  grep -Eo 'PackageReference\s+(Include|Update)="[^"]+"\s+Version="[^"]+"' "$file" 2>/dev/null | \
-    sed -E 's/PackageReference\s+(Include|Update)="([^"]+)"\s+Version="([^"]+)"/\2=\3/' || true
+  grep -Eo 'PackageReference\s+(Include|Update)="[^"]+"' "$file" 2>/dev/null | \
+    sed -E 's/PackageReference\s+(Include|Update)="([^"]+)"/\2/' || true
 }
 
 # Extract OpenShockHostAssembly Include="name" Version="ver"
@@ -63,28 +76,26 @@ extract_host_assemblies() {
     sed -E 's/OpenShockHostAssembly\s+Include="([^"]+)"\s+Version="([^"]+)"/\1=\2/' || true
 }
 
-# Get version from Shared.props
-get_shared_version() {
-  grep -Eo '<Version>[^<]+' "$SHARED_PROPS" | head -1 | sed 's/<Version>//'
-}
-
-# Collect direct PackageReferences from Desktop.csproj and Shared.props
+# Collect direct PackageReferences from Desktop.csproj and ModuleBase.csproj,
+# resolving versions from Directory.Packages.props.
 declare -A DIRECT_REFS
 
-while IFS='=' read -r name version; do
-  [[ -z "$name" ]] && continue
-  DIRECT_REFS["$name"]="$version"
-done < <(extract_package_refs "$SHARED_PROPS")
+collect_refs() {
+  local file="$1"
+  local name
+  while read -r name; do
+    [[ -z "$name" ]] && continue
+    local version="${PACKAGE_VERSIONS[$name]:-}"
+    if [[ -z "$version" ]]; then
+      echo "WARNING: No PackageVersion for '$name' in Directory.Packages.props" >&2
+      continue
+    fi
+    DIRECT_REFS["$name"]="$version"
+  done < <(extract_package_ref_names "$file")
+}
 
-while IFS='=' read -r name version; do
-  [[ -z "$name" ]] && continue
-  DIRECT_REFS["$name"]="$version"
-done < <(extract_package_refs "$DESKTOP_CSPROJ")
-
-while IFS='=' read -r name version; do
-  [[ -z "$name" ]] && continue
-  DIRECT_REFS["$name"]="$version"
-done < <(extract_package_refs "$MODULEBASE_CSPROJ")
+collect_refs "$DESKTOP_CSPROJ"
+collect_refs "$MODULEBASE_CSPROJ"
 
 # Create a temporary project to resolve transitive dependencies.
 # We can't run `dotnet list` on Desktop.csproj directly because it may
@@ -109,6 +120,7 @@ cat > "$TMPDIR/HostDeps.csproj" <<CSPROJ
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
 $PKG_REFS  </ItemGroup>
@@ -129,10 +141,6 @@ LIST_OUTPUT=$(dotnet list "$TMPDIR/HostDeps.csproj" package --include-transitive
 
 # Parse the JSON output to build the full dependency map
 declare -A HOST_DEPS
-
-# Add ModuleBase itself
-MODULEBASE_VERSION="$(get_shared_version)"
-HOST_DEPS["OpenShock.Desktop.ModuleBase"]="$MODULEBASE_VERSION"
 
 # Add platform-specific packages we skipped (they're still host-provided)
 for name in "${!DIRECT_REFS[@]}"; do

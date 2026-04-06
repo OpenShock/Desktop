@@ -2,8 +2,8 @@
 
   <!-- Host-provided assemblies that modules should NOT bundle -->
   <ItemGroup>
-    <!-- ModuleBase itself -->
-    <OpenShockHostAssembly Include="OpenShock.Desktop.ModuleBase" Version="1.1.2" />
+    <!-- ModuleBase itself — always host-provided, version intentionally omitted -->
+    <OpenShockHostAssembly Include="OpenShock.Desktop.ModuleBase" />
     <OpenShockHostAssembly Include="OpenShock.MinimalEvents" Version="0.0.1" />
 
     <!-- UI framework -->
