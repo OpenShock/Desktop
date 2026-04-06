@@ -55,8 +55,8 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          # Read base version from Shared.props
-          BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' Shared.props)
+          # Read base version from Directory.Build.props
+          BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
 
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             # Tagged release: use tag as version
