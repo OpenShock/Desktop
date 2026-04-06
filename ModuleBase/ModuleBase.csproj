@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="../Shared.props" />
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Configurations>Debug;Release</Configurations>
@@ -20,7 +19,8 @@
     <None Include="buildTransitive\**" Pack="true" PackagePath="buildTransitive\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="OpenShock.MinimalEvents" Version="0.0.1" />
-    <PackageReference Update="Microsoft.AspNetCore.Components.Web" Version="10.0.5" />
+    <PackageReference Include="OneOf" />
+    <PackageReference Include="OpenShock.MinimalEvents" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
   </ItemGroup>
 </Project>

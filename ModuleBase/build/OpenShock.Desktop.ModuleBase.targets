@@ -7,7 +7,7 @@
     <OpenShockHostAssembly Include="OpenShock.MinimalEvents" Version="0.0.1" />
 
     <!-- UI framework -->
-    <OpenShockHostAssembly Include="MudBlazor" Version="8.15.0" />
+    <OpenShockHostAssembly Include="MudBlazor" Version="9.2.0" />
 
     <!-- OpenShock SDKs -->
     <OpenShockHostAssembly Include="OpenShock.SDK.CSharp" Version="0.0.40" />
@@ -37,9 +37,9 @@
     <OpenShockHostAssembly Include="CommandLineParser" Version="2.9.1" />
     <OpenShockHostAssembly Include="dnlib" Version="4.5.0" />
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.Web" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.50" />
-    <OpenShockHostAssembly Include="Microsoft.Maui.Controls" Version="10.0.50" />
-    <OpenShockHostAssembly Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.50" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.51" />
+    <OpenShockHostAssembly Include="Microsoft.Maui.Controls" Version="10.0.51" />
+    <OpenShockHostAssembly Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.51" />
     <OpenShockHostAssembly Include="Photino.Blazor" Version="4.0.13" />
     <OpenShockHostAssembly Include="LucHeart.WebsocketLibrary" Version="1.1.0" />
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.Authorization" Version="10.0.5" />
@@ -70,8 +70,8 @@
     <OpenShockHostAssembly Include="Microsoft.Extensions.FileProviders.Physical" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Localization" Version="9.0.1" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Localization.Abstractions" Version="9.0.1" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Localization" Version="10.0.1" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Localization.Abstractions" Version="10.0.1" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Logging" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.5" />
