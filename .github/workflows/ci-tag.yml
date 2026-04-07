@@ -53,3 +53,50 @@ jobs:
       platforms: linux/amd64,linux/arm64
       latest: ${{ needs.get-latest-tag.outputs.latest-tag == github.ref_name }}
       rc: ${{ needs.get-latest-rc-tag.outputs.latest-rc == github.ref_name }}
+
+  # Build module base for release assets
+  build-module-base:
+    uses: ./.github/workflows/build-module-base.yml
+
+  # Create a draft GitHub release for stable tags
+  release:
+    needs: [build, build-module-base]
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref_name, '-rc.') }}
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows installer
+        uses: actions/download-artifact@v8
+        with:
+          name: OpenShock_Desktop_Setup
+          path: artifacts/
+
+      - name: Download Linux Photino
+        uses: actions/download-artifact@v8
+        with:
+          name: OpenShock Desktop Photino Linux
+          path: artifacts/photino-linux/
+
+      - name: Download Module Base
+        uses: actions/download-artifact@v8
+        with:
+          name: OpenShock Desktop Module Base
+          path: artifacts/module-base/
+
+      - name: Package release assets
+        run: |
+          cd artifacts/photino-linux && zip -r ../OpenShock.Desktop.Photino.Linux.zip . && cd ../..
+          cd artifacts/module-base && zip -r ../OpenShock.Desktop.Module.Base.zip . && cd ../..
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
+          files: |
+            artifacts/OpenShock_Desktop_Setup.exe
+            artifacts/OpenShock.Desktop.Photino.Linux.zip
+            artifacts/OpenShock.Desktop.Module.Base.zip
