@@ -1,5 +1,6 @@
 ﻿FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
 WORKDIR /src
+COPY --link *.props *.props ./
 COPY --link Desktop/*.csproj Desktop/
 COPY --link ModuleBase/*.csproj ModuleBase/
 

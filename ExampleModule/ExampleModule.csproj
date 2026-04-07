@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
+    <!-- Import module packaging targets (provided automatically via NuGet, manual import needed for ProjectReference) -->
+    <Import Project="../ModuleBase/build/OpenShock.Desktop.ModuleBase.props" />
+
     <PropertyGroup>
+        <OpenShockModuleId>openshock.desktop.modules.examplemodule</OpenShockModuleId>
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -21,8 +25,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="MudBlazor" Version="8.15.0" />
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+      <PackageReference Include="MudBlazor" />
+      <PackageReference Include="OneOf" />
+      <PackageReference Include="Newtonsoft.Json" />
     </ItemGroup>
-    
+
+    <!-- Import module packaging targets (provided automatically via NuGet, manual import needed for ProjectReference) -->
+    <Import Project="../ModuleBase/build/OpenShock.Desktop.ModuleBase.targets" />
+
 </Project>
