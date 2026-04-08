@@ -7,20 +7,19 @@
 @inject RepositoryManager RepositoryManager
 @inject ModuleManager ModuleManager
 
-<MudButton OnClick="OpenAppdataFolder"
-           Variant="Variant.Filled"
-           StartIcon="@Icons.Material.Filled.FolderOpen"
-           Color="Color.Primary"
-           Class="mb-2">Open AppData
-</MudButton>
+<MudStack Spacing="3" Class="pa-4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h5">Modules</MudText>
 
-<MudExpansionPanels MultiExpansion="true">
-    <MudExpansionPanel Expanded="true">
-        <TitleContent>
-            Installed
-            <MudChip T="int">@_installedModules.Count</MudChip>
-        </TitleContent>
-        <ChildContent>
+        <MudButton OnClick="OpenAppdataFolder"
+                   Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.FolderOpen"
+                   Color="Color.Primary"
+                   Class="mb-2">Open AppData
+        </MudButton>
+    </MudStack>
+    <MudTabs @ref="_tabs">
+        <MudTabPanel Text="Installed" Icon="@Icons.Material.Filled.CheckCircle" BadgeData="@_installedModules.Count">
             <div class="d-flex gap-3 flex-wrap">
                 @foreach (var module in _installedModules)
                 {
@@ -28,47 +27,37 @@
                                        LoadedModule="@module.Value"/>
                 }
             </div>
-        </ChildContent>
-    </MudExpansionPanel>
-    @if (_unknownModules.Count > 0)
-    {
-        <MudExpansionPanel>
-            <TitleContent>
-                Unknown Loaded
-                <MudChip T="int">@_unknownModules.Count</MudChip>
-            </TitleContent>
-            <ChildContent>
-                <div class="d-flex gap-3 flex-wrap">
-                    @foreach (var module in _unknownModules)
-                    {
-                        <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
-                    }
-                </div>
-            </ChildContent>
-        </MudExpansionPanel>
-    }
-    <MudExpansionPanel @bind-Expanded="OpenAvailableModules">
-        <TitleContent>
-            Available
-            <MudChip T="int">@_installableModules.Count</MudChip>
-        </TitleContent>
-        <ChildContent>
+        </MudTabPanel>
+
+
+        <MudTabPanel Text="Unknown Source" Icon="@Icons.Material.Filled.QuestionMark"
+                     BadgeData="@_unknownModules.Count" Visible="_unknownModules.Count > 0">
+            <div class="d-flex gap-3 flex-wrap">
+                @foreach (var module in _unknownModules)
+                {
+                    <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
+                }
+            </div>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Available" Icon="@Icons.Material.Filled.Apps" BadgeData="@_installableModules.Count" @ref="_appsTab">
             <div class="d-flex gap-3 flex-wrap">
                 @foreach (var module in _installableModules)
                 {
                     <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
                 }
             </div>
-        </ChildContent>
-    </MudExpansionPanel>
-</MudExpansionPanels>
+        </MudTabPanel>
+    </MudTabs>
+</MudStack>
 
 @code {
 
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public bool OpenAvailableModules { get; set; } = false;
+    [Parameter] [SupplyParameterFromQuery] public bool OpenAvailableModules { get; set; } = false;
     
+    private MudTabs _tabs = null!;
+    private MudTabPanel _appsTab = null!;
+
     private ImmutableDictionary<string, LoadedModule> _unknownModules = null!;
     private ImmutableDictionary<string, Module> _installableModules = null!;
     private ImmutableDictionary<string, LoadedModule> _installedModules = null!;
@@ -76,6 +65,14 @@
     protected override void OnInitialized()
     {
         PopulateModuleLists();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) 
+    {
+        if (firstRender && OpenAvailableModules)
+        {
+            await _tabs.ActivatePanelAsync(_appsTab);
+        }
     }
 
     private void PopulateModuleLists()
