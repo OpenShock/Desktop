@@ -1,6 +1,5 @@
 ﻿#if MAUI
 using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Components;
 using Microsoft.Maui.LifecycleEvents;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Services.Pipes;

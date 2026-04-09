@@ -3,3 +3,51 @@
     align-self: center;
   }
 }
+
+// --- MudBlazor overrides / helpers ---
+
+.option-width {
+  display: inline-flex !important;
+  padding: 0 10px 0 0 !important;
+}
+
+.option-checkbox-height {
+  padding-top: 10px !important;
+}
+
+.mud-paper-padding-margin {
+  padding: 10px 15px;
+  margin: 20px 0;
+}
+
+.mud-paper-padding {
+  padding: 10px 15px;
+}
+
+.openshock-slider-length {
+  width: 300px !important;
+  margin-left: 30px;
+}
+
+.table-header-small {
+  th {
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+
+// --- Generic flex helpers ---
+
+.row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 100%;
+  flex: 1;
+}
