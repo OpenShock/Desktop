@@ -7,7 +7,7 @@
 @inject RepositoryManager RepositoryManager
 @inject ModuleManager ModuleManager
 
-<MudStack Spacing="3" Class="pa-4">
+<MudStack Spacing="3" Class="pa-4 h-full">
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
         <MudText Typo="Typo.h5">Modules</MudText>
 
@@ -18,43 +18,70 @@
                    Class="mb-2">Open AppData
         </MudButton>
     </MudStack>
-    <MudTabs @ref="_tabs">
-        <MudTabPanel Text="Installed" Icon="@Icons.Material.Filled.CheckCircle" BadgeData="@_installedModules.Count">
-            <div class="d-flex gap-3 flex-wrap">
-                @foreach (var module in _installedModules)
-                {
-                    <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
-                                       LoadedModule="@module.Value"/>
-                }
-            </div>
-        </MudTabPanel>
 
 
-        <MudTabPanel Text="Unknown Source" Icon="@Icons.Material.Filled.QuestionMark"
-                     BadgeData="@_unknownModules.Count" Visible="_unknownModules.Count > 0">
-            <div class="d-flex gap-3 flex-wrap">
-                @foreach (var module in _unknownModules)
-                {
-                    <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
-                }
-            </div>
-        </MudTabPanel>
+    <MudCard Class="module-manager-tabs-paper grow h-full">
 
-        <MudTabPanel Text="Available" Icon="@Icons.Material.Filled.Apps" BadgeData="@_installableModules.Count" @ref="_appsTab">
-            <div class="d-flex gap-3 flex-wrap">
-                @foreach (var module in _installableModules)
-                {
-                    <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
-                }
-            </div>
-        </MudTabPanel>
-    </MudTabs>
+            <MudTabs @ref="_tabs" Class="module-manager-tabs" Rounded="true" ApplyEffectsToContainer="true"
+                     TabPanelsClass="pa-3">
+                <MudTabPanel Text="Installed" Icon="@Icons.Material.Filled.CheckCircle"
+                             BadgeData="@_installedModules.Count">
+                    <div class="d-flex gap-3 flex-wrap">
+                        @foreach (var module in _installedModules)
+                        {
+                            <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
+                                               LoadedModule="@module.Value"/>
+                        }
+                    </div>
+                </MudTabPanel>
+
+
+                <MudTabPanel Text="Unknown Source" Icon="@Icons.Material.Filled.QuestionMark"
+                             BadgeData="@_unknownModules.Count" Visible="_unknownModules.Count > 0">
+                    <div class="d-flex gap-3 flex-wrap">
+                        @foreach (var module in _unknownModules)
+                        {
+                            <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
+                        }
+                    </div>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Available" Icon="@Icons.Material.Filled.Apps" BadgeData="@_installableModules.Count"
+                             @ref="_appsTab">
+                    <div class="d-flex gap-3 flex-wrap">
+                        @foreach (var module in _installableModules)
+                        {
+                            <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
+                        }
+                    </div>
+                </MudTabPanel>
+            </MudTabs>
+    </MudCard>
+
 </MudStack>
+
+<style>
+    .module-manager-tabs .mud-tabs-tabbar-wrapper {
+        width: 100% !important;
+    }
+
+    .module-manager-tabs .mud-tabs-tabbar-wrapper > .mud-tooltip-root {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+
+    .module-manager-tabs .mud-tab {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+</style>
+
 
 @code {
 
     [Parameter] [SupplyParameterFromQuery] public bool OpenAvailableModules { get; set; } = false;
-    
+
     private MudTabs _tabs = null!;
     private MudTabPanel _appsTab = null!;
 
@@ -67,7 +94,7 @@
         PopulateModuleLists();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender) 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && OpenAvailableModules)
         {

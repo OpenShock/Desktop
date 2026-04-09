@@ -10,7 +10,7 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10" Style="max-width: 50%" Outlined="true">
+<MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10 w-1/2" Outlined="true">
     @switch (_moduleIcon?.Index)
     {
         case 0:
@@ -65,7 +65,7 @@
                     </MudButton>
                     break;
             }
-            <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto" Class="slim-split-button">
+            <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Class="slim-split-button self-auto">
                 @if (_availableVersions != null && _availableVersions.Value.Length > 0)
                 {
                     <MudMenu Label="Versions" StartIcon="@Icons.Material.Filled.FormatListNumbered" MaxHeight="400"
@@ -84,7 +84,7 @@
             </MudMenu>
         </MudButtonGroup>
 
-        <div style="text-align: right">
+        <div class="text-right">
             @if (LoadedModule != null)
             {
                 <MudTooltip>

@@ -4,3 +4,4 @@ obj/
 *.DotSettings.user
 .vs
 .claude
+Desktop/wwwroot/css/
