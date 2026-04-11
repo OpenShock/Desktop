@@ -256,4 +256,13 @@ for name in $(echo "${!MISSING[@]}" | tr ' ' '\n' | sort); do
   fi
 done
 
+# Remove entries that are no longer in the resolved host graph.
+# CI runs this script without --fix on every PR, so any accidental deletions
+# caused by a broken local restore will be caught before they merge.
+for entry in "${EXTRA[@]}"; do
+  IFS='=' read -r name _ <<< "$entry"
+  escaped_name=$(printf '%s' "$name" | sed 's/[.[\*^$/]/\\&/g')
+  sed -i "/OpenShockHostAssembly\s\+Include=\"${escaped_name}\"\s\+Version=\"[^\"]*\"\s*\/>/d" "$TARGETS_FILE"
+done
+
 echo "Done. Review the changes and commit."

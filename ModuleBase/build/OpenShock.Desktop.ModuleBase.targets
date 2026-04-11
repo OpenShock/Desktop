@@ -23,9 +23,6 @@
     <OpenShockHostAssembly Include="Serilog.Sinks.File" Version="7.0.0" />
 
     <!-- Microsoft.Extensions -->
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Caching.Memory" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.Debug" Version="10.0.5" />
 
     <!-- ASP.NET Core / SignalR -->
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.5" />
@@ -52,39 +49,26 @@
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.CommandLine" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Diagnostics" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Diagnostics.Abstractions" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Features" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.FileProviders.Abstractions" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.FileProviders.Physical" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.5" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.FileProviders.Abstractions" Version="10.0.0" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Localization" Version="10.0.1" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Localization.Abstractions" Version="10.0.1" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Logging" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.Console" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.EventLog" Version="10.0.5" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.EventSource" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Options" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Primitives" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Validation" Version="10.0.5" />
     <OpenShockHostAssembly Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
     <OpenShockHostAssembly Include="Microsoft.JSInterop" Version="10.0.5" />
-    <OpenShockHostAssembly Include="System.Diagnostics.EventLog" Version="10.0.5" />
   </ItemGroup>
 
   <!-- Modules can override specific host assemblies to force-bundle them.
