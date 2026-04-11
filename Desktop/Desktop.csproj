@@ -78,45 +78,6 @@
         <PackageReference Include="System.Reactive" />
     </ItemGroup>
 
-    <!-- Tailwind CSS build: downloads the standalone tailwindcss CLI on first build and compiles wwwroot/app.css into wwwroot/css/tailwind.css. No Node required. -->
-    <PropertyGroup>
-        <TailwindVersion>v4.1.14</TailwindVersion>
-        <TailwindInput>$(MSBuildProjectDirectory)\Styles\app.css</TailwindInput>
-        <TailwindOutput>$(MSBuildProjectDirectory)\wwwroot\css\tailwind.css</TailwindOutput>
-        <TailwindCliDir>$(MSBuildProjectDirectory)\obj\tailwindcli</TailwindCliDir>
-    </PropertyGroup>
-
-    <Target Name="ResolveTailwindCli">
-        <PropertyGroup>
-            <_TwOs Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows</_TwOs>
-            <_TwOs Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux</_TwOs>
-            <_TwOs Condition="$([MSBuild]::IsOSPlatform('OSX'))">macos</_TwOs>
-            <_TwArch Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">x64</_TwArch>
-            <_TwArch Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">arm64</_TwArch>
-            <_TwExt Condition="'$(_TwOs)' == 'windows'">.exe</_TwExt>
-            <_TwFile>tailwindcss-$(_TwOs)-$(_TwArch)$(_TwExt)</_TwFile>
-            <TailwindCli>$(TailwindCliDir)\$(TailwindVersion)-$(_TwFile)</TailwindCli>
-            <TailwindUrl>https://github.com/tailwindlabs/tailwindcss/releases/download/$(TailwindVersion)/$(_TwFile)</TailwindUrl>
-        </PropertyGroup>
-    </Target>
-
-    <Target Name="DownloadTailwindCli" DependsOnTargets="ResolveTailwindCli" Condition="!Exists('$(TailwindCli)')">
-        <MakeDir Directories="$(TailwindCliDir)" />
-        <Message Importance="high" Text="Downloading Tailwind CLI $(TailwindVersion) from $(TailwindUrl)" />
-        <DownloadFile SourceUrl="$(TailwindUrl)" DestinationFolder="$(TailwindCliDir)" DestinationFileName="$(TailwindVersion)-$(_TwFile)" />
-        <Exec Condition="!$([MSBuild]::IsOSPlatform('Windows'))" Command="chmod +x &quot;$(TailwindCli)&quot;" />
-    </Target>
-
-    <Target Name="BuildTailwind" DependsOnTargets="DownloadTailwindCli" BeforeTargets="AssignTargetPaths;BeforeBuild" Inputs="$(TailwindInput)" Outputs="$(TailwindOutput)">
-        <MakeDir Directories="$(MSBuildProjectDirectory)\wwwroot\css" />
-        <Message Importance="high" Text="Building Tailwind: $(TailwindInput) -&gt; $(TailwindOutput)" />
-        <Exec Command="&quot;$(TailwindCli)&quot; -i &quot;$(TailwindInput)&quot; -o &quot;$(TailwindOutput)&quot; --minify" WorkingDirectory="$(MSBuildProjectDirectory)" />
-    </Target>
-
-    <ItemGroup>
-        <None Include="Styles\**\*.css" />
-    </ItemGroup>
-
     <ItemGroup>
         <Content Update="wwwroot\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

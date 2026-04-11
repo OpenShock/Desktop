@@ -26,7 +26,7 @@
                      TabPanelsClass="pa-3">
                 <MudTabPanel Text="Installed" Icon="@Icons.Material.Filled.CheckCircle"
                              BadgeData="@_installedModules.Count">
-                    <div class="d-flex gap-3 flex-wrap">
+                    <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
                         @foreach (var module in _installedModules)
                         {
                             <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
@@ -38,7 +38,7 @@
 
                 <MudTabPanel Text="Unknown Source" Icon="@Icons.Material.Filled.QuestionMark"
                              BadgeData="@_unknownModules.Count" Visible="_unknownModules.Count > 0">
-                    <div class="d-flex gap-3 flex-wrap">
+                    <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
                         @foreach (var module in _unknownModules)
                         {
                             <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
@@ -48,7 +48,7 @@
 
                 <MudTabPanel Text="Available" Icon="@Icons.Material.Filled.Apps" BadgeData="@_installableModules.Count"
                              @ref="_appsTab">
-                    <div class="d-flex gap-3 flex-wrap">
+                    <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
                         @foreach (var module in _installableModules)
                         {
                             <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
