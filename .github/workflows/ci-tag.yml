@@ -57,6 +57,7 @@ jobs:
   # Build module base for release assets
   build-module-base:
     uses: ./.github/workflows/build-module-base.yml
+    secrets: inherit
 
   # Create a draft GitHub release for stable tags
   release:
