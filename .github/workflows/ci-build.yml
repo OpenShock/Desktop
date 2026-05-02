@@ -37,6 +37,45 @@ env:
 
 jobs:
 
+  test-module-loader:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET SDK ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ matrix.os }}-tests-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: |
+            ${{ matrix.os }}-tests-nuget-
+
+      - name: Run module loader tests
+        # TUnit ships its own runner via Microsoft.Testing.Platform; the test project is
+        # an Exe. `dotnet run` invokes that runner directly and works on net10 without the
+        # legacy VSTest bridge.
+        run: dotnet run --project Desktop.ModuleManager.Tests/Desktop.ModuleManager.Tests.csproj -c Release -- --report-trx --report-trx-filename test-results.trx --results-directory ${{ github.workspace }}/test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: module-loader-test-results-${{ matrix.os }}
+          path: ${{ github.workspace }}/test-results
+          if-no-files-found: ignore
+
   build-windows-maui:
     runs-on: windows-latest
     timeout-minutes: 20

@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <OutputType>Exe</OutputType>
+        <RootNamespace>OpenShock.Desktop.ModuleManager.Tests</RootNamespace>
+        <AssemblyName>OpenShock.Desktop.ModuleManager.Tests</AssemblyName>
+        <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!--
+            Compile the loader source directly into the test assembly. ProjectReference to
+            Desktop.csproj is impractical: it's an Sdk.Web exe, multi-targets net10.0-windows
+            for the MAUI build, and pulls in MudBlazor/MAUI/Photino. The loader has no
+            internal coupling beyond BCL types, so linking the source is clean.
+        -->
+        <Compile Include="..\Desktop\ModuleManager\ModuleAssemblyLoadContext.cs"
+                 Link="Loader\ModuleAssemblyLoadContext.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="TUnit" />
+        <PackageReference Include="System.IO.Ports" GeneratePathProperty="true" />
+    </ItemGroup>
+
+    <!--
+        Stamp the resolved System.IO.Ports nuget package root into a file the integration
+        test can read. We don't want to hardcode the package version or guess the global
+        nuget cache path.
+    -->
+    <Target Name="WriteSystemIoPortsPackagePath" AfterTargets="ResolvePackageAssets" BeforeTargets="CoreCompile">
+        <PropertyGroup>
+            <_SystemIoPortsPackageRoot>$(PkgSystem_IO_Ports)</_SystemIoPortsPackageRoot>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(IntermediateOutputPath)system_io_ports_package_path.txt"
+                          Lines="$(_SystemIoPortsPackageRoot)"
+                          Overwrite="true" />
+        <ItemGroup>
+            <Content Include="$(IntermediateOutputPath)system_io_ports_package_path.txt">
+                <Link>system_io_ports_package_path.txt</Link>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            </Content>
+        </ItemGroup>
+    </Target>
+
+</Project>
