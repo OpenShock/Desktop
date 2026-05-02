@@ -24,4 +24,12 @@
     <Configuration Solution="Debug-Photino|Any CPU" Project="Debug|Any CPU" />
     <Configuration Solution="Release-Photino|Any CPU" Project="Release|Any CPU" />
   </Project>
+  <Project Path="Desktop.ModuleManager.Tests/Desktop.ModuleManager.Tests.csproj">
+    <Configuration Solution="Debug-Web|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Debug-Windows|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Release-Web|Any CPU" Project="Release|Any CPU" />
+    <Configuration Solution="Release-Windows|Any CPU" Project="Release|Any CPU" />
+    <Configuration Solution="Debug-Photino|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Release-Photino|Any CPU" Project="Release|Any CPU" />
+  </Project>
 </Solution>
