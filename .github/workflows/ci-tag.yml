@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Find latest tag
         id: latest-tag
-        uses: oprypin/find-latest-tag@v1
+        uses: oprypin/find-latest-tag@dd2729fe78b0bb55523ae2b2a310c6773a652bd1  # v1.1.2
         continue-on-error: true
         with:
           repository: ${{ github.repository }}
@@ -36,7 +36,7 @@ jobs:
     steps:
       - name: Find latest RC tag
         id: latest-rc
-        uses: oprypin/find-latest-tag@v1
+        uses: oprypin/find-latest-tag@dd2729fe78b0bb55523ae2b2a310c6773a652bd1  # v1.1.2
         continue-on-error: true
         with:
           repository: ${{ github.repository }}
@@ -68,19 +68,19 @@ jobs:
       contents: write
     steps:
       - name: Download Windows installer
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: OpenShock_Desktop_Setup
           path: artifacts/
 
       - name: Download Linux Photino
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: OpenShock Desktop Photino Linux
           path: artifacts/photino-linux/
 
       - name: Download Module Base
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: OpenShock Desktop Module Base
           path: artifacts/module-base/
@@ -91,7 +91,7 @@ jobs:
           cd artifacts/module-base && zip -r ../OpenShock.Desktop.Module.Base.zip . && cd ../..
 
       - name: Create draft release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda  # v3.0.0
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
