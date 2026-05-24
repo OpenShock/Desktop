@@ -1,4 +1,4 @@
-﻿@using OpenShock.Desktop.Backend
+@using OpenShock.Desktop.Backend
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.Models.BaseImpl
 @using OpenShock.Desktop.ModuleBase.Models
@@ -9,42 +9,37 @@
 @if (_configShocker != null)
 {
     <MudTd>
-        <MudCheckBox Class="option-width option-checkbox-height"
-                     Style="margin-left:10px;"
+        <MudCheckBox Size="Size.Small"
+                     Dense="true"
                      @bind-Value="_configShocker.Enabled"
                      @bind-Value:after="OnShockerConfigUpdate"/>
     </MudTd>
     <MudTd>
         @if (!_wasChanged)
         {
-            <MudTooltip>
-                <ChildContent>
-                    <MudToggleIconButton Toggled="Shocker.IsPaused" ToggledChanged="PauseShocker"
-                                         Icon="@Icons.Material.Filled.PlayArrow"
-                                         ToggledIcon="@Icons.Material.Filled.Pause"></MudToggleIconButton>
-                </ChildContent>
-                <TooltipContent>
-                    @(Shocker.IsPaused ? "Shocker Paused" : "Shocker Not Paused")
-                </TooltipContent>
+            <MudTooltip Text="@(Shocker.IsPaused ? "Shocker Paused" : "Shocker Not Paused")">
+                <MudToggleIconButton Toggled="Shocker.IsPaused"
+                                     ToggledChanged="PauseShocker"
+                                     Size="Size.Small"
+                                     Icon="@Icons.Material.Filled.Pause"
+                                     ToggledIcon="@Icons.Material.Filled.PlayArrow"/>
             </MudTooltip>
         }
         else
         {
-            <span style="width: 48px; height: 48px; display: block">
-                <MudProgressCircular Color="Color.Default" Indeterminate="true"/>
-            </span>
+            <MudProgressCircular Size="Size.Small" Color="Color.Default" Indeterminate="true"/>
         }
     </MudTd>
 }
 else
 {
     <MudTd>
-        <MudText Color="Color.Error">Error loading shocker's local settings</MudText>
+        <MudText Typo="Typo.caption" Color="Color.Error">Error</MudText>
     </MudTd>
     <MudTd></MudTd>
 }
 <MudTd>@Shocker.Name</MudTd>
-<MudTd>@Shocker.Id</MudTd>
+<MudTd><code style="font-size: 11px; opacity: 0.7;">@Shocker.Id</code></MudTd>
 
 
 @code {

@@ -1,4 +1,4 @@
-﻿@using System.Diagnostics
+@using System.Diagnostics
 @using OpenShock.Desktop.Logging
 @using Serilog.Events
 @using OpenShock.Desktop.Ui.ErrorHandling
@@ -7,62 +7,84 @@
 
 @page "/dash/logs"
 
-<MudButton OnClick="OpenLogsFolder"
-           Variant="Variant.Filled"
-           StartIcon="@Icons.Material.Filled.FolderOpen"
-           Color="Color.Primary"
-           Style="">Open Logs Folder</MudButton>
+<div class="console-toolbar">
+    @foreach (var level in _levels)
+    {
+        var enabled = _enabledLevels.Contains(level);
+        <button class="@($"level-chip level-{level.ToString().ToLowerInvariant()} {(enabled ? "on" : "off")}")"
+                @onclick="() => ToggleLevel(level)">
+            @LevelTag(level)
+        </button>
+    }
+    <span class="toolbar-spacer"></span>
+    <button class="term-btn" @onclick="ToggleAutoScroll">@(_autoScroll ? "autoscroll: on" : "autoscroll: off")</button>
+    <button class="term-btn" @onclick="ClearLogs">clear</button>
+    <button class="term-btn" @onclick="OpenLogsFolder">open logs folder</button>
+</div>
 
-<MudTable T="LogStore.LogEntry" RowClass="cursor-pointer" RowClassFunc="RowClassFunc" Items="LogStore.Logs.OrderByDescending(x => x.Time)" OnRowClick="LogRowClick" Breakpoint="Breakpoint.Sm" Hover="true" Dense="true" Height="100%">
-    <HeaderContent>
-        <MudTh>Time</MudTh>
-        <MudTh>Level</MudTh>
-        <MudTh>Source</MudTh>
-        <MudTh>Message</MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd>@context.Time.ToString("HH:mm:ss")</MudTd>
-        <MudTd>@context.Level.ToString()</MudTd>
-        <MudTd>@context.SourceContextShort</MudTd>
-        <MudTd>@context.Message.TruncateAtChar(120)</MudTd>
-    </RowTemplate>
-    <ChildRowContent>
-        @if (context.IsExpanded)
+<div class="console" id="console-body">
+    @foreach (var log in FilteredLogs)
+    {
+        var levelClass = log.Level.ToString().ToLowerInvariant();
+        <div class="@($"log-line level-{levelClass} {(log.IsExpanded ? "expanded" : "")}")"
+             @onclick="() => ToggleExpand(log)">
+            <span class="log-time">@log.Time.ToString("HH:mm:ss.fff")</span>
+            <span class="@($"log-level level-{levelClass}")">@LevelTag(log.Level)</span>
+            <span class="log-source">@log.SourceContextShort</span>
+            <span class="log-message">@log.Message</span>
+        </div>
+        @if (log.IsExpanded)
         {
-            <MudTr>
-                <td colspan="3" style="padding: 0 10px">
-
-                    <br/>
-                    <MudTextField ReadOnly Class="option-width" Variant="Variant.Filled" Value="@context.Time.ToString("HH:mm:ss")" Label="Time"></MudTextField>
-                    <MudTextField ReadOnly Class="option-width" Variant="Variant.Filled" Value="@context.Level" Label="Level"></MudTextField>
-                    <MudTextField Style="width: 370%" ReadOnly Class="option-width" Variant="Variant.Filled" Value="@context.SourceContext" Label="Source Context"></MudTextField>
-
-                    <br/>
-                    <br/>
-                    @* HACK, thank you html tables *@
-                    <div style="width: calc(100vw - 335px)">
-                        <CodeBlock Value="@context.Message"/>
-                    </div>
-                    <br/>
-                    <br/>
-                </td>
-            </MudTr>
+            <pre class="log-expanded">@log.SourceContext
+@log.Message</pre>
         }
-    </ChildRowContent>
-</MudTable>
+    }
+</div>
 
 @code {
-    private string GetLogClass(LogEventLevel level)
-        => $"log {level.ToString().ToLowerInvariant()}";
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
-    private void LogRowClick(TableRowClickEventArgs<LogStore.LogEntry> rowClickEventArgs)
+    private static readonly LogEventLevel[] _levels =
     {
-        if(rowClickEventArgs.Item == null) return;
-        rowClickEventArgs.Item.IsExpanded = !rowClickEventArgs.Item.IsExpanded;
+        LogEventLevel.Verbose,
+        LogEventLevel.Debug,
+        LogEventLevel.Information,
+        LogEventLevel.Warning,
+        LogEventLevel.Error,
+        LogEventLevel.Fatal,
+    };
+
+    private readonly HashSet<LogEventLevel> _enabledLevels = new(_levels);
+    private bool _autoScroll = true;
+    private bool _shouldScroll;
+
+    private IEnumerable<LogStore.LogEntry> FilteredLogs =>
+        LogStore.Logs.Where(l => _enabledLevels.Contains(l.Level)).OrderBy(x => x.Time);
+
+    private static string LevelTag(LogEventLevel level) => level switch
+    {
+        LogEventLevel.Verbose => "TRC",
+        LogEventLevel.Debug => "DBG",
+        LogEventLevel.Information => "INF",
+        LogEventLevel.Warning => "WRN",
+        LogEventLevel.Error => "ERR",
+        LogEventLevel.Fatal => "FTL",
+        _ => "???"
+    };
+
+    private void ToggleLevel(LogEventLevel level)
+    {
+        if (!_enabledLevels.Add(level)) _enabledLevels.Remove(level);
     }
-    
-    private string RowClassFunc(LogStore.LogEntry? log, int arg2) =>
-        log == null ? string.Empty : GetLogClass(log.Level) + (log.IsExpanded ? " expanded" : "");
+
+    private void ToggleAutoScroll() => _autoScroll = !_autoScroll;
+
+    private void ToggleExpand(LogStore.LogEntry log) => log.IsExpanded = !log.IsExpanded;
+
+    private void ClearLogs()
+    {
+        while (LogStore.Logs.TryDequeue(out _)) { }
+    }
 
     protected override void OnInitialized()
     {
@@ -71,7 +93,21 @@
 
     private void OnLogAdded()
     {
+        _shouldScroll = _autoScroll;
         InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender || _shouldScroll)
+        {
+            _shouldScroll = false;
+            try
+            {
+                await JS.InvokeVoidAsync("eval", "(()=>{var e=document.getElementById('console-body');if(e)e.scrollTop=e.scrollHeight;})()");
+            }
+            catch { /* ignore */ }
+        }
     }
 
     private void OpenLogsFolder()
@@ -87,25 +123,94 @@
     {
         LogStore.OnLogAdded = null;
     }
-
 }
 
 <style>
-    .log.fatal {
-        background: linear-gradient(180deg, rgba(2,0,36,0) 0%, rgba(121,9,9,0) 58%, rgba(255,0,0,0.4247899843531162) 100%);
+    .console-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 8px;
+        background: #14171a;
+        border: 1px solid #2a2d31;
+        border-bottom: none;
+        border-radius: 4px 4px 0 0;
+        font-family: 'Cascadia Code', 'Consolas', monospace;
     }
-    .log.error {
-        background: linear-gradient(180deg, rgba(2,0,36,0) 0%, rgba(121,19,9,0) 58%, rgba(255,44,0,0.4247899843531162) 100%);
+
+    .toolbar-spacer { flex: 1; }
+
+    .level-chip, .term-btn {
+        background: transparent;
+        border: 1px solid #2e3338;
+        color: #9aa0a6;
+        font-family: inherit;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        line-height: 1.4;
     }
-    .log.warning {
-        background: linear-gradient(180deg, rgba(2,0,36,0) 0%, rgba(118,121,9,0) 58%, rgba(255,254,0,0.42) 100%);
+
+    .term-btn:hover, .level-chip:hover { border-color: #4a4f55; color: #e6e6e6; }
+
+    .level-chip.off { opacity: 0.35; text-decoration: line-through; }
+    .level-chip.level-verbose.on { color: #6c7177; }
+    .level-chip.level-debug.on { color: #9aa0a6; }
+    .level-chip.level-information.on { color: #6cb6ff; }
+    .level-chip.level-warning.on { color: #ffd166; }
+    .level-chip.level-error.on { color: #ff6b6b; }
+    .level-chip.level-fatal.on { color: #fff; background: #b22; border-color: #b22; }
+
+    .console {
+        height: calc(100vh - 140px);
+        overflow: auto;
+        background: #0b0d0e;
+        border: 1px solid #2a2d31;
+        border-radius: 0 0 4px 4px;
+        padding: 6px 0;
+        font-family: 'Cascadia Code', 'Consolas', 'Menlo', monospace;
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #d4d4d4;
     }
-    
-    .expanded {
-        background: rgba(0,0,0,0.32);
+
+    .log-line {
+        padding: 0 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
     }
-    
-    .expanded:hover {
-            background: rgba(0,0,0,0.4) !important;
+
+    .log-line:hover { background: rgba(255,255,255,0.04); }
+    .log-line.expanded { background: rgba(255,255,255,0.06); }
+
+    .log-time { color: #5a6066; margin-right: 10px; }
+    .log-level { display: inline-block; width: 30px; font-weight: 600; margin-right: 8px; }
+    .log-source { color: #b48ead; margin-right: 10px; }
+    .log-message { color: #d4d4d4; }
+
+    .log-level.level-verbose { color: #6c7177; }
+    .log-level.level-debug { color: #9aa0a6; }
+    .log-level.level-information { color: #6cb6ff; }
+    .log-level.level-warning { color: #ffd166; }
+    .log-level.level-error { color: #ff6b6b; }
+    .log-level.level-fatal { color: #fff; background: #b22; padding: 0 2px; border-radius: 2px; }
+
+    .log-line.level-warning .log-message { color: #ffe2a3; }
+    .log-line.level-error .log-message { color: #ffb3b3; }
+    .log-line.level-fatal .log-message { color: #ffd4d4; }
+
+    .log-expanded {
+        margin: 0;
+        padding: 6px 12px 8px 12px;
+        background: rgba(255,255,255,0.03);
+        color: #cfd2d6;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: inherit;
+        font-size: 12px;
+        border-left: 2px solid #2a2d31;
     }
 </style>
