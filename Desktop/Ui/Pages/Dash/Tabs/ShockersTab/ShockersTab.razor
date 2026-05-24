@@ -1,4 +1,4 @@
-﻿@using OpenShock.Desktop.Backend
+@using OpenShock.Desktop.Backend
 @using OpenShock.SDK.CSharp.Models
 @using ControlType = OpenShock.SDK.CSharp.Models.ControlType
 @inject OpenShockApi OpenShockApi
@@ -7,29 +7,54 @@
 
 @page "/dash/shockers"
 
-<MudPaper Height="100%" Outlined="true" Class="rounded-lg mud-paper-padding d-flex" Style="position: relative; flex-direction: column">
+<div class="shockers-toolbar">
     <MudButton OnClick="TestShockers"
                Variant="Variant.Filled"
                StartIcon="@Icons.Material.Filled.Send"
                Color="Color.Primary"
-               Style="margin-right: 10px;">Test Shockers (Vibrate 10% 1s)</MudButton>
-    <br/>
-    <br/>
-    <div style="height: 100%; overflow-y: scroll;">
-        <MudTable Elevation="0" Items="OpenShockApi.Hubs.Value.SelectMany(x => x.Shockers)">
-            <HeaderContent>
-                <MudTh>Enabled</MudTh>
-                <MudTh>Status</MudTh>
-                <MudTh>Name</MudTh>
-                <MudTh>Guid</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <ShockerComponent Shocker="@context"></ShockerComponent>
-            </RowTemplate>
-        </MudTable>
-    </div>
+               Size="Size.Small">
+        Test Shockers (Vibrate 10% 1s)
+    </MudButton>
+    <MudText Typo="Typo.caption" Class="ml-3 mud-text-secondary">
+        @OpenShockApi.Hubs.Value.SelectMany(x => x.Shockers).Count() shockers across @OpenShockApi.Hubs.Value.Count hubs
+    </MudText>
+</div>
 
+<MudPaper Outlined="true" Class="rounded shockers-table-wrap">
+    <MudTable Items="OpenShockApi.Hubs.Value.SelectMany(x => x.Shockers)"
+              Dense="true"
+              Hover="true"
+              Elevation="0"
+              FixedHeader="true"
+              Height="calc(100vh - 180px)">
+        <HeaderContent>
+            <MudTh Style="width: 60px;">Enabled</MudTh>
+            <MudTh Style="width: 60px;">Status</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh>Guid</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <ShockerComponent Shocker="@context"></ShockerComponent>
+        </RowTemplate>
+    </MudTable>
 </MudPaper>
+
+<style>
+    .shockers-toolbar {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .shockers-table-wrap .mud-table-cell {
+        padding: 4px 12px !important;
+    }
+
+    .shockers-table-wrap .mud-table-cell .mud-checkbox,
+    .shockers-table-wrap .mud-table-cell .mud-icon-button {
+        margin: 0 !important;
+    }
+</style>
 
 @code {
     private IAsyncDisposable? _hubsUpdateSubscription;
