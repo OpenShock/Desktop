@@ -8,4 +8,6 @@ public interface IModuleInstanceManager
     public IServiceProvider AppServiceProvider { get; }
     
     public IOpenShockService OpenShock { get; }
+    
+    public string ModuleDataDirectory { get; }
 }
