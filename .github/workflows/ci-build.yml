@@ -235,9 +235,13 @@ jobs:
           ARCH=x86_64
           APPDIR=AppDir
 
-          # Download appimagetool (runs without FUSE via --appimage-extract-and-run)
+          # Download appimagetool, pinned to a tagged release and verified by checksum
+          # (runs without FUSE via --appimage-extract-and-run).
+          APPIMAGETOOL_VERSION=1.9.1
+          APPIMAGETOOL_SHA256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
           curl -fsSL -o appimagetool \
-            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${ARCH}.AppImage"
+            "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGETOOL_VERSION}/appimagetool-${ARCH}.AppImage"
+          echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum -c -
           chmod +x appimagetool
 
           # Assemble the AppDir from committed assets + the published self-contained app

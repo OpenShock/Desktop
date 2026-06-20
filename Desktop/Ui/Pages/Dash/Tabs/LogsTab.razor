@@ -104,7 +104,7 @@
             _shouldScroll = false;
             try
             {
-                await JS.InvokeVoidAsync("eval", "(()=>{var e=document.getElementById('console-body');if(e)e.scrollTop=e.scrollHeight;})()");
+                await JS.InvokeVoidAsync("openshock.scrollToBottom", "console-body");
             }
             catch { /* ignore */ }
         }

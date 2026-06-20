@@ -79,6 +79,12 @@ jobs:
           name: OpenShock Desktop Photino Linux
           path: artifacts/photino-linux/
 
+      - name: Download Linux AppImage
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: OpenShock Desktop AppImage
+          path: artifacts/
+
       - name: Download Module Base
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
@@ -100,4 +106,5 @@ jobs:
           files: |
             artifacts/OpenShock_Desktop_Setup.exe
             artifacts/OpenShock.Desktop.Photino.Linux.zip
+            artifacts/OpenShock_Desktop-*.AppImage
             artifacts/OpenShock.Desktop.Module.Base.zip
