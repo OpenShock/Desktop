@@ -30,15 +30,22 @@ if [ -n "${APPIMAGE:-}" ]; then
     apps_dir="${data_dir}/applications"
     icon_dir="${data_dir}/icons/hicolor/512x512/apps"
     handler_file="${apps_dir}/openshock-desktop.desktop"
-    icon_file="${icon_dir}/openshock-desktop.png"
     icon_src="${HERE}/usr/share/icons/hicolor/512x512/apps/openshock-desktop.png"
 
     changed=0
 
-    if [ ! -e "${icon_file}" ] && [ -e "${icon_src}" ]; then
-        mkdir -p "${icon_dir}"
-        cp "${icon_src}" "${icon_file}"
-        changed=1
+    # Install the icon under both the .desktop Icon= name and the window app_id
+    # (the program name, "OpenShock.Desktop"). KWin resolves the *taskbar* icon via
+    # the .desktop Icon=, but the *title bar* looks the icon up in the theme by the
+    # window app_id directly, so the theme needs an entry under that name too.
+    if [ -e "${icon_src}" ]; then
+        for icon_name in openshock-desktop OpenShock.Desktop; do
+            if [ ! -e "${icon_dir}/${icon_name}.png" ]; then
+                mkdir -p "${icon_dir}"
+                cp "${icon_src}" "${icon_dir}/${icon_name}.png"
+                changed=1
+            fi
+        done
     fi
 
     if [ ! -e "${handler_file}" ]; then
