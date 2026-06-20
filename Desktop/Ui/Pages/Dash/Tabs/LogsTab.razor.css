@@ -1,0 +1,98 @@
+/* Scoped to LogsTab via Blazor CSS isolation. Colors derive from the MudBlazor
+   theme palette so the console follows light/dark themes. */
+
+.console-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+}
+
+.toolbar-spacer { flex: 1; }
+
+.level-chip, .term-btn {
+    background: transparent;
+    border: 1px solid var(--mud-palette-lines-default);
+    color: var(--mud-palette-text-secondary);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.term-btn:hover, .level-chip:hover {
+    border-color: var(--mud-palette-text-secondary);
+    color: var(--mud-palette-text-primary);
+}
+
+.level-chip.off { opacity: 0.35; text-decoration: line-through; }
+.level-chip.level-verbose.on { color: var(--mud-palette-text-disabled); }
+.level-chip.level-debug.on { color: var(--mud-palette-text-secondary); }
+.level-chip.level-information.on { color: var(--mud-palette-info); }
+.level-chip.level-warning.on { color: var(--mud-palette-warning); }
+.level-chip.level-error.on { color: var(--mud-palette-error); }
+.level-chip.level-fatal.on {
+    color: var(--mud-palette-error-text);
+    background: var(--mud-palette-error);
+    border-color: var(--mud-palette-error);
+}
+
+.console {
+    height: calc(100vh - 140px);
+    overflow: auto;
+    background: var(--mud-palette-background);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 0 0 4px 4px;
+    padding: 6px 0;
+    font-family: 'Cascadia Code', 'Consolas', 'Menlo', monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--mud-palette-text-primary);
+}
+
+.log-line {
+    padding: 0 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.log-line:hover { background: var(--mud-palette-action-default-hover); }
+.log-line.expanded { background: var(--mud-palette-action-default-hover); }
+
+.log-time { color: var(--mud-palette-text-disabled); margin-right: 10px; }
+.log-level { display: inline-block; width: 30px; font-weight: 600; margin-right: 8px; }
+.log-source { color: var(--mud-palette-secondary); margin-right: 10px; }
+.log-message { color: var(--mud-palette-text-primary); }
+
+.log-level.level-verbose { color: var(--mud-palette-text-disabled); }
+.log-level.level-debug { color: var(--mud-palette-text-secondary); }
+.log-level.level-information { color: var(--mud-palette-info); }
+.log-level.level-warning { color: var(--mud-palette-warning); }
+.log-level.level-error { color: var(--mud-palette-error); }
+.log-level.level-fatal {
+    color: var(--mud-palette-error-text);
+    background: var(--mud-palette-error);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+.log-expanded {
+    margin: 0;
+    padding: 6px 12px 8px 12px;
+    background: var(--mud-palette-action-default-hover);
+    color: var(--mud-palette-text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: inherit;
+    font-size: 12px;
+    border-left: 2px solid var(--mud-palette-lines-default);
+}
