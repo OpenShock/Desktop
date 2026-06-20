@@ -227,3 +227,46 @@ jobs:
           path: publish/Photino-Linux/*
           retention-days: 7
           if-no-files-found: error
+
+      - name: Build AppImage
+        run: |
+          set -euo pipefail
+
+          ARCH=x86_64
+          APPDIR=AppDir
+
+          # Download appimagetool (runs without FUSE via --appimage-extract-and-run)
+          curl -fsSL -o appimagetool \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${ARCH}.AppImage"
+          chmod +x appimagetool
+
+          # Assemble the AppDir from committed assets + the published self-contained app
+          rm -rf "${APPDIR}"
+          mkdir -p "${APPDIR}/usr/bin" \
+                   "${APPDIR}/usr/share/applications" \
+                   "${APPDIR}/usr/share/icons/hicolor/512x512/apps"
+
+          cp -r publish/Photino-Linux/. "${APPDIR}/usr/bin/"
+
+          install -m 0755 packaging/appimage/AppRun "${APPDIR}/AppRun"
+          install -m 0644 packaging/appimage/OpenShock.Desktop.desktop \
+            "${APPDIR}/usr/share/applications/OpenShock.Desktop.desktop"
+          cp packaging/appimage/OpenShock.Desktop.desktop "${APPDIR}/OpenShock.Desktop.desktop"
+
+          install -m 0644 Desktop/wwwroot/images/Icon512.png \
+            "${APPDIR}/usr/share/icons/hicolor/512x512/apps/openshock-desktop.png"
+          cp Desktop/wwwroot/images/Icon512.png "${APPDIR}/openshock-desktop.png"
+
+          # The published binary needs to be executable
+          chmod +x "${APPDIR}/usr/bin/OpenShock.Desktop"
+
+          ARCH="${ARCH}" ./appimagetool --appimage-extract-and-run \
+            "${APPDIR}" "OpenShock_Desktop-${ARCH}.AppImage"
+
+      - name: Upload OpenShock Desktop AppImage
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: OpenShock Desktop AppImage
+          path: OpenShock_Desktop-*.AppImage
+          retention-days: 7
+          if-no-files-found: error

@@ -1,0 +1,53 @@
+#!/bin/sh
+# AppRun entry point for the OpenShock Desktop AppImage.
+# Resolves the AppDir, then execs the published self-contained binary.
+# wwwroot and the managed assemblies live next to the binary in usr/bin,
+# which is what AppDomain.BaseDirectory resolves to at runtime.
+
+HERE="$(dirname "$(readlink -f "${0}")")"
+APP_BIN="${HERE}/usr/bin/OpenShock.Desktop"
+
+# Photino on Linux renders through WebKitGTK. It is intentionally not bundled
+# (GTK/webkit do not relocate cleanly), so surface a clear error if it is missing.
+if ! ldconfig -p 2>/dev/null | grep -q 'libwebkit2gtk-4\.\(0\|1\)'; then
+    echo "OpenShock Desktop requires WebKitGTK (libwebkit2gtk-4.1 or 4.0) to be installed." >&2
+    echo "  Debian/Ubuntu: sudo apt install libwebkit2gtk-4.1-0" >&2
+    echo "  Fedora:        sudo dnf install webkit2gtk4.1" >&2
+    echo "  Arch:          sudo pacman -S webkit2gtk-4.1" >&2
+fi
+
+# Register the openshock:// URL scheme handler the first time we run as an AppImage.
+# $APPIMAGE is set by the AppImage runtime to the absolute path of the .AppImage file.
+if [ -n "${APPIMAGE:-}" ] && command -v xdg-mime >/dev/null 2>&1; then
+    apps_dir="${XDG_DATA_HOME:-${HOME}/.local/share}/applications"
+    handler_file="${apps_dir}/openshock-desktop.desktop"
+    if [ ! -e "${handler_file}" ]; then
+        mkdir -p "${apps_dir}"
+        cat > "${handler_file}" <<EOF
+[Desktop Entry]
+Type=Application
+Name=OpenShock Desktop
+Exec=${APPIMAGE} %u
+Icon=openshock-desktop
+Categories=Utility;Network;
+Terminal=false
+MimeType=x-scheme-handler/openshock;
+StartupWMClass=OpenShock.Desktop
+EOF
+        xdg-mime default openshock-desktop.desktop x-scheme-handler/openshock 2>/dev/null || true
+        command -v update-desktop-database >/dev/null 2>&1 && \
+            update-desktop-database "${apps_dir}" 2>/dev/null || true
+    fi
+fi
+
+# The desktop entry passes the openshock:// URL as a bare positional arg (%u),
+# but the CLI expects it as --uri=. Translate it here.
+case "${1:-}" in
+    openshock:*)
+        uri="$1"
+        shift
+        set -- --uri="${uri}" "$@"
+        ;;
+esac
+
+exec "${APP_BIN}" "$@"

@@ -1,0 +1,3 @@
+# Keep AppImage packaging files as LF so the shell script runs on Linux
+packaging/appimage/AppRun text eol=lf
+packaging/appimage/*.desktop text eol=lf
