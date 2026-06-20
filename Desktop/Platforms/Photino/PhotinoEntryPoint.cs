@@ -84,8 +84,12 @@ public static class PhotinoEntryPoint
 
         var app = builder.Build();
 
+        // Resolve the icon against the app's base directory; the working directory is
+        // wherever the AppImage was launched from (e.g. ~/Downloads), not the install dir.
+        var iconFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "images", "Icon512.png");
+
         app.MainWindow
-            .SetIconFile("wwwroot/images/Icon512.png")
+            .SetIconFile(iconFile)
             .SetTitle("OpenShock Desktop");
         
         app.MainWindow.MinHeight = 600;
