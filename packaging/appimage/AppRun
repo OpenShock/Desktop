@@ -21,23 +21,22 @@ fi
 # This installs:
 #   - the icon into the user icon theme, and
 #   - a .desktop entry (which also registers the openshock:// URL scheme handler).
-# Both are needed so the running window has the right icon: under Wayland (KDE/GNOME)
-# there is no _NET_WM_ICON, so the compositor resolves the taskbar/titlebar icon by
-# matching the window app_id (the program name, "OpenShock.Desktop") to a .desktop
-# entry and loading its Icon= name from the icon theme.
+# The .desktop file is named after the window app_id (the program name,
+# "OpenShock.Desktop"). This matters under Wayland (KDE/GNOME), where there is no
+# _NET_WM_ICON: the compositor resolves the window icon by matching the app_id to a
+# desktop file *of the same name* and loading its Icon= from the icon theme. Naming
+# the file to match the app_id is what makes the title bar icon resolve, not just
+# the taskbar (which Plasma also matches via StartupWMClass).
 if [ -n "${APPIMAGE:-}" ]; then
     data_dir="${XDG_DATA_HOME:-${HOME}/.local/share}"
     apps_dir="${data_dir}/applications"
     icon_dir="${data_dir}/icons/hicolor/512x512/apps"
-    handler_file="${apps_dir}/openshock-desktop.desktop"
+    handler_file="${apps_dir}/OpenShock.Desktop.desktop"
     icon_src="${HERE}/usr/share/icons/hicolor/512x512/apps/openshock-desktop.png"
 
     changed=0
 
-    # Install the icon under both the .desktop Icon= name and the window app_id
-    # (the program name, "OpenShock.Desktop"). KWin resolves the *taskbar* icon via
-    # the .desktop Icon=, but the *title bar* looks the icon up in the theme by the
-    # window app_id directly, so the theme needs an entry under that name too.
+    # Install the icon under both the .desktop Icon= name and the window app_id name.
     if [ -e "${icon_src}" ]; then
         for icon_name in openshock-desktop OpenShock.Desktop; do
             if [ ! -e "${icon_dir}/${icon_name}.png" ]; then
@@ -46,6 +45,12 @@ if [ -n "${APPIMAGE:-}" ]; then
                 changed=1
             fi
         done
+    fi
+
+    # Remove the legacy mismatched-name entry from earlier versions, if present.
+    if [ -e "${apps_dir}/openshock-desktop.desktop" ]; then
+        rm -f "${apps_dir}/openshock-desktop.desktop"
+        changed=1
     fi
 
     if [ ! -e "${handler_file}" ]; then
@@ -62,7 +67,7 @@ MimeType=x-scheme-handler/openshock;
 StartupWMClass=OpenShock.Desktop
 EOF
         command -v xdg-mime >/dev/null 2>&1 && \
-            xdg-mime default openshock-desktop.desktop x-scheme-handler/openshock 2>/dev/null || true
+            xdg-mime default OpenShock.Desktop.desktop x-scheme-handler/openshock 2>/dev/null || true
         changed=1
     fi
 
