@@ -16,11 +16,31 @@ if ! ldconfig -p 2>/dev/null | grep -q 'libwebkit2gtk-4\.\(0\|1\)'; then
     echo "  Arch:          sudo pacman -S webkit2gtk-4.1" >&2
 fi
 
-# Register the openshock:// URL scheme handler the first time we run as an AppImage.
+# Desktop integration, done once when running as an AppImage.
 # $APPIMAGE is set by the AppImage runtime to the absolute path of the .AppImage file.
-if [ -n "${APPIMAGE:-}" ] && command -v xdg-mime >/dev/null 2>&1; then
-    apps_dir="${XDG_DATA_HOME:-${HOME}/.local/share}/applications"
+# This installs:
+#   - the icon into the user icon theme, and
+#   - a .desktop entry (which also registers the openshock:// URL scheme handler).
+# Both are needed so the running window has the right icon: under Wayland (KDE/GNOME)
+# there is no _NET_WM_ICON, so the compositor resolves the taskbar/titlebar icon by
+# matching the window app_id (the program name, "OpenShock.Desktop") to a .desktop
+# entry and loading its Icon= name from the icon theme.
+if [ -n "${APPIMAGE:-}" ]; then
+    data_dir="${XDG_DATA_HOME:-${HOME}/.local/share}"
+    apps_dir="${data_dir}/applications"
+    icon_dir="${data_dir}/icons/hicolor/512x512/apps"
     handler_file="${apps_dir}/openshock-desktop.desktop"
+    icon_file="${icon_dir}/openshock-desktop.png"
+    icon_src="${HERE}/usr/share/icons/hicolor/512x512/apps/openshock-desktop.png"
+
+    changed=0
+
+    if [ ! -e "${icon_file}" ] && [ -e "${icon_src}" ]; then
+        mkdir -p "${icon_dir}"
+        cp "${icon_src}" "${icon_file}"
+        changed=1
+    fi
+
     if [ ! -e "${handler_file}" ]; then
         mkdir -p "${apps_dir}"
         cat > "${handler_file}" <<EOF
@@ -34,9 +54,20 @@ Terminal=false
 MimeType=x-scheme-handler/openshock;
 StartupWMClass=OpenShock.Desktop
 EOF
-        xdg-mime default openshock-desktop.desktop x-scheme-handler/openshock 2>/dev/null || true
+        command -v xdg-mime >/dev/null 2>&1 && \
+            xdg-mime default openshock-desktop.desktop x-scheme-handler/openshock 2>/dev/null || true
+        changed=1
+    fi
+
+    if [ "${changed}" -eq 1 ]; then
         command -v update-desktop-database >/dev/null 2>&1 && \
             update-desktop-database "${apps_dir}" 2>/dev/null || true
+        command -v gtk-update-icon-cache >/dev/null 2>&1 && \
+            gtk-update-icon-cache -f -t "${data_dir}/icons/hicolor" 2>/dev/null || true
+        # Nudge KDE to rebuild its application/icon cache so the change shows immediately.
+        for kb in kbuildsycoca6 kbuildsycoca5; do
+            command -v "${kb}" >/dev/null 2>&1 && "${kb}" >/dev/null 2>&1 && break
+        done
     fi
 fi
 
