@@ -1,0 +1,105 @@
+@using LucHeart.WebsocketLibrary
+@using OpenShock.Desktop.Models
+@using OpenShock.Desktop.ModuleBase.StableInterfaces
+@using OpenShock.Desktop.Ui.Utils
+@using OpenShock.SDK.CSharp.Live
+
+<div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
+    <MudText Style="font-size: 10pt; text-align: center">Shared @OnlineHubs/@TotalHubs</MudText>
+    <MudTooltip Arrow="true" Placement="Placement.Top">
+        <ChildContent>
+            <MudIcon Icon="@Icons.Material.Filled.Group" Color="AggregateColor()" Class="d-block ma-auto"/>
+        </ChildContent>
+        <TooltipContent>
+            <div style="min-width: 220px; max-width: 300px; padding: 2px 2px 4px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                    <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small"/>
+                    <MudText Typo="Typo.subtitle2">Shared hubs</MudText>
+                    <div style="flex-grow: 1"></div>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.6">@OnlineHubs/@TotalHubs online</MudText>
+                </div>
+                <MudDivider Style="margin-bottom: 4px;"/>
+
+                @foreach (var owner in Owners)
+                {
+                    @if (owner.Hubs.Count == 1)
+                    {
+                        // A single hub is redundant with the owner, so collapse into one row showing just the owner.
+                        var hub = owner.Hubs[0];
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 2px 0;">
+                            <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="HubColor(hub)"/>
+                            <MudText Typo="Typo.body2">@owner.Name.Truncate(20)</MudText>
+                            <div style="flex-grow: 1; min-width: 12px"></div>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6">@HubStateText(hub)</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="display: flex; align-items: center; gap: 6px; padding: 4px 0 1px;">
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="opacity: 0.7"/>
+                            <MudText Typo="Typo.body2" Style="font-weight: 600">@owner.Name.Truncate(20)</MudText>
+                        </div>
+                        @foreach (var hub in owner.Hubs)
+                        {
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 1px 0 1px 20px;">
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="HubColor(hub)"/>
+                                <MudText Typo="Typo.caption">@hub.Name.Truncate(22)</MudText>
+                                <div style="flex-grow: 1; min-width: 12px"></div>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6">@HubStateText(hub)</MudText>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+        </TooltipContent>
+    </MudTooltip>
+</div>
+
+@code {
+    /// <summary>
+    /// The shared hubs grouped by owner, summarized in a single aggregate indicator.
+    /// </summary>
+    [Parameter]
+    public required IReadOnlyList<SharedHubOwner> Owners { get; set; }
+
+    /// <summary>
+    /// Resolves the active live control client for a hub, or null when no live control connection is open.
+    /// </summary>
+    [Parameter]
+    public required Func<Guid, IOpenShockLiveControlClient?> GetClient { get; set; }
+
+    private IEnumerable<IOpenShockHub> AllHubs => Owners.SelectMany(o => o.Hubs);
+
+    private int OnlineHubs => AllHubs.Count(h => h.Status.Online);
+    private int TotalHubs => AllHubs.Count();
+
+    private Color AggregateColor()
+    {
+        if (AllHubs.Any(h => GetClient(h.Id)?.State.Value == WebsocketConnectionState.Connected))
+            return Color.Success;
+
+        return OnlineHubs > 0 ? Color.Info : Color.Dark;
+    }
+
+    private Color HubColor(IOpenShockHub hub)
+    {
+        var client = GetClient(hub.Id);
+        if (client != null)
+            return client.State.Value switch
+            {
+                WebsocketConnectionState.Connected => Color.Success,
+                WebsocketConnectionState.Connecting => Color.Warning,
+                WebsocketConnectionState.WaitingForReconnect => Color.Warning,
+                _ => Color.Error
+            };
+
+        return hub.Status.Online ? Color.Info : Color.Dark;
+    }
+
+    private string HubStateText(IOpenShockHub hub)
+    {
+        var client = GetClient(hub.Id);
+        if (client != null) return $"Live: {client.State.Value}";
+        return hub.Status.Online ? "idle" : "offline";
+    }
+}

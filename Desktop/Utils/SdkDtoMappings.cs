@@ -1,4 +1,5 @@
 ﻿using OpenShock.Desktop.Backend;
+using OpenShock.Desktop.Models;
 using OpenShock.Desktop.Models.BaseImpl;
 using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.ModuleBase.StableInterfaces;
@@ -45,5 +46,46 @@ public static class SdkDtoMappings
             Shockers = [..hub.Shockers.Select(ToSdkShocker)],
             GetStatus = () => openShockApi.HubStates.TryGetValue(hub.Id, out var value) ? value : new HubStatus()
         };
+    }
+
+    private static IOpenShockShocker ToSdkShocker(this OwnerShockerResponse.SharedDevice.SharedShocker shocker)
+    {
+        return new OpenShockShocker
+        {
+            Id = shocker.Id,
+            Name = shocker.Name,
+            IsPaused = shocker.IsPaused,
+            // Not exposed by the shared shockers endpoint
+            RfId = 0,
+            Model = ShockerModelType.Unknown,
+            CreatedOn = default
+        };
+    }
+
+    /// <summary>
+    /// Maps the owner/device grouped shared shockers response into per-owner groups, keeping each owner's hubs together
+    /// so the UI can attribute shared hubs to the person that owns them.
+    /// </summary>
+    public static IReadOnlyList<SharedHubOwner> ToSdkSharedOwners(this IEnumerable<OwnerShockerResponse> owners,
+        OpenShockApi openShockApi)
+    {
+        return owners
+            .Select(owner => new SharedHubOwner
+            {
+                Id = owner.Id,
+                Name = owner.Name,
+                Image = owner.Image,
+                Hubs = owner.Devices
+                    .Select(device => (IOpenShockHub)new OpenShockHub
+                    {
+                        Id = device.Id,
+                        Name = device.Name,
+                        CreatedOn = default,
+                        Shockers = [..device.Shockers.Select(ToSdkShocker)],
+                        GetStatus = () => openShockApi.HubStates.TryGetValue(device.Id, out var value) ? value : new HubStatus()
+                    })
+                    .ToArray()
+            })
+            .ToArray();
     }
 }

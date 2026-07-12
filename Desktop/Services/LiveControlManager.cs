@@ -1,4 +1,6 @@
-﻿using System.Reactive.Linq;
+using System.Collections.Concurrent;
+using System.Reactive.Linq;
+using LucHeart.WebsocketLibrary;
 using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Utils;
@@ -10,13 +12,27 @@ using OpenShock.SDK.CSharp.Models;
 
 namespace OpenShock.Desktop.Services;
 
-public sealed class LiveControlManager
+public sealed class LiveControlManager : IAsyncDisposable
 {
+    /// <summary>
+    /// How long a live control connection is kept open after the last control frame before it is closed again.
+    /// Live control sockets are opened lazily on demand, so this only needs to cover gaps between bursts of activity.
+    /// </summary>
+    private static readonly TimeSpan IdleTimeout = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// How often we sweep for idle / offline connections to close.
+    /// </summary>
+    private static readonly TimeSpan SweepInterval = TimeSpan.FromSeconds(30);
+
     private readonly ILogger<LiveControlManager> _logger;
     private readonly ConfigManager _configManager;
     private readonly ILoggerFactory _loggerFactory;
     private readonly OpenShockApi _apiClient;
-    private readonly SemaphoreSlim _refreshLock = new(1, maxCount: 1);
+
+    private readonly ConcurrentDictionary<Guid, LiveControlConnection> _connections = new();
+    private readonly object _connectionCreationLock = new();
+    private readonly CancellationTokenSource _cts = new();
 
     public LiveControlManager(
         ILogger<LiveControlManager> logger,
@@ -31,148 +47,231 @@ public sealed class LiveControlManager
         _loggerFactory = loggerFactory;
         _apiClient = apiClient;
 
-        backendHubManager.OnHubStatusUpdated.Throttle(TimeSpan.FromMilliseconds(500)).Subscribe(HubStatusUpdated);
-        
-        hubClient.OnHubUpdate.SubscribeAsync(async _ =>
-        {
-            _logger.LogDebug("Device update received, updating shockers and refreshing connections");
-            await RefreshConnections();
-        }).AsTask().Wait();
-    }
+        // When a hub goes offline (or the hub list changes) we only ever want to close connections, never open new
+        // ones. Opening happens lazily when a control frame is actually sent.
+        backendHubManager.OnHubStatusUpdated.Throttle(TimeSpan.FromMilliseconds(500)).Subscribe(_ => PruneConnections());
 
-    private void HubStatusUpdated(Guid? obj)
-    {
-        RefreshConnections().Wait();
+        hubClient.OnHubUpdate.SubscribeAsync(_ =>
+        {
+            _logger.LogDebug("Device update received, pruning stale live control connections");
+            PruneConnections();
+            return Task.CompletedTask;
+        }).AsTask().Wait();
+
+        OsTask.Run(() => SweepLoop(_cts.Token));
     }
 
     public IAsyncMinimalEventObservable OnStateUpdated => _onStateUpdated;
     private readonly AsyncMinimalEvent _onStateUpdated = new();
-    
-    public Dictionary<Guid, OpenShockLiveControlClient> LiveControlClients { get; } = new();
 
-    public async Task RefreshConnections()
-    {
-        await _refreshLock.WaitAsync();
-        try
-        {
-            await RefreshInternal();
-        }
-        finally
-        {
-            _refreshLock.Release();
-        }
-    }
-    
-    private async Task RefreshInternal()
-    {
-        _logger.LogDebug("Refreshing live control connections");
-
-        // Remove devices that dont exist anymore
-        // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
-        // Linq would be horrible for readability here
-        foreach (var liveControlClient in LiveControlClients)
-        {
-            // Check if the hub is online
-            var hub = _apiClient.Hubs.Value.FirstOrDefault(x => x.Id == liveControlClient.Key);
-            if (hub is not null && hub.Status.Online) continue; // If so, dont remove it
-            
-            if (LiveControlClients.Remove(liveControlClient.Key, out var removedClient))
-                await removedClient.DisposeAsync();
-        }
-
-        foreach (var device in _apiClient.Hubs.Value.Where(x => x.Status.Online))
-        {
-            // Skip hubs that already have a live control client
-            if (LiveControlClients.ContainsKey(device.Id)) continue;
-
-            _logger.LogTrace("Creating live control client for device [{DeviceId}]", device.Id);
-            
-            // Adds the new live control client to the list
-            await SetupLiveControlClient(device.Id);
-        }
-
-        OsTask.Run(_onStateUpdated.InvokeAsyncParallel);
-    }
-
-    private async Task SetupLiveControlClient(Guid deviceId)
-    {
-        if(_apiClient.Client == null)
-        {
-            _logger.LogWarning("API client is not initialized, cannot setup live control client for device [{DeviceId}]", deviceId);
-            return;
-        }
-
-        var client = new OpenShockLiveControlClient(deviceId, _configManager.Config.OpenShock.Token,  _apiClient.Client, _loggerFactory);
-        LiveControlClients.Add(deviceId, client);
-
-        // Websocket connection state
-        await client.State.Updated.SubscribeAsync(async state =>
-        {
-            _logger.LogTrace("Live control client for device [{DeviceId}] status updated {Status}",
-                deviceId, state);
-            await _onStateUpdated.InvokeAsyncParallel();
-        });
-        
-        await client.OnDispose.SubscribeAsync(async () =>
-        {
-            if (!LiveControlClients.Remove(deviceId, out var removedClient)) return;
-            _logger.LogDebug("This shouldnt be reached [{DeviceId}]", deviceId);
-            await removedClient.DisposeAsync(); // Dispose incase it was not disposed
-        });
-
-        client.Start();
-    }
+    /// <summary>
+    /// Returns the currently open live control client for a hub, or null if no live control connection is active.
+    /// Connections are opened lazily when the hub is being controlled and closed again after an idle period.
+    /// </summary>
+    public IOpenShockLiveControlClient? GetClient(Guid hubId) =>
+        _connections.TryGetValue(hubId, out var connection) ? connection.Client : null;
 
     /// <summary>
     /// Control shockers with a specific intensity and control type. This also checks for enabled shockers in the config.
+    /// Opens the live control connection for the relevant hubs on demand.
     /// </summary>
-    /// <param name="shockers"></param>
-    /// <param name="intensity"></param>
-    /// <param name="type"></param>
     public void ControlShockers(IEnumerable<Guid> shockers, byte intensity, ControlType type)
     {
-        var enabledShockers = shockers.Where(x =>
-            _configManager.Config.OpenShock.Shockers.Any(y => y.Key == x && y.Value.Enabled));
-        
+        var enabledShockers = shockers.Where(IsLiveControllable);
+
         var shockersByDevice = enabledShockers.GroupBy(
-            x => _apiClient.Hubs.Value.FirstOrDefault(y => y.Shockers.Any(z => z.Id == x && !z.IsPaused))?.Id);
+            x => _apiClient.AllHubs.FirstOrDefault(y => y.Shockers.Any(z => z.Id == x && !z.IsPaused))?.Id);
 
         foreach (var device in shockersByDevice)
         {
             if (device.Key == null) continue;
-            if (!LiveControlClients.TryGetValue(device.Key.Value, out var client)) continue;
 
-            ControlFrame(device.Select(x => x), client, intensity, type);
+            var connection = EnsureConnection(device.Key.Value);
+            if (connection == null) continue;
+
+            SendFrames(device, connection, intensity, type);
         }
     }
 
     /// <summary>
-    /// Control all enabled shockers with a specific intensity and control type.
+    /// Control all enabled and online shockers with a specific intensity and control type.
+    /// Opens the live control connection for the relevant hubs on demand.
+    /// Only ever targets owned hubs; shared hubs are never swept by a blanket "control all" and can only be
+    /// controlled via an explicit <see cref="ControlShockers"/> call that names their shocker ids.
     /// </summary>
-    /// <param name="intensity"></param>
-    /// <param name="type"></param>
     public void ControlAllShockers(byte intensity, ControlType type)
     {
-        foreach (var (deviceId, liveControlClient) in LiveControlClients)
+        foreach (var hub in _apiClient.Hubs.Value.Where(x => x.Status.Online))
         {
-            var apiDevice = _apiClient.Hubs.Value
-                .FirstOrDefault(x => x.Id == deviceId);
-            if (apiDevice == null) continue;
-                
-            ControlFrame(apiDevice.Shockers
-                .Where(x => !x.IsPaused &&
-                    _configManager.Config.OpenShock.Shockers.Any(y => 
-                        y.Key == x.Id && y.Value.Enabled))
-                .Select(x => x.Id), liveControlClient, intensity, type);
+            var shockers = hub.Shockers
+                .Where(x => !x.IsPaused && IsLiveControllable(x.Id))
+                .Select(x => x.Id)
+                .ToArray();
+
+            if (shockers.Length == 0) continue;
+
+            var connection = EnsureConnection(hub.Id);
+            if (connection == null) continue;
+
+            SendFrames(shockers, connection, intensity, type);
         }
-    } 
-    
-    private static void ControlFrame(IEnumerable<Guid> shockers, OpenShockLiveControlClient client,
-        byte vibrationIntensity, ControlType type)
+    }
+
+    /// <summary>
+    /// A shocker is live controllable when it is enabled in config and, for shared shockers, we have been granted the
+    /// live control permission. Owned shockers are not present in the shared permission map and are always allowed.
+    /// </summary>
+    private bool IsLiveControllable(Guid shockerId)
     {
+        if (!_configManager.Config.OpenShock.Shockers.TryGetValue(shockerId, out var conf) || !conf.Enabled)
+            return false;
+
+        if (_apiClient.SharedShockerPermissions.TryGetValue(shockerId, out var permissions))
+            return permissions.Live;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Closes connections for hubs that are no longer online or no longer exist. Used on login/logout and on hub
+    /// status changes. Never opens new connections.
+    /// </summary>
+    public Task RefreshConnections()
+    {
+        PruneConnections();
+        return Task.CompletedTask;
+    }
+
+    private LiveControlConnection? EnsureConnection(Guid hubId)
+    {
+        if (_connections.TryGetValue(hubId, out var existing))
+        {
+            existing.Touch();
+            return existing;
+        }
+
+        lock (_connectionCreationLock)
+        {
+            if (_connections.TryGetValue(hubId, out existing))
+            {
+                existing.Touch();
+                return existing;
+            }
+
+            if (_apiClient.Client == null)
+            {
+                _logger.LogWarning("API client is not initialized, cannot open live control connection for hub [{HubId}]", hubId);
+                return null;
+            }
+
+            _logger.LogDebug("Opening live control connection for hub [{HubId}]", hubId);
+
+            var client = new OpenShockLiveControlClient(hubId, _configManager.Config.OpenShock.Token, _apiClient.Client, _loggerFactory);
+            var connection = new LiveControlConnection(client);
+            _connections[hubId] = connection;
+
+            OsTask.Run(() => StartConnection(hubId, client));
+
+            return connection;
+        }
+    }
+
+    private async Task StartConnection(Guid hubId, OpenShockLiveControlClient client)
+    {
+        await client.State.Updated.SubscribeAsync(async state =>
+        {
+            _logger.LogTrace("Live control connection for hub [{HubId}] status updated {Status}", hubId, state);
+            await _onStateUpdated.InvokeAsyncParallel();
+        });
+
+        await client.OnDispose.SubscribeAsync(async () =>
+        {
+            if (_connections.TryRemove(hubId, out _))
+                _logger.LogDebug("Live control connection for hub [{HubId}] disposed itself", hubId);
+            await _onStateUpdated.InvokeAsyncParallel();
+        });
+
+        client.Start();
+
+        // Notify listeners that a (connecting) client now exists for this hub.
+        await _onStateUpdated.InvokeAsyncParallel();
+    }
+
+    private static void SendFrames(IEnumerable<Guid> shockers, LiveControlConnection connection,
+        byte intensity, ControlType type)
+    {
+        // Frames are only accepted once the socket is connected; while it is still warming up (or reconnecting) we
+        // drop them. EnsureConnection already kicked off / kept the connection alive.
+        if (connection.Client.State.Value != WebsocketConnectionState.Connected) return;
+
         foreach (var shocker in shockers)
         {
-            client.IntakeFrame(shocker, type, vibrationIntensity);
+            connection.Client.IntakeFrame(shocker, type, intensity);
         }
+    }
+
+    private async Task SweepLoop(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(SweepInterval);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await PruneConnectionsAsync(idleEviction: true);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutting down
+        }
+    }
+
+    private void PruneConnections() => OsTask.Run(() => PruneConnectionsAsync(idleEviction: false));
+
+    private async Task PruneConnectionsAsync(bool idleEviction)
+    {
+        var changed = false;
+
+        foreach (var (hubId, connection) in _connections)
+        {
+            var hub = _apiClient.AllHubs.FirstOrDefault(x => x.Id == hubId);
+            var online = hub?.Status.Online ?? false;
+            var idle = idleEviction && connection.IdleFor > IdleTimeout;
+
+            if (online && !idle) continue;
+
+            if (!_connections.TryRemove(hubId, out var removed)) continue;
+
+            _logger.LogDebug("Closing live control connection for hub [{HubId}] ({Reason})", hubId,
+                !online ? "offline" : "idle");
+            await removed.Client.DisposeAsync();
+            changed = true;
+        }
+
+        if (changed)
+            await _onStateUpdated.InvokeAsyncParallel();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _cts.CancelAsync();
+        _cts.Dispose();
+
+        foreach (var hubId in _connections.Keys)
+        {
+            if (_connections.TryRemove(hubId, out var connection))
+                await connection.Client.DisposeAsync();
+        }
+    }
+
+    private sealed class LiveControlConnection(OpenShockLiveControlClient client)
+    {
+        public OpenShockLiveControlClient Client { get; } = client;
+
+        private long _lastUsedTicks = Environment.TickCount64;
+
+        public void Touch() => Interlocked.Exchange(ref _lastUsedTicks, Environment.TickCount64);
+
+        public TimeSpan IdleFor => TimeSpan.FromMilliseconds(Environment.TickCount64 - Interlocked.Read(ref _lastUsedTicks));
     }
 }

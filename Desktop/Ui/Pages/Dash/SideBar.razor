@@ -97,21 +97,14 @@
 
                     @foreach (var device in Api.Hubs.Value)
                     {
-                        if (LiveControlManager.LiveControlClients.TryGetValue(device.Id, out var client))
-                        {
-                            <StatePart Text="@device.Name.Truncate(13)" Client="client"/>
-                        }
-                        else
-                        {
-                            <div style="display: flex; flex-direction: column"
-                                 class="child-div-align-center flex-grow-1">
-                                <MudText Style="font-size: 10pt; text-align: center">@device.Name.Truncate(13)</MudText>
-                                <MudTooltip Arrow="true" Placement="Placement.Top" Text="Offline">
-                                    <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@Color.Dark"
-                                             Class="d-block ma-auto"/>
-                                </MudTooltip>
-                            </div>
-                        }
+                        <StatePart Text="@device.Name.Truncate(13)"
+                                   Online="device.Status.Online"
+                                   Client="LiveControlManager.GetClient(device.Id)"/>
+                    }
+
+                    @if (Api.SharedOwners.Value.Count > 0)
+                    {
+                        <SharedHubsPart Owners="Api.SharedOwners.Value" GetClient="LiveControlManager.GetClient"/>
                     }
 
                 </div>

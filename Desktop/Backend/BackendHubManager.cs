@@ -116,15 +116,33 @@ public sealed class BackendHubManager
     /// <returns></returns>
     public Task Control(IEnumerable<Control> shocks, string? customName = null)
     {
-        var enabledShockers = _configManager.Config.OpenShock.Shockers
-            .Where(y => y.Value.Enabled && 
-                        _openShockApi.Hubs.Value.Any(x=> 
-                            x.Shockers.Any(z => z.Id == y.Key && !z.IsPaused)))
-            .Select(x => x.Key)
-            .ToHashSet();
-        
-        var shocksToSend = shocks.Where(x => enabledShockers.Contains(x.Id));
+        var shocksToSend = shocks.Where(x => CanControl(x.Id, x.Type));
         return _openShockHubClient.Control(shocksToSend, customName);
+    }
+
+    /// <summary>
+    /// Whether the given shocker may be controlled with the given control type: it must be enabled in config, exist and
+    /// not be paused, and for shared shockers we must hold the permission matching the control type. Owned shockers are
+    /// not present in the shared permission map and are always allowed.
+    /// </summary>
+    private bool CanControl(Guid shockerId, ControlType type)
+    {
+        if (!_configManager.Config.OpenShock.Shockers.TryGetValue(shockerId, out var conf) || !conf.Enabled)
+            return false;
+
+        var shocker = _openShockApi.AllHubs.SelectMany(x => x.Shockers).FirstOrDefault(x => x.Id == shockerId);
+        if (shocker is null || shocker.IsPaused) return false;
+
+        if (!_openShockApi.SharedShockerPermissions.TryGetValue(shockerId, out var permissions)) return true;
+
+        return type switch
+        {
+            ControlType.Stop => true,
+            ControlType.Shock => permissions.Shock,
+            ControlType.Vibrate => permissions.Vibrate,
+            ControlType.Sound => permissions.Sound,
+            _ => false
+        };
     }
 }
 

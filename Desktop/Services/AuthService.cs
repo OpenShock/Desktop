@@ -66,6 +66,7 @@ public sealed class AuthService
 
             _logger.LogInformation("Refreshing shockers");
             await _apiClient.RefreshHubs();
+            await _apiClient.RefreshSharedHubs();
 
             await _liveControlManager.RefreshConnections();
 
