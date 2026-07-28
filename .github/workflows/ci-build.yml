@@ -133,10 +133,8 @@ jobs:
         run: choco install nsis -y
         
       - name: Create nsis installer
-        uses: joncloud/makensis-action@971ef20f43e4f9f3af2c7f276cb7348d033da1cd # v5.0
-        with:
-          script-file: ${{ github.workspace }}/Installer/installer.nsi
-          additional-plugin-paths: ${{ github.workspace }}/Installer/Plugins
+        shell: pwsh
+        run: makensis /X"!addplugindir `"${{ github.workspace }}\Installer\Plugins`"" "${{ github.workspace }}\Installer\installer.nsi"
           
       - name: Upload OpenShock Desktop Windows Setup
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
