@@ -133,7 +133,6 @@ jobs:
         uses: OpenShock/actions/nsis-build@f8100ff5d177b36c8f2c815949cce48b0217b629 # v1.1.2
         with:
           script-file: ${{ github.workspace }}\Installer\installer.nsi
-          plugin-dir: ${{ github.workspace }}\Installer\Plugins
           
       - name: Upload OpenShock Desktop Windows Setup
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

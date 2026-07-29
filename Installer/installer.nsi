@@ -5,6 +5,8 @@
 ;https://nsis.sourceforge.io/NsProcess_plugin
 ;https://nsis.sourceforge.io/Inetc_plug-in
 
+    !addplugindir "${__FILEDIR__}\Plugins"
+
 ;--------------------------------
 ;Version
 
