@@ -130,7 +130,7 @@ jobs:
           path: publish/
 
       - name: Create nsis installer
-        uses: OpenShock/actions/nsis-build@21ca2d511bca92cf24fb502fa302f82700822584 # v1.1.1
+        uses: OpenShock/actions/nsis-build@f8100ff5d177b36c8f2c815949cce48b0217b629 # v1.1.2
         with:
           script-file: ${{ github.workspace }}\Installer\installer.nsi
           plugin-dir: ${{ github.workspace }}\Installer\Plugins
