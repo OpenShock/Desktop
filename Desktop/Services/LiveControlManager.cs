@@ -25,14 +25,22 @@ public sealed class LiveControlManager : IAsyncDisposable
     /// </summary>
     private static readonly TimeSpan SweepInterval = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// How long a frame that arrived before the socket finished connecting stays eligible for replay. A live control
+    /// frame means "right now", so one that has gone stale is dropped rather than fired late against an intent the
+    /// user has long since released.
+    /// </summary>
+    private static readonly TimeSpan PendingFrameMaxAge = TimeSpan.FromSeconds(2);
+
     private readonly ILogger<LiveControlManager> _logger;
     private readonly ConfigManager _configManager;
     private readonly ILoggerFactory _loggerFactory;
     private readonly OpenShockApi _apiClient;
 
     private readonly ConcurrentDictionary<Guid, LiveControlConnection> _connections = new();
-    private readonly object _connectionCreationLock = new();
+    private readonly Lock _connectionCreationLock = new();
     private readonly CancellationTokenSource _cts = new();
+    private readonly Task _sweepTask;
 
     public LiveControlManager(
         ILogger<LiveControlManager> logger,
@@ -58,7 +66,7 @@ public sealed class LiveControlManager : IAsyncDisposable
             return Task.CompletedTask;
         }).AsTask().Wait();
 
-        OsTask.Run(() => SweepLoop(_cts.Token));
+        _sweepTask = OsTask.Run(() => SweepLoop(_cts.Token));
     }
 
     public IAsyncMinimalEventObservable OnStateUpdated => _onStateUpdated;
@@ -77,19 +85,25 @@ public sealed class LiveControlManager : IAsyncDisposable
     /// </summary>
     public void ControlShockers(IEnumerable<Guid> shockers, byte intensity, ControlType type)
     {
-        var enabledShockers = shockers.Where(IsLiveControllable);
+        // This runs per live control frame, so resolve through the api's shocker lookup and group by hand rather than
+        // scanning every hub per shocker.
+        var lookup = _apiClient.ShockerLookup;
+        var shockersByHub = new Dictionary<Guid, List<Guid>>();
 
-        var shockersByDevice = enabledShockers.GroupBy(
-            x => _apiClient.AllHubs.FirstOrDefault(y => y.Shockers.Any(z => z.Id == x && !z.IsPaused))?.Id);
-
-        foreach (var device in shockersByDevice)
+        foreach (var shockerId in shockers)
         {
-            if (device.Key == null) continue;
+            if (!IsLiveControllable(shockerId)) continue;
+            if (!lookup.TryGetValue(shockerId, out var location) || location.Shocker.IsPaused) continue;
 
-            var connection = EnsureConnection(device.Key.Value);
-            if (connection == null) continue;
+            if (!shockersByHub.TryGetValue(location.Hub.Id, out var hubShockers))
+                shockersByHub[location.Hub.Id] = hubShockers = [];
 
-            SendFrames(device, connection, intensity, type);
+            hubShockers.Add(shockerId);
+        }
+
+        foreach (var (hubId, hubShockers) in shockersByHub)
+        {
+            EnsureConnection(hubId)?.SendFrames(hubShockers, intensity, type);
         }
     }
 
@@ -110,10 +124,7 @@ public sealed class LiveControlManager : IAsyncDisposable
 
             if (shockers.Length == 0) continue;
 
-            var connection = EnsureConnection(hub.Id);
-            if (connection == null) continue;
-
-            SendFrames(shockers, connection, intensity, type);
+            EnsureConnection(hub.Id)?.SendFrames(shockers, intensity, type);
         }
     }
 
@@ -136,11 +147,7 @@ public sealed class LiveControlManager : IAsyncDisposable
     /// Closes connections for hubs that are no longer online or no longer exist. Used on login/logout and on hub
     /// status changes. Never opens new connections.
     /// </summary>
-    public Task RefreshConnections()
-    {
-        PruneConnections();
-        return Task.CompletedTask;
-    }
+    public Task RefreshConnections() => PruneConnectionsAsync(idleEviction: false);
 
     private LiveControlConnection? EnsureConnection(Guid hubId)
     {
@@ -170,17 +177,24 @@ public sealed class LiveControlManager : IAsyncDisposable
             var connection = new LiveControlConnection(client);
             _connections[hubId] = connection;
 
-            OsTask.Run(() => StartConnection(hubId, client));
+            OsTask.Run(() => StartConnection(hubId, connection));
 
             return connection;
         }
     }
 
-    private async Task StartConnection(Guid hubId, OpenShockLiveControlClient client)
+    private async Task StartConnection(Guid hubId, LiveControlConnection connection)
     {
+        var client = connection.Client;
+
         await client.State.Updated.SubscribeAsync(async state =>
         {
             _logger.LogTrace("Live control connection for hub [{HubId}] status updated {Status}", hubId, state);
+
+            // The socket only accepts frames once connected, so anything that arrived while it was still warming up
+            // was parked. Replay it now, otherwise the first press after an idle period is silently swallowed.
+            if (state == WebsocketConnectionState.Connected) connection.FlushPendingFrames();
+
             await _onStateUpdated.InvokeAsyncParallel();
         });
 
@@ -195,19 +209,6 @@ public sealed class LiveControlManager : IAsyncDisposable
 
         // Notify listeners that a (connecting) client now exists for this hub.
         await _onStateUpdated.InvokeAsyncParallel();
-    }
-
-    private static void SendFrames(IEnumerable<Guid> shockers, LiveControlConnection connection,
-        byte intensity, ControlType type)
-    {
-        // Frames are only accepted once the socket is connected; while it is still warming up (or reconnecting) we
-        // drop them. EnsureConnection already kicked off / kept the connection alive.
-        if (connection.Client.State.Value != WebsocketConnectionState.Connected) return;
-
-        foreach (var shocker in shockers)
-        {
-            connection.Client.IntakeFrame(shocker, type, intensity);
-        }
     }
 
     private async Task SweepLoop(CancellationToken cancellationToken)
@@ -244,8 +245,7 @@ public sealed class LiveControlManager : IAsyncDisposable
 
             _logger.LogDebug("Closing live control connection for hub [{HubId}] ({Reason})", hubId,
                 !online ? "offline" : "idle");
-            await removed.Client.DisposeAsync();
-            changed = true;
+            changed |= await removed.DisposeAsync();
         }
 
         if (changed)
@@ -255,23 +255,109 @@ public sealed class LiveControlManager : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _cts.CancelAsync();
+
+        // Let the sweep loop observe the cancellation before the token source goes away underneath it.
+        try
+        {
+            await _sweepTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutting down
+        }
+
         _cts.Dispose();
 
         foreach (var hubId in _connections.Keys)
         {
             if (_connections.TryRemove(hubId, out var connection))
-                await connection.Client.DisposeAsync();
+                await connection.DisposeAsync();
         }
     }
 
+    /// <summary>
+    /// A live control socket plus the bookkeeping around it: when it was last used (for idle eviction), the frames
+    /// parked while it was still connecting, and whether it has already been disposed.
+    /// </summary>
     private sealed class LiveControlConnection(OpenShockLiveControlClient client)
     {
         public OpenShockLiveControlClient Client { get; } = client;
 
+        /// <summary>
+        /// Guards frame delivery against disposal, so a frame can never be handed to a client the sweeper is closing.
+        /// </summary>
+        private readonly Lock _lock = new();
+
+        /// <summary>
+        /// The latest frame per shocker that arrived before the socket was ready. Latest wins - live control is a
+        /// continuous stream, so replaying anything but the most recent intensity would be meaningless.
+        /// </summary>
+        private readonly Dictionary<Guid, (ControlType Type, byte Intensity)> _pendingFrames = new();
+
+        private long _pendingSinceTicks;
         private long _lastUsedTicks = Environment.TickCount64;
+        private bool _disposed;
 
         public void Touch() => Interlocked.Exchange(ref _lastUsedTicks, Environment.TickCount64);
 
         public TimeSpan IdleFor => TimeSpan.FromMilliseconds(Environment.TickCount64 - Interlocked.Read(ref _lastUsedTicks));
+
+        /// <summary>
+        /// Hands frames to the socket when it is ready, otherwise parks them for replay once it connects.
+        /// </summary>
+        public void SendFrames(IEnumerable<Guid> shockers, byte intensity, ControlType type)
+        {
+            lock (_lock)
+            {
+                if (_disposed) return;
+
+                if (Client.State.Value == WebsocketConnectionState.Connected)
+                {
+                    foreach (var shocker in shockers) Client.IntakeFrame(shocker, type, intensity);
+                    return;
+                }
+
+                foreach (var shocker in shockers) _pendingFrames[shocker] = (type, intensity);
+                _pendingSinceTicks = Environment.TickCount64;
+            }
+        }
+
+        /// <summary>
+        /// Replays frames parked while the socket was connecting, unless they have gone stale.
+        /// </summary>
+        public void FlushPendingFrames()
+        {
+            lock (_lock)
+            {
+                if (_pendingFrames.Count == 0) return;
+
+                var age = TimeSpan.FromMilliseconds(Environment.TickCount64 - _pendingSinceTicks);
+                if (!_disposed && age <= PendingFrameMaxAge &&
+                    Client.State.Value == WebsocketConnectionState.Connected)
+                {
+                    foreach (var (shocker, frame) in _pendingFrames)
+                        Client.IntakeFrame(shocker, frame.Type, frame.Intensity);
+                }
+
+                _pendingFrames.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Marks the connection dead so no further frames reach the client, then closes the socket.
+        /// </summary>
+        /// <returns>False when another caller already claimed the disposal.</returns>
+        public async ValueTask<bool> DisposeAsync()
+        {
+            lock (_lock)
+            {
+                if (_disposed) return false;
+                _disposed = true;
+                _pendingFrames.Clear();
+            }
+
+            await Client.DisposeAsync();
+            return true;
+        }
     }
 }

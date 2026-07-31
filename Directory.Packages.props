@@ -16,9 +16,9 @@
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="OneOf" Version="3.0.271" />
     <PackageVersion Include="OpenShock.MinimalEvents" Version="0.0.1" />
-    <PackageVersion Include="OpenShock.SDK.CSharp" Version="0.0.41" />
-    <PackageVersion Include="OpenShock.SDK.CSharp.Hub" Version="0.0.41" />
-    <PackageVersion Include="OpenShock.SDK.CSharp.Live" Version="0.0.41" />
+    <PackageVersion Include="OpenShock.SDK.CSharp" Version="0.0.42" />
+    <PackageVersion Include="OpenShock.SDK.CSharp.Hub" Version="0.0.42" />
+    <PackageVersion Include="OpenShock.SDK.CSharp.Live" Version="0.0.42" />
     <PackageVersion Include="Photino.Blazor" Version="4.0.13" />
     <PackageVersion Include="Semver" Version="3.0.0" />
     <PackageVersion Include="Serilog" Version="4.4.0" />

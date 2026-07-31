@@ -3,6 +3,7 @@
 @using OpenShock.Desktop.Models.BaseImpl
 @using OpenShock.Desktop.ModuleBase.Models
 @using OpenShock.Desktop.ModuleBase.StableInterfaces
+@using OpenShock.SDK.CSharp.Models
 @inject ConfigManager ConfigManager
 @inject OpenShockApi OpenShockApi
 
@@ -15,7 +16,20 @@
                      @bind-Value:after="OnShockerConfigUpdate"/>
     </MudTd>
     <MudTd>
-        @if (!_wasChanged)
+        @if (Permissions is { } permissions)
+        {
+            <div style="display: flex; gap: 2px;">
+                @foreach (var (icon, label, granted) in PermissionIcons(permissions))
+                {
+                    <MudTooltip Text="@($"{label}: {(granted ? "granted" : "not granted")}")">
+                        <MudIcon Icon="@icon"
+                                 Size="Size.Small"
+                                 Color="@(granted ? Color.Success : Color.Dark)"/>
+                    </MudTooltip>
+                }
+            </div>
+        }
+        else if (!_wasChanged)
         {
             <MudTooltip Text="@(Shocker.IsPaused ? "Shocker Paused" : "Shocker Not Paused")">
                 <MudToggleIconButton Toggled="Shocker.IsPaused"
@@ -38,7 +52,15 @@ else
     </MudTd>
     <MudTd></MudTd>
 }
-<MudTd>@Shocker.Name</MudTd>
+<MudTd>
+    @Shocker.Name
+    @if (Permissions != null && Shocker.IsPaused)
+    {
+        <MudTooltip Text="Shocker Paused">
+            <MudIcon Icon="@Icons.Material.Filled.Pause" Size="Size.Small" Color="Color.Warning"/>
+        </MudTooltip>
+    }
+</MudTd>
 <MudTd><code style="font-size: 11px; opacity: 0.7;">@Shocker.Id</code></MudTd>
 
 
@@ -47,7 +69,22 @@ else
 
     [Parameter] public required IOpenShockShocker Shocker { get; set; }
 
+    /// <summary>
+    /// The permissions granted to us for this shocker when it is shared with us by another owner, or null when we own
+    /// the shocker ourselves. Shared shockers show their permissions instead of a pause toggle, since pausing another
+    /// user's shocker is not ours to do.
+    /// </summary>
+    [Parameter] public ShockerPermissions? Permissions { get; set; }
+
     private bool _wasChanged = false;
+
+    private static (string Icon, string Label, bool Granted)[] PermissionIcons(ShockerPermissions permissions) =>
+    [
+        (Icons.Material.Filled.Bolt, "Shock", permissions.Shock),
+        (Icons.Material.Filled.Vibration, "Vibrate", permissions.Vibrate),
+        (Icons.Material.Filled.VolumeUp, "Sound", permissions.Sound),
+        (Icons.Material.Filled.Sensors, "Live control", permissions.Live)
+    ];
 
     private async Task PauseShocker()
     {
@@ -56,9 +93,11 @@ else
         await OpenShockApi.Client.PauseShocker(Shocker.Id, !Shocker.IsPaused);
     }
 
-    protected override void OnInitialized()
+    // A refresh replaces the config's shocker dictionary wholesale, so re-resolve the entry on every parameter set
+    // rather than only once - otherwise we would keep writing to a detached ShockerConf that is never persisted.
+    protected override void OnParametersSet()
     {
-        _configShocker = ConfigManager.Config.OpenShock.Shockers[Shocker.Id];
+        _configShocker = ConfigManager.Config.OpenShock.Shockers.GetValueOrDefault(Shocker.Id);
     }
 
     private void OnShockerConfigUpdate()

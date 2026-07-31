@@ -130,13 +130,14 @@ public sealed class BackendHubManager
         if (!_configManager.Config.OpenShock.Shockers.TryGetValue(shockerId, out var conf) || !conf.Enabled)
             return false;
 
-        var shocker = _openShockApi.AllHubs.SelectMany(x => x.Shockers).FirstOrDefault(x => x.Id == shockerId);
-        if (shocker is null || shocker.IsPaused) return false;
+        if (!_openShockApi.ShockerLookup.TryGetValue(shockerId, out var location) || location.Shocker.IsPaused)
+            return false;
 
         if (!_openShockApi.SharedShockerPermissions.TryGetValue(shockerId, out var permissions)) return true;
 
         return type switch
         {
+            // Stop is always permitted: it can only ever end an action, so it needs no grant of its own.
             ControlType.Stop => true,
             ControlType.Shock => permissions.Shock,
             ControlType.Vibrate => permissions.Vibrate,

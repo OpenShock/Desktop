@@ -63,9 +63,54 @@ public sealed class OpenShockApi
     /// </summary>
     public IEnumerable<IOpenShockHub> AllHubs => Hubs.Value.Concat(SharedHubs.Value);
 
+    /// <summary>
+    /// Lookup from shocker id to that shocker and the hub it lives on, across owned and shared hubs. Rebuilt whenever
+    /// a hub list is refreshed, so hot paths do not have to scan every hub per shocker - live control resolves this
+    /// for every shocker on every frame.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, ShockerLocation> ShockerLookup => _shockerLookup;
+    private volatile IReadOnlyDictionary<Guid, ShockerLocation> _shockerLookup =
+        new Dictionary<Guid, ShockerLocation>();
+
     public ConcurrentDictionary<Guid, HubStatus> HubStates { get; } = new();
 
+    /// <summary>
+    /// Whether owned / shared hubs have been fetched at least once since the last logout. The shocker config is only
+    /// pruned once both halves are known, otherwise the half that has not loaded yet would look like it no longer
+    /// exists and its entries (including the user's enabled choices) would be dropped.
+    /// </summary>
+    private bool _ownHubsLoaded;
+    private bool _sharedHubsLoaded;
+
+    /// <summary>
+    /// Guards the read-modify-write of the shocker config, which is reachable from concurrent refreshes.
+    /// </summary>
+    private readonly Lock _shockerConfigLock = new();
+
+    /// <summary>
+    /// Refreshes owned and shared hubs together and syncs the shocker config once, after both are known. Prefer this
+    /// over calling the individual refreshes back to back, which would sync against a half-populated hub list.
+    /// </summary>
+    public async Task RefreshAllHubs()
+    {
+        var ownFetched = await FetchOwnHubs();
+        var sharedFetched = await FetchSharedHubs();
+
+        if (ownFetched || sharedFetched) SyncShockerConfig();
+    }
+
     public async Task RefreshHubs()
+    {
+        if (await FetchOwnHubs()) SyncShockerConfig();
+    }
+
+    public async Task RefreshSharedHubs()
+    {
+        if (await FetchSharedHubs()) SyncShockerConfig();
+    }
+
+    /// <returns>Whether the hub list was updated and the shocker config needs syncing.</returns>
+    private async Task<bool> FetchOwnHubs()
     {
         if (Client == null)
         {
@@ -74,19 +119,23 @@ public sealed class OpenShockApi
         }
         var response = await Client.GetOwnShockers();
 
-        response.Switch(success =>
+        return response.Match(success =>
             {
                 Hubs.Value = [..success.Value.Select(x => x.ToSdkHub(this))];
-                SyncShockerConfig();
+                _ownHubsLoaded = true;
+                RebuildShockerLookup();
+                return true;
             },
-        error =>
+        _ =>
         {
             _logger.LogError("We are not authenticated with the OpenShock API!");
             // TODO: handle unauthenticated error
+            return false;
         });
     }
 
-    public async Task RefreshSharedHubs()
+    /// <returns>Whether the shared hub list was updated and the shocker config needs syncing.</returns>
+    private async Task<bool> FetchSharedHubs()
     {
         if (Client == null)
         {
@@ -95,7 +144,7 @@ public sealed class OpenShockApi
         }
         var response = await Client.GetSharedShockers();
 
-        response.Switch(success =>
+        return response.Match(success =>
             {
                 var owners = success.Value.ToSdkSharedOwners(this);
                 SharedOwners.Value = owners;
@@ -106,13 +155,27 @@ public sealed class OpenShockApi
                     .SelectMany(device => device.Shockers)
                     .ToDictionary(shocker => shocker.Id, shocker => shocker.Permissions);
 
-                SyncShockerConfig();
+                _sharedHubsLoaded = true;
+                RebuildShockerLookup();
+                return true;
             },
-        error =>
+        _ =>
         {
             _logger.LogError("We are not authenticated with the OpenShock API!");
             // TODO: handle unauthenticated error
+            return false;
         });
+    }
+
+    private void RebuildShockerLookup()
+    {
+        var lookup = new Dictionary<Guid, ShockerLocation>();
+
+        foreach (var hub in AllHubs)
+        foreach (var shocker in hub.Shockers)
+            lookup.TryAdd(shocker.Id, new ShockerLocation(hub, shocker));
+
+        _shockerLookup = lookup;
     }
 
     /// <summary>
@@ -120,26 +183,41 @@ public sealed class OpenShockApi
     /// flag for shockers that were already present and dropping shockers that no longer exist. Newly discovered owned
     /// shockers default to enabled; newly discovered shared shockers default to disabled so another user's device is
     /// never controlled until the user explicitly opts in.
+    ///
+    /// Entries are only dropped once both the owned and the shared hub list have been fetched; until then unknown
+    /// entries are carried over untouched so a partially loaded state cannot discard the user's choices.
     /// </summary>
     private void SyncShockerConfig()
     {
-        var shockerList = new Dictionary<Guid, OpenShockConf.ShockerConf>();
-        foreach (var shockerId in AllHubs.SelectMany(x => x.Shockers).Select(x => x.Id))
+        lock (_shockerConfigLock)
         {
-            if (shockerList.ContainsKey(shockerId)) continue;
+            var existing = _configManager.Config.OpenShock.Shockers;
+            var shockerList = new Dictionary<Guid, OpenShockConf.ShockerConf>();
 
-            // Shared shockers are present in the permission map; owned shockers are not.
-            var enabled = !_sharedShockerPermissions.ContainsKey(shockerId);
-            if (_configManager.Config.OpenShock.Shockers.TryGetValue(shockerId, out var confShocker))
-                enabled = confShocker.Enabled;
-
-            shockerList.Add(shockerId, new OpenShockConf.ShockerConf
+            foreach (var shockerId in AllHubs.SelectMany(x => x.Shockers).Select(x => x.Id))
             {
-                Enabled = enabled
-            });
+                if (shockerList.ContainsKey(shockerId)) continue;
+
+                // Shared shockers are present in the permission map; owned shockers are not.
+                var enabled = !_sharedShockerPermissions.ContainsKey(shockerId);
+                if (existing.TryGetValue(shockerId, out var confShocker))
+                    enabled = confShocker.Enabled;
+
+                shockerList.Add(shockerId, new OpenShockConf.ShockerConf
+                {
+                    Enabled = enabled
+                });
+            }
+
+            if (!_ownHubsLoaded || !_sharedHubsLoaded)
+            {
+                foreach (var (shockerId, confShocker) in existing)
+                    shockerList.TryAdd(shockerId, confShocker);
+            }
+
+            _configManager.Config.OpenShock.Shockers = shockerList;
+            _configManager.Save();
         }
-        _configManager.Config.OpenShock.Shockers = shockerList;
-        _configManager.Save();
     }
 
     public void Logout()
@@ -148,6 +226,9 @@ public sealed class OpenShockApi
         SharedHubs.Value = ImmutableArray<OpenShockHub>.Empty;
         SharedOwners.Value = ImmutableArray<SharedHubOwner>.Empty;
         _sharedShockerPermissions = new Dictionary<Guid, ShockerPermissions>();
+        _shockerLookup = new Dictionary<Guid, ShockerLocation>();
+        _ownHubsLoaded = false;
+        _sharedHubsLoaded = false;
     }
 
 }
