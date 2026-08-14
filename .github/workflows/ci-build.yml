@@ -130,7 +130,7 @@ jobs:
           path: publish/
 
       - name: Create nsis installer
-        uses: OpenShock/actions/nsis-build@f8100ff5d177b36c8f2c815949cce48b0217b629 # v1.1.2
+        uses: OpenShock/actions/nsis-build@96e1cda1be3fe2be1fc92f560798445e778da45e # v1.1.2
         with:
           script-file: ${{ github.workspace }}\Installer\installer.nsi
           
@@ -155,7 +155,7 @@ jobs:
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Log in to Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
