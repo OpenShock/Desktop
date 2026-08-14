@@ -10,6 +10,7 @@ using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Updatables;
 using Serilog;
 using ILogger = Serilog.ILogger;
+using OpenShock.Internal.Common.Utils;
 
 namespace OpenShock.Desktop.ModuleManager.Repository;
 

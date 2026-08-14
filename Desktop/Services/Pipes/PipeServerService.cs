@@ -3,6 +3,7 @@ using System.Text.Json;
 using OpenShock.Desktop.Utils;
 using OpenShock.MinimalEvents;
 using OpenShock.SDK.CSharp.Utils;
+using OpenShock.Internal.Common.Utils;
 
 namespace OpenShock.Desktop.Services.Pipes;
 

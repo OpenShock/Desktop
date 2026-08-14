@@ -71,6 +71,7 @@
         <PackageReference Include="Serilog.Extensions.Logging" />
         <PackageReference Include="Serilog.Sinks.Console" />
         <PackageReference Include="Serilog.Sinks.Debug" />
+        <PackageReference Include="OpenShock.Internal.Common" />
         <PackageReference Include="OpenShock.SDK.CSharp" />
         <PackageReference Include="OpenShock.SDK.CSharp.Hub" />
         <PackageReference Include="OpenShock.SDK.CSharp.Live" />
