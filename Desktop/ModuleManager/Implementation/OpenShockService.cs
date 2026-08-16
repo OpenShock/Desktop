@@ -27,7 +27,8 @@ public sealed class OpenShockService : IOpenShockService, IAsyncDisposable
         Control = _controlInstance = new OpenShockControl(backendHubManager, liveControlManager);
         Data = new OpenShockData
         {
-            Hubs = openShockApi.Hubs
+            Hubs = openShockApi.Hubs,
+            SharedHubs = openShockApi.SharedHubs
         };
         Api = new OpenShockApiWrapper(openShockApi);
         Auth = new OpenShockAuth

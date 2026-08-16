@@ -36,6 +36,8 @@
         <MudNavMenu style="align-self: flex-start; overflow-y: auto" Class="flex-auto flex-grow-1" Margin="Margin.Dense"
                     Color="Color.Primary" Bordered="true">
 
+            <MudNavLink Icon="@Icons.Material.Filled.ElectricBolt" Href="/dash/shockers">Shockers</MudNavLink>
+
             <MudNavLink Icon="@Icons.Material.Filled.ViewModule" Href="/dash/modules">Manage Modules</MudNavLink>
 
             <MudDivider Style="margin-bottom: 5px; margin-top: 5px;" DividerType="DividerType.Middle"/>
@@ -97,21 +99,14 @@
 
                     @foreach (var device in Api.Hubs.Value)
                     {
-                        if (LiveControlManager.LiveControlClients.TryGetValue(device.Id, out var client))
-                        {
-                            <StatePart Text="@device.Name.Truncate(13)" Client="client"/>
-                        }
-                        else
-                        {
-                            <div style="display: flex; flex-direction: column"
-                                 class="child-div-align-center flex-grow-1">
-                                <MudText Style="font-size: 10pt; text-align: center">@device.Name.Truncate(13)</MudText>
-                                <MudTooltip Arrow="true" Placement="Placement.Top" Text="Offline">
-                                    <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@Color.Dark"
-                                             Class="d-block ma-auto"/>
-                                </MudTooltip>
-                            </div>
-                        }
+                        <StatePart Text="@device.Name.Truncate(13)"
+                                   Online="device.Status.Online"
+                                   Client="LiveControlManager.GetClient(device.Id)"/>
+                    }
+
+                    @if (Api.SharedOwners.Value.Count > 0)
+                    {
+                        <SharedHubsPart Owners="Api.SharedOwners.Value" GetClient="LiveControlManager.GetClient"/>
                     }
 
                 </div>
@@ -125,11 +120,17 @@
 @code {
     private IAsyncDisposable _statusSubscription = null!;
     private IAsyncDisposable _authStateSubscription = null!;
+    private IAsyncDisposable _liveControlSubscription = null!;
+    private IAsyncDisposable _sharedOwnersSubscription = null!;
 
     protected override async Task OnInitializedAsync()
     {
         _statusSubscription = await StatusHandler.OnWebsocketStatusChanged.SubscribeAsync(() => InvokeAsync(StateHasChanged));
         _authStateSubscription = await AuthService.AuthState.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+
+        // Connections open lazily and are pruned when idle, so GetClient flips with nothing else changing.
+        _liveControlSubscription = await LiveControlManager.OnStateUpdated.SubscribeAsync(() => InvokeAsync(StateHasChanged));
+        _sharedOwnersSubscription = await Api.SharedOwners.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
 
     private struct PermissionInfo
@@ -164,6 +165,8 @@
         _disposed = true;
         await _statusSubscription.DisposeAsync();
         await _authStateSubscription.DisposeAsync();
+        await _liveControlSubscription.DisposeAsync();
+        await _sharedOwnersSubscription.DisposeAsync();
     }
 
 }

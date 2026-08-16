@@ -57,19 +57,14 @@
 
             @foreach (var device in Api.Hubs.Value)
             {
-                if (LiveControlManager.LiveControlClients.TryGetValue(device.Id, out var client))
-                {
-                    <StatePart Text="@device.Name.Truncate(13)" Client="client"/>
-                }
-                else
-                {
-                    <div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
-                        <MudText Style="font-size: 10pt">@device.Name.Truncate(13)</MudText>
-                        <MudTooltip Arrow="true" Placement="Placement.Top" Text="Offline">
-                            <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@Color.Dark"/>
-                        </MudTooltip>
-                    </div>
-                }
+                <StatePart Text="@device.Name.Truncate(13)"
+                           Online="device.Status.Online"
+                           Client="LiveControlManager.GetClient(device.Id)"/>
+            }
+
+            @if (Api.SharedOwners.Value.Count > 0)
+            {
+                <SharedHubsPart Owners="Api.SharedOwners.Value" GetClient="LiveControlManager.GetClient"/>
             }
         </div>
     </MudPaper>
@@ -124,10 +119,16 @@
     private void OpenGithub() => UiUtils.OpenUrl("https://github.com/OpenShock/Desktop", Snackbar);
     private void GoToModuleManager() => NavigationManager.NavigateTo("/dash/modules?OpenAvailableModules=true");
     private IAsyncDisposable _statusSubscription = null!;
-    
+    private IAsyncDisposable _liveControlSubscription = null!;
+    private IAsyncDisposable _sharedOwnersSubscription = null!;
+
     protected override async Task OnInitializedAsync()
     {
         _statusSubscription = await StatusHandler.OnWebsocketStatusChanged.SubscribeAsync(() => InvokeAsync(StateHasChanged));
+
+        // Connections open lazily and are pruned when idle, so GetClient flips with nothing else changing.
+        _liveControlSubscription = await LiveControlManager.OnStateUpdated.SubscribeAsync(() => InvokeAsync(StateHasChanged));
+        _sharedOwnersSubscription = await Api.SharedOwners.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
     
 
@@ -155,6 +156,8 @@
         if (_disposed) return;
         _disposed = true;
         await _statusSubscription.DisposeAsync();
+        await _liveControlSubscription.DisposeAsync();
+        await _sharedOwnersSubscription.DisposeAsync();
     }
 
 }

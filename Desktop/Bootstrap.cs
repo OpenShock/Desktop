@@ -123,20 +123,9 @@ public static class Bootstrap
     {
         #region SystemTray
 
-#if WINDOWS
-        if (headless)
-        {
-            var applicationThread = new Thread(() =>
-            {
-                services.GetService<ITrayService>()?.Initialize().Wait();
-                System.Windows.Forms.Application.Run();
-            });
-            applicationThread.Start();
-        }
-        else services.GetService<ITrayService>()?.Initialize().Wait();
-#else
-        services.GetService<ITrayService>()?.Initialize();
-#endif
+        // Off the startup path, a failing tray must not stop the app from launching.
+        var trayService = services.GetService<ITrayService>();
+        if (trayService != null) OsTask.Run(trayService.Initialize);
 
         #endregion
 

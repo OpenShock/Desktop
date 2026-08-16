@@ -67,18 +67,17 @@ public sealed class BackendHubManager
 
     private async Task DeviceUpdate(HubUpdateEventArgs update)
     {
-        if (update.UpdateType is not HubUpdateType.Created)
-        {
-            if(_openShockApi.Hubs.Value.All(x => x.Id != update.HubId))
-            {
-                _logger.LogDebug("Hub update received for none of our hubs {HubId} {Type}, ignoring", update.HubId, update.UpdateType);
-                return;
-            }
-        }
-        
         _logger.LogDebug("Device update received {DeviceId} {UpdateType}", update.HubId, update.UpdateType);
-        
-        await _openShockApi.RefreshHubs();
+
+        try
+        {
+            // Not filtered to known hubs: an update for an unknown one is a hub someone has just shared with us.
+            await _openShockApi.RefreshAllHubs();
+        }
+        catch (HubRefreshException e)
+        {
+            _logger.LogWarning(e, "Failed to refresh hubs after a device update, keeping the previous hub data");
+        }
     }
 
 
@@ -116,15 +115,49 @@ public sealed class BackendHubManager
     /// <returns></returns>
     public Task Control(IEnumerable<Control> shocks, string? customName = null)
     {
-        var enabledShockers = _configManager.Config.OpenShock.Shockers
-            .Where(y => y.Value.Enabled && 
-                        _openShockApi.Hubs.Value.Any(x=> 
-                            x.Shockers.Any(z => z.Id == y.Key && !z.IsPaused)))
-            .Select(x => x.Key)
-            .ToHashSet();
-        
-        var shocksToSend = shocks.Where(x => enabledShockers.Contains(x.Id));
+        var shocksToSend = shocks.Where(x => CanControl(x.Id, x.Type));
         return _openShockHubClient.Control(shocksToSend, customName);
+    }
+
+    /// <summary>
+    /// Whether the given shocker may be controlled with the given control type: it must be enabled in config, exist and
+    /// not be paused, and for shared shockers we must hold the permission matching the control type.
+    /// </summary>
+    private bool CanControl(Guid shockerId, ControlType type)
+    {
+        var resolution = _openShockApi.ResolveShocker(shockerId);
+
+        if (!resolution.Enabled)
+            return Drop(shockerId, type, "shocker is not enabled");
+
+        if (resolution.Location is not { } location)
+            return Drop(shockerId, type, "shocker is not on any known hub");
+
+        if (location.Shocker.IsPaused)
+            return Drop(shockerId, type, "shocker is paused");
+
+        if (resolution.SharedPermissions is not { } permissions) return true;
+
+        var permitted = type switch
+        {
+            // Stop can only ever end an action, so it needs no grant of its own.
+            ControlType.Stop => true,
+            ControlType.Shock => permissions.Shock,
+            ControlType.Vibrate => permissions.Vibrate,
+            ControlType.Sound => permissions.Sound,
+            _ => false
+        };
+
+        return permitted || Drop(shockerId, type, "the owner has not granted this control type");
+    }
+
+    /// <summary>
+    /// Logs why a control command was dropped, which is otherwise invisible to whatever issued it.
+    /// </summary>
+    private bool Drop(Guid shockerId, ControlType type, string reason)
+    {
+        _logger.LogDebug("Dropping {Type} for shocker [{ShockerId}]: {Reason}", type, shockerId, reason);
+        return false;
     }
 }
 

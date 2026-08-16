@@ -1,69 +1,94 @@
 @using OpenShock.Desktop.Backend
-@using OpenShock.Desktop.Config
 @using OpenShock.Desktop.Models.BaseImpl
 @using OpenShock.Desktop.ModuleBase.Models
 @using OpenShock.Desktop.ModuleBase.StableInterfaces
-@inject ConfigManager ConfigManager
+@using OpenShock.SDK.CSharp.Models
 @inject OpenShockApi OpenShockApi
 
-@if (_configShocker != null)
-{
-    <MudTd>
-        <MudCheckBox Size="Size.Small"
-                     Dense="true"
-                     @bind-Value="_configShocker.Enabled"
-                     @bind-Value:after="OnShockerConfigUpdate"/>
-    </MudTd>
-    <MudTd>
-        @if (!_wasChanged)
-        {
-            <MudTooltip Text="@(Shocker.IsPaused ? "Shocker Paused" : "Shocker Not Paused")">
-                <MudToggleIconButton Toggled="Shocker.IsPaused"
-                                     ToggledChanged="PauseShocker"
-                                     Size="Size.Small"
-                                     Icon="@Icons.Material.Filled.Pause"
-                                     ToggledIcon="@Icons.Material.Filled.PlayArrow"/>
-            </MudTooltip>
-        }
-        else
-        {
-            <MudProgressCircular Size="Size.Small" Color="Color.Default" Indeterminate="true"/>
-        }
-    </MudTd>
-}
-else
-{
-    <MudTd>
-        <MudText Typo="Typo.caption" Color="Color.Error">Error</MudText>
-    </MudTd>
-    <MudTd></MudTd>
-}
-<MudTd>@Shocker.Name</MudTd>
+<MudTd>
+    <MudCheckBox T="bool"
+                 Size="Size.Small"
+                 Dense="true"
+                 Value="OpenShockApi.IsShockerEnabled(Shocker.Id)"
+                 ValueChanged="SetEnabled"/>
+</MudTd>
+<MudTd>
+    @if (Permissions is { } permissions)
+    {
+        <div style="display: flex; gap: 2px;">
+            @foreach (var (icon, label, granted) in PermissionIcons(permissions))
+            {
+                <MudTooltip Text="@($"{label}: {(granted ? "granted" : "not granted")}")">
+                    <MudIcon Icon="@icon"
+                             Size="Size.Small"
+                             Color="@(granted ? Color.Success : Color.Dark)"/>
+                </MudTooltip>
+            }
+        </div>
+    }
+    else if (!_wasChanged)
+    {
+        <MudTooltip Text="@(Shocker.IsPaused ? "Shocker Paused" : "Shocker Not Paused")">
+            <MudToggleIconButton Toggled="Shocker.IsPaused"
+                                 ToggledChanged="PauseShocker"
+                                 Size="Size.Small"
+                                 Icon="@Icons.Material.Filled.Pause"
+                                 ToggledIcon="@Icons.Material.Filled.PlayArrow"/>
+        </MudTooltip>
+    }
+    else
+    {
+        <MudProgressCircular Size="Size.Small" Color="Color.Default" Indeterminate="true"/>
+    }
+</MudTd>
+<MudTd>
+    @Shocker.Name
+    @if (Permissions != null && Shocker.IsPaused)
+    {
+        <MudTooltip Text="Shocker Paused">
+            <MudIcon Icon="@Icons.Material.Filled.Pause" Size="Size.Small" Color="Color.Warning"/>
+        </MudTooltip>
+    }
+</MudTd>
 <MudTd><code style="font-size: 11px; opacity: 0.7;">@Shocker.Id</code></MudTd>
 
 
 @code {
-    private OpenShockConf.ShockerConf? _configShocker;
-
     [Parameter] public required IOpenShockShocker Shocker { get; set; }
 
+    /// <summary>
+    /// The permissions granted to us for this shocker when it is shared with us by another owner, or null when we own
+    /// the shocker ourselves. Shared shockers show their permissions instead of a pause toggle, since pausing another
+    /// user's shocker is not ours to do.
+    /// </summary>
+    [Parameter] public ShockerPermissions? Permissions { get; set; }
+
     private bool _wasChanged = false;
+
+    private static (string Icon, string Label, bool Granted)[] PermissionIcons(ShockerPermissions permissions) =>
+    [
+        (Icons.Material.Filled.Bolt, "Shock", permissions.Shock),
+        (Icons.Material.Filled.Vibration, "Vibrate", permissions.Vibrate),
+        (Icons.Material.Filled.VolumeUp, "Sound", permissions.Sound),
+        (Icons.Material.Filled.Sensors, "Live control", permissions.Live)
+    ];
 
     private async Task PauseShocker()
     {
         if (OpenShockApi.Client == null || _wasChanged) return;
         _wasChanged = true;
-        await OpenShockApi.Client.PauseShocker(Shocker.Id, !Shocker.IsPaused);
+
+        try
+        {
+            await OpenShockApi.Client.PauseShocker(Shocker.Id, !Shocker.IsPaused);
+        }
+        finally
+        {
+            _wasChanged = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
-    protected override void OnInitialized()
-    {
-        _configShocker = ConfigManager.Config.OpenShock.Shockers[Shocker.Id];
-    }
-
-    private void OnShockerConfigUpdate()
-    {
-        ConfigManager.Save();
-    }
+    private void SetEnabled(bool enabled) => OpenShockApi.SetShockerEnabled(Shocker.Id, enabled);
 
 }

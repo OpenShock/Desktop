@@ -7,15 +7,15 @@
     <OpenShockHostAssembly Include="OpenShock.MinimalEvents" Version="0.0.1" />
 
     <!-- UI framework -->
-    <OpenShockHostAssembly Include="MudBlazor" Version="9.4.0" />
+    <OpenShockHostAssembly Include="MudBlazor" Version="9.8.0" />
 
     <!-- OpenShock SDKs -->
-    <OpenShockHostAssembly Include="OpenShock.SDK.CSharp" Version="0.0.40" />
-    <OpenShockHostAssembly Include="OpenShock.SDK.CSharp.Hub" Version="0.0.40" />
-    <OpenShockHostAssembly Include="OpenShock.SDK.CSharp.Live" Version="0.0.40" />
+    <OpenShockHostAssembly Include="OpenShock.SDK.CSharp" Version="0.0.42" />
+    <OpenShockHostAssembly Include="OpenShock.SDK.CSharp.Hub" Version="0.0.42" />
+    <OpenShockHostAssembly Include="OpenShock.SDK.CSharp.Live" Version="0.0.42" />
 
     <!-- Logging -->
-    <OpenShockHostAssembly Include="Serilog" Version="4.3.1" />
+    <OpenShockHostAssembly Include="Serilog" Version="4.4.0" />
     <OpenShockHostAssembly Include="Serilog.Extensions.Hosting" Version="10.0.0" />
     <OpenShockHostAssembly Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <OpenShockHostAssembly Include="Serilog.Sinks.Console" Version="6.1.1" />
@@ -25,50 +25,51 @@
     <!-- Microsoft.Extensions -->
 
     <!-- ASP.NET Core / SignalR -->
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.11" />
 
     <!-- Other host dependencies -->
-    <OpenShockHostAssembly Include="System.Reactive" Version="6.1.0" />
+    <OpenShockHostAssembly Include="System.Reactive" Version="7.0.0" />
     <OpenShockHostAssembly Include="Semver" Version="3.0.0" />
     <OpenShockHostAssembly Include="OneOf" Version="3.0.271" />
     <OpenShockHostAssembly Include="CommandLineParser" Version="2.9.1" />
     <OpenShockHostAssembly Include="dnlib" Version="4.5.0" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.Web" Version="10.0.8" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.Web" Version="10.0.11" />
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.51" />
     <OpenShockHostAssembly Include="Microsoft.Maui.Controls" Version="10.0.51" />
     <OpenShockHostAssembly Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.51" />
     <OpenShockHostAssembly Include="Photino.Blazor" Version="4.0.13" />
     <OpenShockHostAssembly Include="LucHeart.WebsocketLibrary" Version="1.1.0" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Authorization" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.Forms" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Connections.Abstractions" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Http.Connections.Client" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Http.Connections.Common" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Metadata" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Diagnostics" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Diagnostics.Abstractions" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Features" Version="10.0.8" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Authorization" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.Forms" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Connections.Abstractions" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Http.Connections.Client" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Http.Connections.Common" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.Metadata" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Diagnostics" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Diagnostics.Abstractions" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Features" Version="10.0.11" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.FileProviders.Abstractions" Version="10.0.0" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Localization" Version="10.0.1" />
     <OpenShockHostAssembly Include="Microsoft.Extensions.Localization.Abstractions" Version="10.0.1" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Options" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Primitives" Version="10.0.8" />
-    <OpenShockHostAssembly Include="Microsoft.Extensions.Validation" Version="10.0.8" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Options" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Primitives" Version="10.0.11" />
+    <OpenShockHostAssembly Include="Microsoft.Extensions.Validation" Version="10.0.11" />
     <OpenShockHostAssembly Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
-    <OpenShockHostAssembly Include="Microsoft.JSInterop" Version="10.0.8" />
+    <OpenShockHostAssembly Include="Microsoft.JSInterop" Version="10.0.11" />
+    <OpenShockHostAssembly Include="OpenShock.Internal.Common" Version="1.1.0" />
   </ItemGroup>
 
   <!-- Modules can override specific host assemblies to force-bundle them.

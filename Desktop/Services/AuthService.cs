@@ -65,7 +65,7 @@ public sealed class AuthService
             await _hubClient.StartAsync();
 
             _logger.LogInformation("Refreshing shockers");
-            await _apiClient.RefreshHubs();
+            await _apiClient.RefreshAllHubs();
 
             await _liveControlManager.RefreshConnections();
 

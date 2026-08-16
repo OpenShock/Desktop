@@ -10,4 +10,5 @@ namespace OpenShock.Desktop.ModuleManager.Implementation;
 public class OpenShockData : IOpenShockData
 {
     public required IObservableVariable<IReadOnlyList<IOpenShockHub>> Hubs { get; init; }
+    public required IObservableVariable<IReadOnlyList<IOpenShockHub>> SharedHubs { get; init; }
 }

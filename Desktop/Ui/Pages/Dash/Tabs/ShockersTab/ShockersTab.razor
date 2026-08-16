@@ -1,4 +1,5 @@
 @using OpenShock.Desktop.Backend
+@using OpenShock.Desktop.ModuleBase.StableInterfaces
 @using OpenShock.SDK.CSharp.Models
 @using ControlType = OpenShock.SDK.CSharp.Models.ControlType
 @inject OpenShockApi OpenShockApi
@@ -26,7 +27,7 @@
               Hover="true"
               Elevation="0"
               FixedHeader="true"
-              Height="calc(100vh - 180px)">
+              Height="@(HasSharedShockers ? "calc(50vh - 120px)" : "calc(100vh - 180px)")">
         <HeaderContent>
             <MudTh Style="width: 60px;">Enabled</MudTh>
             <MudTh Style="width: 60px;">Status</MudTh>
@@ -38,6 +39,43 @@
         </RowTemplate>
     </MudTable>
 </MudPaper>
+
+@if (HasSharedShockers)
+{
+    <div class="shockers-toolbar mt-4">
+        <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small" Class="mr-2"/>
+        <MudText Typo="Typo.subtitle2">Shared with you</MudText>
+        <MudText Typo="Typo.caption" Class="ml-3 mud-text-secondary">
+            Disabled by default &ndash; enable a shocker to let modules control it
+        </MudText>
+    </div>
+
+    <MudPaper Outlined="true" Class="rounded shockers-table-wrap">
+        <MudTable Items="SharedRows"
+                  GroupBy="_sharedGrouping"
+                  Dense="true"
+                  Hover="true"
+                  Elevation="0"
+                  FixedHeader="true"
+                  Height="calc(50vh - 120px)">
+            <HeaderContent>
+                <MudTh Style="width: 60px;">Enabled</MudTh>
+                <MudTh Style="width: 110px;">Permissions</MudTh>
+                <MudTh>Name</MudTh>
+                <MudTh>Guid</MudTh>
+            </HeaderContent>
+            <GroupHeaderTemplate>
+                <MudTh Class="mud-table-cell-custom-group" colspan="4">
+                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.Key</MudText>
+                </MudTh>
+            </GroupHeaderTemplate>
+            <RowTemplate>
+                <ShockerComponent Shocker="@context.Shocker"
+                                  Permissions="@GetPermissions(context.Shocker.Id)"></ShockerComponent>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+}
 
 <style>
     .shockers-toolbar {
@@ -58,9 +96,46 @@
 
 @code {
     private IAsyncDisposable? _hubsUpdateSubscription;
+    private IAsyncDisposable? _sharedOwnersUpdateSubscription;
+
+    /// <summary>
+    /// A shared shocker together with the owner and hub it belongs to, so the table can group by owner / hub.
+    /// </summary>
+    private sealed record SharedShockerRow(string Owner, string Hub, IOpenShockShocker Shocker);
+
+    private readonly TableGroupDefinition<SharedShockerRow> _sharedGrouping = new()
+    {
+        Selector = x => $"{x.Owner} - {x.Hub}",
+        Indentation = false,
+        Expandable = false
+    };
+
+    private IEnumerable<SharedShockerRow> SharedRows => OpenShockApi.SharedOwners.Value
+        .SelectMany(owner => owner.Hubs
+            .SelectMany(hub => hub.Shockers
+                .Select(shocker => new SharedShockerRow(owner.Name, hub.Name, shocker))));
+
+    private bool HasSharedShockers => OpenShockApi.SharedOwners.Value
+        .Any(owner => owner.Hubs.Any(hub => hub.Shockers.Count > 0));
+
+    /// <summary>
+    /// Fallback for the (not expected) case where a shared shocker is missing from the permission map - showing
+    /// nothing granted is the safe reading.
+    /// </summary>
+    private static readonly ShockerPermissions NoPermissions = new()
+    {
+        Shock = false,
+        Vibrate = false,
+        Sound = false,
+        Live = false
+    };
+
+    private ShockerPermissions GetPermissions(Guid shockerId) =>
+        OpenShockApi.SharedShockerPermissions.GetValueOrDefault(shockerId, NoPermissions);
 
     private async Task TestShockers()
     {
+        // Owned shockers only - a blanket test should never reach into someone else's hub.
         var controlCommandsAll = OpenShockApi.Hubs.Value.SelectMany(x => x.Shockers)
             .Select(x => new Control
             {
@@ -76,11 +151,14 @@
     protected override async Task OnInitializedAsync()
     {
         _hubsUpdateSubscription = await OpenShockApi.Hubs.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+        _sharedOwnersUpdateSubscription =
+            await OpenShockApi.SharedOwners.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
 
     public async ValueTask DisposeAsync()
     {
         if (_hubsUpdateSubscription != null) await _hubsUpdateSubscription.DisposeAsync();
+        if (_sharedOwnersUpdateSubscription != null) await _sharedOwnersUpdateSubscription.DisposeAsync();
     }
 
 }

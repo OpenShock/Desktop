@@ -1,13 +1,30 @@
-﻿<div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
+<div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
     <MudText Style="font-size: 10pt; text-align: center">@Text</MudText>
     <MudTooltip Arrow="true" Placement="Placement.Top">
         <ChildContent>
             <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="GetConnectionStateColor()" Class="d-block ma-auto"/>
         </ChildContent>
         <TooltipContent>
-            <MudText Typo="Typo.body2">@Client.State.Value.ToString()</MudText>
-            <MudText Typo="Typo.caption">@Client.Gateway</MudText><br/>
-            <MudText Typo="Typo.caption">Latency: @(Client.Latency.Value)ms</MudText>
+            @if (Client != null)
+            {
+                <MudText Typo="Typo.body2">Live control: @Client.State.Value.ToString()</MudText>
+                <MudText Typo="Typo.caption">@Client.Gateway</MudText><br/>
+                <MudText Typo="Typo.caption">Latency: @(Client.Latency.Value)ms</MudText>
+            }
+            else if (Online)
+            {
+                <MudText Typo="Typo.body2">Online</MudText>
+                <MudText Typo="Typo.caption">Live control idle</MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2">Offline</MudText>
+            }
+            @if (Shared)
+            {
+                <br/>
+                <MudText Typo="Typo.caption" Color="Color.Info">Shared with you</MudText>
+            }
         </TooltipContent>
     </MudTooltip>
 </div>
