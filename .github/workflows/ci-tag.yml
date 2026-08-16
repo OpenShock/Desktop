@@ -55,11 +55,10 @@ jobs:
     uses: ./.github/workflows/build-module-base.yml
     secrets: inherit
 
-  # Create a draft GitHub release for stable tags
+  # Create a draft GitHub release; RC tags are marked as pre-release
   release:
     needs: [build, build-module-base]
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.ref_name, '-rc.') }}
     permissions:
       contents: write
     steps:
@@ -92,12 +91,13 @@ jobs:
           cd artifacts/photino-linux && zip -r ../OpenShock.Desktop.Photino.Linux.zip . && cd ../..
           cd artifacts/module-base && zip -r ../OpenShock.Desktop.Module.Base.zip . && cd ../..
 
-      - name: Create draft release
+      - name: Create release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
           draft: true
+          prerelease: ${{ contains(github.ref_name, '-rc.') }}
           generate_release_notes: true
           files: |
             artifacts/OpenShock_Desktop_Setup.exe
