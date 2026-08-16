@@ -69,6 +69,7 @@
     <OpenShockHostAssembly Include="Microsoft.Extensions.Validation" Version="10.0.11" />
     <OpenShockHostAssembly Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
     <OpenShockHostAssembly Include="Microsoft.JSInterop" Version="10.0.11" />
+    <OpenShockHostAssembly Include="OpenShock.Internal.Common" Version="1.1.0" />
   </ItemGroup>
 
   <!-- Modules can override specific host assemblies to force-bundle them.
