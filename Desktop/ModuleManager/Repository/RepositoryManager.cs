@@ -3,6 +3,7 @@ using OpenShock.Desktop.Config;
 using OpenShock.Desktop.ModuleBase.Utils;
 using OpenShock.Desktop.Utils;
 using OpenShock.MinimalEvents;
+using OpenShock.Internal.Common.Utils;
 
 namespace OpenShock.Desktop.ModuleManager.Repository;
 
