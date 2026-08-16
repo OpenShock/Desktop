@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Immutable;
+using System.Collections.Concurrent;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Models;
 using OpenShock.Desktop.Models.BaseImpl;
@@ -36,199 +35,190 @@ public sealed class OpenShockApi
             Token = _configManager.Config.OpenShock.Token
         });
     }
-    
-    public ObservableVariable<IReadOnlyList<IOpenShockHub>> Hubs { get; } = new(ImmutableArray<OpenShockHub>.Empty);
+
+    public ObservableVariable<IReadOnlyList<IOpenShockHub>> Hubs { get; } = new([]);
 
     /// <summary>
     /// Hubs owned by other users that have shared one or more shockers with us. Kept separate from <see cref="Hubs"/>.
     /// Flattened across all owners; see <see cref="SharedOwners"/> for the owner-grouped view used by the UI.
     /// </summary>
-    public ObservableVariable<IReadOnlyList<IOpenShockHub>> SharedHubs { get; } = new(ImmutableArray<OpenShockHub>.Empty);
+    public ObservableVariable<IReadOnlyList<IOpenShockHub>> SharedHubs { get; } = new([]);
 
     /// <summary>
     /// Shared hubs grouped by the owner that shared them, so the UI can attribute hubs to the person that owns them.
     /// </summary>
-    public ObservableVariable<IReadOnlyList<SharedHubOwner>> SharedOwners { get; } =
-        new(ImmutableArray<SharedHubOwner>.Empty);
-
-    /// <summary>
-    /// Permissions granted to us per shared shocker. Owned shockers are not present here (they have all permissions).
-    /// </summary>
-    public IReadOnlyDictionary<Guid, ShockerPermissions> SharedShockerPermissions => _sharedShockerPermissions;
-    private volatile IReadOnlyDictionary<Guid, ShockerPermissions> _sharedShockerPermissions =
-        new Dictionary<Guid, ShockerPermissions>();
-
-    /// <summary>
-    /// All hubs we can control, both owned and shared.
-    /// </summary>
-    public IEnumerable<IOpenShockHub> AllHubs => Hubs.Value.Concat(SharedHubs.Value);
-
-    /// <summary>
-    /// Lookup from shocker id to that shocker and the hub it lives on, across owned and shared hubs. Rebuilt whenever
-    /// a hub list is refreshed, so hot paths do not have to scan every hub per shocker - live control resolves this
-    /// for every shocker on every frame.
-    /// </summary>
-    public IReadOnlyDictionary<Guid, ShockerLocation> ShockerLookup => _shockerLookup;
-    private volatile IReadOnlyDictionary<Guid, ShockerLocation> _shockerLookup =
-        new Dictionary<Guid, ShockerLocation>();
+    public ObservableVariable<IReadOnlyList<SharedHubOwner>> SharedOwners { get; } = new([]);
 
     public ConcurrentDictionary<Guid, HubStatus> HubStates { get; } = new();
 
     /// <summary>
-    /// Whether owned / shared hubs have been fetched at least once since the last logout. The shocker config is only
-    /// pruned once both halves are known, otherwise the half that has not loaded yet would look like it no longer
-    /// exists and its entries (including the user's enabled choices) would be dropped.
+    /// Everything the control paths resolve against, rebuilt as one immutable unit per refresh and published with a
+    /// single reference assignment, so readers need no lock and never see a mix of two refreshes.
     /// </summary>
-    private bool _ownHubsLoaded;
-    private bool _sharedHubsLoaded;
+    private volatile HubSnapshot _snapshot = HubSnapshot.Empty;
 
     /// <summary>
-    /// Guards the read-modify-write of the shocker config, which is reachable from concurrent refreshes.
+    /// Permissions granted to us per shared shocker. Owned shockers are not present here (they have all permissions).
     /// </summary>
-    private readonly Lock _shockerConfigLock = new();
+    public IReadOnlyDictionary<Guid, ShockerPermissions> SharedShockerPermissions => _snapshot.SharedPermissions;
 
     /// <summary>
-    /// Refreshes owned and shared hubs together and syncs the shocker config once, after both are known. Prefer this
-    /// over calling the individual refreshes back to back, which would sync against a half-populated hub list.
+    /// Lookup from shocker id to that shocker and the hub it lives on, across owned and shared hubs. Live control
+    /// resolves this for every shocker on every frame, so it is prebuilt rather than scanned.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, ShockerLocation> ShockerLookup => _snapshot.Lookup;
+
+    /// <summary>
+    /// All hubs we can control, owned and shared, keyed by id.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, IOpenShockHub> HubsById => _snapshot.HubsById;
+
+    /// <summary>
+    /// Fetches owned and shared hubs and publishes them as one snapshot. All or nothing, so a partially loaded state
+    /// where the missing half looks deleted cannot occur.
     /// </summary>
     public async Task RefreshAllHubs()
     {
-        var ownFetched = await FetchOwnHubs();
-        var sharedFetched = await FetchSharedHubs();
-
-        if (ownFetched || sharedFetched) SyncShockerConfig();
-    }
-
-    public async Task RefreshHubs()
-    {
-        if (await FetchOwnHubs()) SyncShockerConfig();
-    }
-
-    public async Task RefreshSharedHubs()
-    {
-        if (await FetchSharedHubs()) SyncShockerConfig();
-    }
-
-    /// <returns>Whether the hub list was updated and the shocker config needs syncing.</returns>
-    private async Task<bool> FetchOwnHubs()
-    {
         if (Client == null)
         {
             _logger.LogError("Client is not initialized!");
             throw new Exception("Client is not initialized!");
         }
-        var response = await Client.GetOwnShockers();
 
-        return response.Match(success =>
-            {
-                Hubs.Value = [..success.Value.Select(x => x.ToSdkHub(this))];
-                _ownHubsLoaded = true;
-                RebuildShockerLookup();
-                return true;
-            },
-        _ =>
+        var ownResponse = await Client.GetOwnShockers();
+        var sharedResponse = await Client.GetSharedShockers();
+
+        if (!ownResponse.IsT0 || !sharedResponse.IsT0)
         {
             _logger.LogError("We are not authenticated with the OpenShock API!");
             // TODO: handle unauthenticated error
-            return false;
-        });
-    }
-
-    /// <returns>Whether the shared hub list was updated and the shocker config needs syncing.</returns>
-    private async Task<bool> FetchSharedHubs()
-    {
-        if (Client == null)
-        {
-            _logger.LogError("Client is not initialized!");
-            throw new Exception("Client is not initialized!");
+            return;
         }
-        var response = await Client.GetSharedShockers();
 
-        return response.Match(success =>
-            {
-                var owners = success.Value.ToSdkSharedOwners(this);
-                SharedOwners.Value = owners;
-                SharedHubs.Value = owners.SelectMany(owner => owner.Hubs).ToArray();
+        IOpenShockHub[] ownHubs = [..ownResponse.AsT0.Value.Select(x => x.ToSdkHub(this))];
+        var sharedOwners = sharedResponse.AsT0.Value.ToSdkSharedOwners(this);
+        IOpenShockHub[] sharedHubs = [..sharedOwners.SelectMany(owner => owner.Hubs)];
 
-                _sharedShockerPermissions = success.Value
-                    .SelectMany(owner => owner.Devices)
-                    .SelectMany(device => device.Shockers)
-                    .ToDictionary(shocker => shocker.Id, shocker => shocker.Permissions);
+        var snapshot = new HubSnapshot(
+            [..ownHubs, ..sharedHubs],
+            sharedResponse.AsT0.Value
+                .SelectMany(owner => owner.Devices)
+                .SelectMany(device => device.Shockers)
+                .ToDictionary(shocker => shocker.Id, shocker => shocker.Permissions));
 
-                _sharedHubsLoaded = true;
-                RebuildShockerLookup();
-                return true;
-            },
-        _ =>
-        {
-            _logger.LogError("We are not authenticated with the OpenShock API!");
-            // TODO: handle unauthenticated error
-            return false;
-        });
-    }
+        _snapshot = snapshot;
 
-    private void RebuildShockerLookup()
-    {
-        var lookup = new Dictionary<Guid, ShockerLocation>();
+        Hubs.Value = ownHubs;
+        SharedHubs.Value = sharedHubs;
+        SharedOwners.Value = sharedOwners;
 
-        foreach (var hub in AllHubs)
-        foreach (var shocker in hub.Shockers)
-            lookup.TryAdd(shocker.Id, new ShockerLocation(hub, shocker));
-
-        _shockerLookup = lookup;
+        PruneDeadShockerOverrides(snapshot);
     }
 
     /// <summary>
-    /// Re-populates the per-shocker config with the currently known owned and shared shockers, preserving the enabled
-    /// flag for shockers that were already present and dropping shockers that no longer exist. Newly discovered owned
-    /// shockers default to enabled; newly discovered shared shockers default to disabled so another user's device is
-    /// never controlled until the user explicitly opts in.
-    ///
-    /// Entries are only dropped once both the owned and the shared hub list have been fetched; until then unknown
-    /// entries are carried over untouched so a partially loaded state cannot discard the user's choices.
+    /// Whether the user has opted this shocker in. Absent from the config means disabled, owned and shared alike.
     /// </summary>
-    private void SyncShockerConfig()
+    public bool IsShockerEnabled(Guid shockerId) => ResolveShocker(shockerId).Enabled;
+
+    /// <param name="Enabled">Whether the user has opted this shocker in.</param>
+    /// <param name="Location">Where the shocker lives, or null when it sits on no known hub.</param>
+    /// <param name="SharedPermissions">What its owner granted us, or null when we own it ourselves.</param>
+    public readonly record struct ShockerResolution(
+        bool Enabled,
+        ShockerLocation? Location,
+        ShockerPermissions? SharedPermissions);
+
+    /// <summary>
+    /// Resolves a shocker for a control decision. Control paths must use this rather than reading
+    /// <see cref="SharedShockerPermissions"/> and <see cref="ShockerLookup"/> separately, which re-reads the volatile
+    /// snapshot each time and lets one decision straddle two refreshes.
+    /// </summary>
+    public ShockerResolution ResolveShocker(Guid shockerId)
     {
-        lock (_shockerConfigLock)
+        var snapshot = _snapshot;
+
+        ShockerPermissions? shared =
+            snapshot.SharedPermissions.TryGetValue(shockerId, out var permissions) ? permissions : null;
+
+        var enabled = _configManager.Config.OpenShock.Shockers.TryGetValue(shockerId, out var conf) && conf.Enabled;
+
+        snapshot.Lookup.TryGetValue(shockerId, out var location);
+
+        return new ShockerResolution(enabled, location, shared);
+    }
+
+    /// <summary>
+    /// Records an explicit opt-in choice for a shocker. Copy on write, so readers holding the previous dictionary are
+    /// unaffected.
+    /// </summary>
+    public void SetShockerEnabled(Guid shockerId, bool enabled)
+    {
+        var openShock = _configManager.Config.OpenShock;
+
+        openShock.Shockers = new Dictionary<Guid, OpenShockConf.ShockerConf>(openShock.Shockers)
         {
-            var existing = _configManager.Config.OpenShock.Shockers;
-            var shockerList = new Dictionary<Guid, OpenShockConf.ShockerConf>();
+            [shockerId] = new() { Enabled = enabled }
+        };
 
-            foreach (var shockerId in AllHubs.SelectMany(x => x.Shockers).Select(x => x.Id))
-            {
-                if (shockerList.ContainsKey(shockerId)) continue;
+        _configManager.Save();
+    }
 
-                // Shared shockers are present in the permission map; owned shockers are not.
-                var enabled = !_sharedShockerPermissions.ContainsKey(shockerId);
-                if (existing.TryGetValue(shockerId, out var confShocker))
-                    enabled = confShocker.Enabled;
+    /// <summary>
+    /// Drops overrides for shockers that no longer exist, forcing a fresh opt-in when a share is revoked and later
+    /// granted again.
+    /// </summary>
+    private void PruneDeadShockerOverrides(HubSnapshot snapshot)
+    {
+        var openShock = _configManager.Config.OpenShock;
 
-                shockerList.Add(shockerId, new OpenShockConf.ShockerConf
-                {
-                    Enabled = enabled
-                });
-            }
+        if (openShock.Shockers.Count == 0) return;
+        if (openShock.Shockers.Keys.All(snapshot.Lookup.ContainsKey)) return;
 
-            if (!_ownHubsLoaded || !_sharedHubsLoaded)
-            {
-                foreach (var (shockerId, confShocker) in existing)
-                    shockerList.TryAdd(shockerId, confShocker);
-            }
+        openShock.Shockers = openShock.Shockers
+            .Where(x => snapshot.Lookup.ContainsKey(x.Key))
+            .ToDictionary(x => x.Key, x => x.Value);
 
-            _configManager.Config.OpenShock.Shockers = shockerList;
-            _configManager.Save();
-        }
+        _configManager.Save();
     }
 
     public void Logout()
     {
-        Hubs.Value = ImmutableArray<OpenShockHub>.Empty;
-        SharedHubs.Value = ImmutableArray<OpenShockHub>.Empty;
-        SharedOwners.Value = ImmutableArray<SharedHubOwner>.Empty;
-        _sharedShockerPermissions = new Dictionary<Guid, ShockerPermissions>();
-        _shockerLookup = new Dictionary<Guid, ShockerLocation>();
-        _ownHubsLoaded = false;
-        _sharedHubsLoaded = false;
+        _snapshot = HubSnapshot.Empty;
+
+        Hubs.Value = [];
+        SharedHubs.Value = [];
+        SharedOwners.Value = [];
     }
 
+    /// <summary>
+    /// An immutable view of the hubs from a single refresh, with the derived lookups built once up front.
+    /// </summary>
+    private sealed class HubSnapshot
+    {
+        public static readonly HubSnapshot Empty = new([], new Dictionary<Guid, ShockerPermissions>());
+
+        public HubSnapshot(IReadOnlyList<IOpenShockHub> allHubs,
+            IReadOnlyDictionary<Guid, ShockerPermissions> sharedPermissions)
+        {
+            SharedPermissions = sharedPermissions;
+
+            var hubsById = new Dictionary<Guid, IOpenShockHub>();
+            var lookup = new Dictionary<Guid, ShockerLocation>();
+
+            foreach (var hub in allHubs)
+            {
+                hubsById.TryAdd(hub.Id, hub);
+
+                foreach (var shocker in hub.Shockers)
+                    lookup.TryAdd(shocker.Id, new ShockerLocation(hub, shocker));
+            }
+
+            HubsById = hubsById;
+            Lookup = lookup;
+        }
+
+        public IReadOnlyDictionary<Guid, IOpenShockHub> HubsById { get; }
+        public IReadOnlyDictionary<Guid, ShockerPermissions> SharedPermissions { get; }
+        public IReadOnlyDictionary<Guid, ShockerLocation> Lookup { get; }
+    }
 }

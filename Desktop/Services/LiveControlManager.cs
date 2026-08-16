@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using LucHeart.WebsocketLibrary;
 using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Config;
+using OpenShock.Desktop.Models;
 using OpenShock.Desktop.Utils;
 using OpenShock.MinimalEvents;
 using OpenShock.SDK.CSharp.Hub;
@@ -87,15 +88,16 @@ public sealed class LiveControlManager : IAsyncDisposable
     {
         // This runs per live control frame, so resolve through the api's shocker lookup and group by hand rather than
         // scanning every hub per shocker.
-        var lookup = _apiClient.ShockerLookup;
         var shockersByHub = new Dictionary<Guid, List<Guid>>();
 
         foreach (var shockerId in shockers)
         {
-            if (!IsLiveControllable(shockerId)) continue;
-            if (!lookup.TryGetValue(shockerId, out var location) || location.Shocker.IsPaused) continue;
+            var rejection = GetRejection(shockerId, type, out var location);
+            LogRejection(shockerId, rejection);
 
-            if (!shockersByHub.TryGetValue(location.Hub.Id, out var hubShockers))
+            if (rejection != ControlRejection.None) continue;
+
+            if (!shockersByHub.TryGetValue(location!.Hub.Id, out var hubShockers))
                 shockersByHub[location.Hub.Id] = hubShockers = [];
 
             hubShockers.Add(shockerId);
@@ -108,17 +110,17 @@ public sealed class LiveControlManager : IAsyncDisposable
     }
 
     /// <summary>
-    /// Control all enabled and online shockers with a specific intensity and control type.
-    /// Opens the live control connection for the relevant hubs on demand.
-    /// Only ever targets owned hubs; shared hubs are never swept by a blanket "control all" and can only be
-    /// controlled via an explicit <see cref="ControlShockers"/> call that names their shocker ids.
+    /// Control all enabled and online shockers with a specific intensity and control type, owned and shared alike,
+    /// with <see cref="GetRejection"/> as the single gate. Opens the live control connection for the relevant hubs on
+    /// demand. Uses <see cref="OpenShockApi.HubsById"/> rather than concatenating the owned and shared lists, which
+    /// are two separate assignments per refresh and can be caught half updated.
     /// </summary>
     public void ControlAllShockers(byte intensity, ControlType type)
     {
-        foreach (var hub in _apiClient.Hubs.Value.Where(x => x.Status.Online))
+        foreach (var hub in _apiClient.HubsById.Values.Where(x => x.Status.Online))
         {
             var shockers = hub.Shockers
-                .Where(x => !x.IsPaused && IsLiveControllable(x.Id))
+                .Where(x => GetRejection(x.Id, type, out _) == ControlRejection.None)
                 .Select(x => x.Id)
                 .ToArray();
 
@@ -128,19 +130,70 @@ public sealed class LiveControlManager : IAsyncDisposable
         }
     }
 
-    /// <summary>
-    /// A shocker is live controllable when it is enabled in config and, for shared shockers, we have been granted the
-    /// live control permission. Owned shockers are not present in the shared permission map and are always allowed.
-    /// </summary>
-    private bool IsLiveControllable(Guid shockerId)
+    private enum ControlRejection
     {
-        if (!_configManager.Config.OpenShock.Shockers.TryGetValue(shockerId, out var conf) || !conf.Enabled)
-            return false;
+        None,
+        Disabled,
+        NoLivePermission,
+        NoControlTypePermission,
+        UnknownShocker,
+        Paused,
+        HubOffline
+    }
 
-        if (_apiClient.SharedShockerPermissions.TryGetValue(shockerId, out var permissions))
-            return permissions.Live;
+    /// <summary>
+    /// Why a shocker may not be live controlled with <paramref name="type"/>, or <see cref="ControlRejection.None"/>
+    /// when it may be, in which case <paramref name="location"/> is set to where it lives.
+    /// </summary>
+    private ControlRejection GetRejection(Guid shockerId, ControlType type, out ShockerLocation? location)
+    {
+        var resolution = _apiClient.ResolveShocker(shockerId);
+        location = resolution.Location;
 
-        return true;
+        if (!resolution.Enabled) return ControlRejection.Disabled;
+
+        if (resolution.SharedPermissions is { } permissions)
+        {
+            if (!permissions.Live) return ControlRejection.NoLivePermission;
+
+            // Live grants streaming at all, not any kind of frame, so the per type grant still applies.
+            var permitted = type switch
+            {
+                // Stop can only ever end an action, so it needs no grant of its own.
+                ControlType.Stop => true,
+                ControlType.Shock => permissions.Shock,
+                ControlType.Vibrate => permissions.Vibrate,
+                ControlType.Sound => permissions.Sound,
+                _ => false
+            };
+
+            if (!permitted) return ControlRejection.NoControlTypePermission;
+        }
+
+        if (location == null) return ControlRejection.UnknownShocker;
+
+        if (location.Shocker.IsPaused) return ControlRejection.Paused;
+
+        // Opening a socket to an offline hub would only get closed again by the next sweep.
+        if (!location.Hub.Status.Online) return ControlRejection.HubOffline;
+
+        return ControlRejection.None;
+    }
+
+    private readonly ConcurrentDictionary<Guid, ControlRejection> _lastRejection = new();
+
+    /// <summary>
+    /// Logs why a shocker was dropped from a live control frame, but only when the reason changes. Frames arrive many
+    /// times per second, so logging every drop would flood the log for a single disabled shocker - yet without any
+    /// logging at all a dropped shocker is completely invisible to whatever issued the control.
+    /// </summary>
+    private void LogRejection(Guid shockerId, ControlRejection rejection)
+    {
+        if (_lastRejection.GetValueOrDefault(shockerId) == rejection) return;
+        _lastRejection[shockerId] = rejection;
+
+        if (rejection != ControlRejection.None)
+            _logger.LogDebug("Dropping live control frames for shocker [{ShockerId}]: {Reason}", shockerId, rejection);
     }
 
     /// <summary>
@@ -235,8 +288,7 @@ public sealed class LiveControlManager : IAsyncDisposable
 
         foreach (var (hubId, connection) in _connections)
         {
-            var hub = _apiClient.AllHubs.FirstOrDefault(x => x.Id == hubId);
-            var online = hub?.Status.Online ?? false;
+            var online = _apiClient.HubsById.TryGetValue(hubId, out var hub) && hub.Status.Online;
             var idle = idleEviction && connection.IdleFor > IdleTimeout;
 
             if (online && !idle) continue;
@@ -319,6 +371,11 @@ public sealed class LiveControlManager : IAsyncDisposable
 
                 foreach (var shocker in shockers) _pendingFrames[shocker] = (type, intensity);
                 _pendingSinceTicks = Environment.TickCount64;
+
+                // The socket can reach Connected between the check above and this park, in which case the flush that
+                // ran on that transition already saw an empty queue. Re-check, otherwise the frame sits here until
+                // the next transition - which for a one-shot press after an idle period never comes.
+                if (Client.State.Value == WebsocketConnectionState.Connected) FlushLocked();
             }
         }
 
@@ -329,18 +386,24 @@ public sealed class LiveControlManager : IAsyncDisposable
         {
             lock (_lock)
             {
-                if (_pendingFrames.Count == 0) return;
-
-                var age = TimeSpan.FromMilliseconds(Environment.TickCount64 - _pendingSinceTicks);
-                if (!_disposed && age <= PendingFrameMaxAge &&
-                    Client.State.Value == WebsocketConnectionState.Connected)
-                {
-                    foreach (var (shocker, frame) in _pendingFrames)
-                        Client.IntakeFrame(shocker, frame.Type, frame.Intensity);
-                }
-
-                _pendingFrames.Clear();
+                FlushLocked();
             }
+        }
+
+        /// <remarks>Must be called while holding <see cref="_lock"/>.</remarks>
+        private void FlushLocked()
+        {
+            if (_pendingFrames.Count == 0) return;
+
+            var age = TimeSpan.FromMilliseconds(Environment.TickCount64 - _pendingSinceTicks);
+            if (!_disposed && age <= PendingFrameMaxAge &&
+                Client.State.Value == WebsocketConnectionState.Connected)
+            {
+                foreach (var (shocker, frame) in _pendingFrames)
+                    Client.IntakeFrame(shocker, frame.Type, frame.Intensity);
+            }
+
+            _pendingFrames.Clear();
         }
 
         /// <summary>

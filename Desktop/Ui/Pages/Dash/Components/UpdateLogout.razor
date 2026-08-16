@@ -3,6 +3,7 @@
 @inject Updater Updater
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
+@inject ISnackbar Snackbar
 @using OpenShock.Desktop.Config
 @using OpenShock.Desktop.ModuleBase.Models
 @using OpenShock.Desktop.Services
@@ -10,12 +11,28 @@
 @implements IAsyncDisposable
 
 @code {
+    private const string SettingsHref = "/dash/settings";
+    private const string LogsHref = "/dash/logs";
+
     private static readonly DialogOptions UpdateDialogOptions = new() { NoHeader = true, BackdropClick = false };
     private static readonly DialogOptions LoginDialogOptions = new() { FullScreen = true, CloseButton = true };
 
+    private bool _updateDialogOpen;
+
+    /// <summary>
+    /// Opens the update dialog unless one is already up. The manual check and the UpdateAvailable subscription can
+    /// both reach here for the same update, and cannot be sequenced against each other: ObservableVariable dispatches
+    /// subscribers through OsTask.Run, so the handler runs long after CheckUpdate returned.
+    /// </summary>
     private async Task OpenUpdateDialog()
     {
-        await DialogService.ShowAsync<UpdateDialog>("Update", UpdateDialogOptions);
+        if (_updateDialogOpen) return;
+        _updateDialogOpen = true;
+
+        var dialog = await DialogService.ShowAsync<UpdateDialog>("Update", UpdateDialogOptions);
+
+        // Release the guard once the dialog closes, without holding up the caller.
+        _ = dialog.Result.ContinueWith(_ => _updateDialogOpen = false, TaskScheduler.Default);
     }
 
     private readonly List<IAsyncDisposable> _disposables = new();
@@ -26,13 +43,26 @@
         _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(b => InvokeAsync(StateHasChanged)));
         _disposables.Add(await AuthService.AuthState.ValueUpdated.SubscribeAsync(type => InvokeAsync(StateHasChanged)));
 
+        NavigationManager.LocationChanged += OnLocationChanged;
+
         if (Updater.UpdateAvailable.Value && !Updater.IsPostponed) await OpenUpdateDialog();
     }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
     private async Task UpdateAvailableOnValueChanged(bool v)
     {
         await InvokeAsync(StateHasChanged);
         if (v && !Updater.IsPostponed) await OpenUpdateDialog();
+    }
+
+    private async Task CheckForUpdates()
+    {
+        await Updater.CheckUpdate();
+
+        // Also covers an update that was already known, where the value never changes and the subscription never fires.
+        if (Updater.UpdateAvailable.Value) await OpenUpdateDialog();
+        else Snackbar.Add($"You are running the latest version ({Constants.Version})", Severity.Success);
     }
 
     private async Task Logout()
@@ -49,6 +79,8 @@
         if (_disposed) return;
         _disposed = true;
 
+        NavigationManager.LocationChanged -= OnLocationChanged;
+
         foreach (var asyncDisposable in _disposables)
         {
             await asyncDisposable.DisposeAsync();
@@ -62,59 +94,99 @@
         await DialogService.ShowAsync<Authenticate>("Login", LoginDialogOptions);
     }
 
+    private bool IsActive(string href) =>
+        NavigationManager.ToBaseRelativePath(NavigationManager.Uri)
+            .TrimStart('/')
+            .StartsWith(href.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
+
+    private Color ActiveColor(string href) => IsActive(href) ? Color.Primary : Color.Default;
+
+    private string AccountTooltip => AuthService.AuthState.Value switch
+    {
+        AuthStateType.Authed => AuthService.SelfResponse?.Name ?? "Account",
+        AuthStateType.Authenticating => "Logging in...",
+        AuthStateType.FailedAuth => "Login Failed",
+        _ => "Not Logged In"
+    };
+
 }
 
-<MudMenu Style="width: 100%;">
-    <ActivatorContent>
-        <MudButton OnClick="@context.ToggleAsync" Style="width: 100%; display: flex; align-items: center; justify-content: flex-start;">
-            @switch (AuthService.AuthState.Value)
+<div class="d-flex align-center justify-space-between" style="width: 100%;">
+
+    <MudMenu>
+        <ActivatorContent>
+            <MudTooltip Arrow="true" Placement="Placement.Top" Text="@AccountTooltip">
+                <MudButton OnClick="@context.ToggleAsync" Class="pa-1"
+                           Style="min-width: 0; border-radius: 50%;" aria-label="@AccountTooltip">
+                    @switch (AuthService.AuthState.Value)
+                    {
+                        case AuthStateType.NotAuthed:
+                            <MudAvatar Style="background-color: transparent">
+                                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Size="Size.Large"
+                                         Color="Color.Default"/>
+                            </MudAvatar>
+                            break;
+                        case AuthStateType.FailedAuth:
+                            <MudAvatar Color="Color.Error">
+                                <MudIcon Icon="@Icons.Material.Filled.PersonOff"/>
+                            </MudAvatar>
+                            break;
+                        case AuthStateType.Authenticating:
+                            <MudAvatar Style="background-color: transparent">
+                                <MudProgressCircular Indeterminate="true"></MudProgressCircular>
+                            </MudAvatar>
+                            break;
+                        case AuthStateType.Authed:
+                            <MudAvatar>
+                                <MudImage Src="@AuthService.SelfResponse?.Image.ToString()"/>
+                            </MudAvatar>
+                            break;
+                    }
+                </MudButton>
+            </MudTooltip>
+        </ActivatorContent>
+        <ChildContent>
+            @if (AuthService.AuthState.Value == AuthStateType.Authed)
             {
-                case AuthStateType.NotAuthed:
-                    <MudAvatar Style="background-color: transparent">
-                        <MudImage Src="/images/Icon.svg"/>
-                    </MudAvatar>
-                    <div class="d-flex align-center" style="margin-left: 15px">
-                        <p>Not Logged In</p>
-                    </div>
-                    break;
-                case AuthStateType.FailedAuth:
-                    <MudAvatar Style="background-color: transparent">
-                        <MudImage Src="/images/Icon.svg"/>
-                    </MudAvatar>
-                    <div class="d-flex align-center" style="margin-left: 15px">
-                        <p>Not Logged In (Failed)</p>
-                    </div>
-                    break;
-                case AuthStateType.Authenticating:
-                    <MudAvatar Style="background-color: transparent">
-                        <MudProgressCircular Indeterminate="true"></MudProgressCircular>
-                    </MudAvatar>
-                    <div class="d-flex align-center" style="margin-left: 15px">
-                        <p>Logging in....</p>
-                    </div>
-                    break;
-                case AuthStateType.Authed:
-                    <MudAvatar>
-                        <MudImage Src="@AuthService.SelfResponse?.Image.ToString()"/>
-                    </MudAvatar>
-                    <div class="d-flex align-center" style="margin-left: 15px">
-                        <p>@AuthService.SelfResponse?.Name</p>
-                    </div>
-                    break;
+                <div class="px-4 py-1">
+                    <MudText Typo="Typo.body2">@AuthService.SelfResponse?.Name</MudText>
+                </div>
+                <MudDivider Class="my-1"/>
             }
-        </MudButton>
-    </ActivatorContent>
-    <ChildContent>
-        <MudMenuItem Icon="@Icons.Material.Filled.List" Href="/dash/logs">Logs</MudMenuItem>
-        <MudMenuItem Icon="@Icons.Material.Filled.ElectricBolt" Href="/dash/shockers">Shockers</MudMenuItem>
-        <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/dash/settings">Settings</MudMenuItem>
-        @if (AuthService.AuthState.Value == AuthStateType.Authed)
-        {
-            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="Logout">Logout</MudMenuItem>
-        }
-        else
-        {
-            <MudMenuItem Icon="@Icons.Material.Filled.Login" OnClick="OpenLoginDialog">Login</MudMenuItem>
-        }
-    </ChildContent>
-</MudMenu>
+
+            <MudMenuItem Icon="@Icons.Material.Filled.Refresh" OnClick="CheckForUpdates"
+                         Disabled="@Updater.CheckingForUpdate.Value">
+                @(Updater.CheckingForUpdate.Value ? "Checking for Updates..." : "Check for Updates")
+            </MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.BugReport" Href="/dash/debug">Debug</MudMenuItem>
+
+            <MudDivider Class="my-1"/>
+
+            @if (AuthService.AuthState.Value == AuthStateType.Authed)
+            {
+                <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="Logout">Logout</MudMenuItem>
+            }
+            else
+            {
+                <MudMenuItem Icon="@Icons.Material.Filled.Login" OnClick="OpenLoginDialog">Login</MudMenuItem>
+            }
+
+            <MudDivider Class="my-1"/>
+
+            <div class="px-4 py-1">
+                <MudText Typo="Typo.caption" Color="Color.Tertiary">v@(Constants.Version)</MudText>
+            </div>
+        </ChildContent>
+    </MudMenu>
+
+    <MudTooltip Arrow="true" Placement="Placement.Top" Text="Settings">
+        <MudIconButton Icon="@Icons.Material.Filled.Settings" Href="@SettingsHref"
+                       Color="@ActiveColor(SettingsHref)" aria-label="Settings"/>
+    </MudTooltip>
+
+    <MudTooltip Arrow="true" Placement="Placement.Top" Text="Logs">
+        <MudIconButton Icon="@Icons.Material.Filled.Article" Href="@LogsHref"
+                       Color="@ActiveColor(LogsHref)" aria-label="Logs"/>
+    </MudTooltip>
+
+</div>

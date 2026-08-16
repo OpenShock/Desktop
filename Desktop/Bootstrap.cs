@@ -123,16 +123,7 @@ public static class Bootstrap
         #region SystemTray
 
 #if WINDOWS
-        if (headless)
-        {
-            var applicationThread = new Thread(() =>
-            {
-                services.GetService<ITrayService>()?.Initialize().Wait();
-                System.Windows.Forms.Application.Run();
-            });
-            applicationThread.Start();
-        }
-        else services.GetService<ITrayService>()?.Initialize().Wait();
+        services.GetService<ITrayService>()?.Initialize().Wait();
 #else
         services.GetService<ITrayService>()?.Initialize();
 #endif

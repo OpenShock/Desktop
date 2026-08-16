@@ -1,11 +1,8 @@
-﻿#if WINDOWS
+#if WINDOWS
 
-using System.Drawing;
-using System.Windows.Forms;
 using OpenShock.Desktop.Services;
 using OpenShock.SDK.CSharp.Hub;
 using Application = Microsoft.Maui.Controls.Application;
-using Image = System.Drawing.Image;
 
 // ReSharper disable once CheckNamespace
 namespace OpenShock.Desktop.Platforms.Windows;
@@ -14,9 +11,7 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
 {
     private readonly OpenShockHubClient _apiHubClient;
     private readonly List<IAsyncDisposable> _subscriptions = new();
-    private NotifyIcon? _tray;
-    private ContextMenuStrip? _menu;
-    private ToolStripLabel? _stateLabel;
+    private TrayIcon? _tray;
 
     /// <summary>
     /// Windows Tray Service
@@ -26,12 +21,12 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
     {
         _apiHubClient = apiHubClient;
     }
-    
+
 
     private Task HubStateChanged()
     {
-        if (_stateLabel == null) return Task.CompletedTask;
-        _stateLabel.Text = $"State: {_apiHubClient.State}";
+        if (_tray == null) return Task.CompletedTask;
+        _tray.MenuItems = BuildMenu();
         return Task.CompletedTask;
     }
 
@@ -46,30 +41,25 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
         _subscriptions.Add(await _apiHubClient.OnConnected.SubscribeAsync(_ => HubStateChanged())
             .ConfigureAwait(false));
 
-        _tray = new NotifyIcon();
-        _tray.Icon = Icon.ExtractAssociatedIcon(@"wwwroot/images/openshock-icon.ico");
-        _tray.Text = "OpenShock";
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "images", "openshock-icon.ico");
 
-        _menu = new ContextMenuStrip();
-
-        _menu.Items.Add("OpenShock", Image.FromFile(@"wwwroot/images/openshock-icon.ico"), OnMainClick);
-        _menu.Items.Add(new ToolStripSeparator());
-        _stateLabel = new ToolStripLabel($"State: {_apiHubClient.State}");
-        _menu.Items.Add(_stateLabel);
-        _menu.Items.Add(new ToolStripSeparator());
-        _menu.Items.Add("Quit OpenShock", null, OnQuitClick);
-
-        _tray.ContextMenuStrip = _menu;
-
-        _tray.Click += OnMainClick;
-
-        _tray.Visible = true;
+        _tray = new TrayIcon("OpenShock", iconPath, ShowMainWindow)
+        {
+            MenuItems = BuildMenu()
+        };
     }
 
-    private static void OnMainClick(object? sender, EventArgs eventArgs)
-    {
-        if (eventArgs is MouseEventArgs mouseEventArgs && mouseEventArgs.Button != MouseButtons.Left) return;
+    private TrayIcon.MenuItem[] BuildMenu() =>
+    [
+        new("OpenShock", ShowMainWindow),
+        TrayIcon.MenuItem.Separator,
+        new($"State: {_apiHubClient.State}"),
+        TrayIcon.MenuItem.Separator,
+        new("Quit OpenShock", Quit)
+    ];
 
+    private static void ShowMainWindow()
+    {
         var window = Application.Current?.Windows[0];
         var nativeWindow = window?.Handler?.PlatformView;
         if (nativeWindow == null) return;
@@ -79,7 +69,7 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
         appWindow.ShowOnTop();
     }
 
-    private static void OnQuitClick(object? sender, EventArgs eventArgs)
+    private static void Quit()
     {
         if (Application.Current != null)
         {
@@ -102,11 +92,9 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
         {
             await subscription.DisposeAsync();
         }
-        
+
         _tray?.Dispose();
-        _menu?.Dispose();
-        _stateLabel?.Dispose();
-        
+
         GC.SuppressFinalize(this);
     }
 }

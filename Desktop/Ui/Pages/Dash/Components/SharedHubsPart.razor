@@ -3,59 +3,90 @@
 @using OpenShock.Desktop.ModuleBase.StableInterfaces
 @using OpenShock.Desktop.Ui.Utils
 @using OpenShock.SDK.CSharp.Live
+@implements IAsyncDisposable
 
-<div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
+<div style="display: flex; flex-direction: column; position: relative;" class="child-div-align-center flex-grow-1">
     <MudText Style="font-size: 10pt; text-align: center">Shared @OnlineHubs/@TotalHubs</MudText>
-    <MudTooltip Arrow="true" Placement="Placement.Top">
-        <ChildContent>
-            <MudIcon Icon="@Icons.Material.Filled.Group" Color="AggregateColor()" Class="d-block ma-auto"/>
-        </ChildContent>
-        <TooltipContent>
-            <div style="min-width: 220px; max-width: 300px; padding: 2px 2px 4px;">
-                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                    <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small"/>
-                    <MudText Typo="Typo.subtitle2">Shared hubs</MudText>
-                    <div style="flex-grow: 1"></div>
-                    <MudText Typo="Typo.caption" Style="opacity: 0.6">@OnlineHubs/@TotalHubs online</MudText>
-                </div>
-                <MudDivider Style="margin-bottom: 4px;"/>
 
-                @foreach (var owner in Owners)
+    <MudIconButton Icon="@Icons.Material.Filled.Group" Color="AggregateColor()" Class="pa-0 d-block ma-auto"
+                   OnClick="@(() => _open = !_open)" aria-label="Shared hubs"/>
+
+    @* Must render before the popover so it sits behind it in the stack. *@
+    <MudOverlay Visible="_open" OnClick="@(() => _open = false)" LockScroll="false"/>
+
+    <MudPopover Open="_open" AnchorOrigin="Origin.TopCenter" TransformOrigin="Origin.BottomCenter"
+                Class="shared-hubs-popover rounded-lg">
+        @* Fixed width, not min/max: a content sized popover resizes on every latency tick. *@
+        <div style="width: 272px; padding: 12px 14px 10px;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small"/>
+                <MudText Typo="Typo.subtitle2">Shared hubs</MudText>
+                <div style="flex-grow: 1"></div>
+                <MudText Typo="Typo.caption" Style="opacity: 0.6">@OnlineHubs/@TotalHubs online</MudText>
+            </div>
+            <MudDivider Style="margin-bottom: 8px;"/>
+
+            @foreach (var owner in Owners)
+            {
+                @if (owner.Hubs.Count == 1)
                 {
-                    @if (owner.Hubs.Count == 1)
-                    {
-                        // A single hub is redundant with the owner, so collapse into one row showing just the owner.
-                        var hub = owner.Hubs[0];
-                        <div style="display: flex; align-items: center; gap: 8px; padding: 2px 0;">
-                            <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="HubColor(hub)"/>
-                            <MudText Typo="Typo.body2">@owner.Name.Truncate(20)</MudText>
-                            <div style="flex-grow: 1; min-width: 12px"></div>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.6">@HubStateText(hub)</MudText>
-                        </div>
-                    }
-                    else
-                    {
-                        <div style="display: flex; align-items: center; gap: 6px; padding: 4px 0 1px;">
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="opacity: 0.7"/>
-                            <MudText Typo="Typo.body2" Style="font-weight: 600">@owner.Name.Truncate(20)</MudText>
-                        </div>
-                        @foreach (var hub in owner.Hubs)
+                    // A single hub is redundant with the owner, so collapse into one row.
+                    var hub = owner.Hubs[0];
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 3px 0;">
+                        <MudTooltip Text="@GatewayOf(hub)" Disabled="@(GatewayOf(hub) is null)"
+                                    Arrow="true" Placement="Placement.Top">
+                            <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small"
+                                     Color="HubColor(hub)" Style="@DotStyle(hub)"/>
+                        </MudTooltip>
+                        <MudText Typo="Typo.body2">@owner.Name.Truncate(20)</MudText>
+                        <div style="flex-grow: 1; min-width: 12px"></div>
+                        <MudText Typo="Typo.caption" Style="opacity: 0.6">@StateLabel(hub)</MudText>
+                        @if (LatencyText(hub) is { } latency)
                         {
-                            <div style="display: flex; align-items: center; gap: 8px; padding: 1px 0 1px 20px;">
-                                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="HubColor(hub)"/>
-                                <MudText Typo="Typo.caption">@hub.Name.Truncate(22)</MudText>
-                                <div style="flex-grow: 1; min-width: 12px"></div>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6">@HubStateText(hub)</MudText>
-                            </div>
+                            <MudText Typo="Typo.caption" Style="@LatencySlotStyle">@latency</MudText>
                         }
+                    </div>
+                }
+                else
+                {
+                    <div style="display: flex; align-items: center; gap: 6px; padding: 6px 0 2px;">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="opacity: 0.7"/>
+                        <MudText Typo="Typo.body2" Style="font-weight: 600">@owner.Name.Truncate(20)</MudText>
+                    </div>
+                    @foreach (var hub in owner.Hubs)
+                    {
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 2px 0 2px 20px;">
+                            <MudTooltip Text="@GatewayOf(hub)" Disabled="@(GatewayOf(hub) is null)"
+                                        Arrow="true" Placement="Placement.Top">
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small"
+                                         Color="HubColor(hub)" Style="@DotStyle(hub)"/>
+                            </MudTooltip>
+                            <MudText Typo="Typo.caption">@hub.Name.Truncate(22)</MudText>
+                            <div style="flex-grow: 1; min-width: 12px"></div>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6">@StateLabel(hub)</MudText>
+                            @if (LatencyText(hub) is { } latency)
+                            {
+                                <MudText Typo="Typo.caption" Style="@LatencySlotStyle">@latency</MudText>
+                            }
+                        </div>
                     }
                 }
-            </div>
-        </TooltipContent>
-    </MudTooltip>
+            }
+        </div>
+    </MudPopover>
 </div>
 
+<style>
+    .shared-hubs-popover {
+        border: solid 1px var(--mud-palette-lines-default);
+        /* Clips the content to the rounded corners, which the border would otherwise cut across. */
+        overflow: hidden;
+    }
+</style>
+
 @code {
+    private bool _open;
+
     /// <summary>
     /// The shared hubs grouped by owner, summarized in a single aggregate indicator.
     /// </summary>
@@ -96,10 +127,107 @@
         return hub.Status.Online ? Color.Info : Color.Dark;
     }
 
-    private string HubStateText(IOpenShockHub hub)
+    /// <summary>
+    /// Fixed width tabular slot, so a latency going from 9ms to 112ms does not shove the row sideways on every tick.
+    /// </summary>
+    private const string LatencySlotStyle =
+        "opacity: 0.6; font-variant-numeric: tabular-nums; min-width: 46px; text-align: right;";
+
+    private string StateLabel(IOpenShockHub hub)
     {
         var client = GetClient(hub.Id);
-        if (client != null) return $"Live: {client.State.Value}";
-        return hub.Status.Online ? "idle" : "offline";
+        if (client == null) return hub.Status.Online ? "idle" : "offline";
+
+        return client.State.Value.ToString();
+    }
+
+    /// <summary>
+    /// The hub's live control latency, or null when there is no socket up.
+    /// </summary>
+    private string? LatencyText(IOpenShockHub hub)
+    {
+        var client = GetClient(hub.Id);
+        if (client == null || client.State.Value != WebsocketConnectionState.Connected) return null;
+
+        return $"{client.Latency.Value}ms";
+    }
+
+    private string? GatewayOf(IOpenShockHub hub) => GetClient(hub.Id)?.Gateway;
+
+    private string DotStyle(IOpenShockHub hub) => GatewayOf(hub) is null ? string.Empty : "cursor: help;";
+
+    private readonly Dictionary<Guid, HubSubscription> _subscriptions = new();
+
+    private readonly record struct HubSubscription(
+        IOpenShockLiveControlClient Client,
+        IAsyncDisposable State,
+        IAsyncDisposable Latency);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Clients are created lazily and disposed once idle, so keep each hub's subscriptions pointed at whatever
+        // client is current.
+        var live = new HashSet<Guid>();
+
+        foreach (var hub in AllHubs)
+        {
+            // Blazor does not wait for a pending OnParametersSetAsync before disposing, and the awaits below would
+            // repopulate a dictionary DisposeAsync has already drained.
+            if (_disposed) return;
+
+            var client = GetClient(hub.Id);
+            if (client == null) continue;
+
+            live.Add(hub.Id);
+
+            if (_subscriptions.TryGetValue(hub.Id, out var existing))
+            {
+                if (ReferenceEquals(existing.Client, client)) continue;
+                await UnsubscribeAsync(hub.Id);
+            }
+
+            var stateSubscription = await client.State.Updated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+            var latencySubscription = await client.Latency.Updated.SubscribeAsync(_ => InvokeAsync(RenderIfOpen));
+
+            // Disposal can also land while those two awaits are in flight.
+            if (_disposed)
+            {
+                await stateSubscription.DisposeAsync();
+                await latencySubscription.DisposeAsync();
+                return;
+            }
+
+            _subscriptions[hub.Id] = new HubSubscription(client, stateSubscription, latencySubscription);
+        }
+
+        foreach (var hubId in _subscriptions.Keys.Where(id => !live.Contains(id)).ToArray())
+            await UnsubscribeAsync(hubId);
+    }
+
+    /// <summary>
+    /// Latency only shows inside the popover and ticks several times a second, so skip the render while it is closed.
+    /// </summary>
+    private void RenderIfOpen()
+    {
+        if (_open) StateHasChanged();
+    }
+
+    private async Task UnsubscribeAsync(Guid hubId)
+    {
+        if (!_subscriptions.Remove(hubId, out var subscription)) return;
+
+        await subscription.State.DisposeAsync();
+        await subscription.Latency.DisposeAsync();
+    }
+
+    private bool _disposed;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        foreach (var hubId in _subscriptions.Keys.ToArray())
+            await UnsubscribeAsync(hubId);
     }
 }

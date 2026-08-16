@@ -1,57 +1,46 @@
 @using OpenShock.Desktop.Backend
-@using OpenShock.Desktop.Config
 @using OpenShock.Desktop.Models.BaseImpl
 @using OpenShock.Desktop.ModuleBase.Models
 @using OpenShock.Desktop.ModuleBase.StableInterfaces
 @using OpenShock.SDK.CSharp.Models
-@inject ConfigManager ConfigManager
 @inject OpenShockApi OpenShockApi
 
-@if (_configShocker != null)
-{
-    <MudTd>
-        <MudCheckBox Size="Size.Small"
-                     Dense="true"
-                     @bind-Value="_configShocker.Enabled"
-                     @bind-Value:after="OnShockerConfigUpdate"/>
-    </MudTd>
-    <MudTd>
-        @if (Permissions is { } permissions)
-        {
-            <div style="display: flex; gap: 2px;">
-                @foreach (var (icon, label, granted) in PermissionIcons(permissions))
-                {
-                    <MudTooltip Text="@($"{label}: {(granted ? "granted" : "not granted")}")">
-                        <MudIcon Icon="@icon"
+<MudTd>
+    <MudCheckBox T="bool"
+                 Size="Size.Small"
+                 Dense="true"
+                 Value="OpenShockApi.IsShockerEnabled(Shocker.Id)"
+                 ValueChanged="SetEnabled"/>
+</MudTd>
+<MudTd>
+    @if (Permissions is { } permissions)
+    {
+        <div style="display: flex; gap: 2px;">
+            @foreach (var (icon, label, granted) in PermissionIcons(permissions))
+            {
+                <MudTooltip Text="@($"{label}: {(granted ? "granted" : "not granted")}")">
+                    <MudIcon Icon="@icon"
+                             Size="Size.Small"
+                             Color="@(granted ? Color.Success : Color.Dark)"/>
+                </MudTooltip>
+            }
+        </div>
+    }
+    else if (!_wasChanged)
+    {
+        <MudTooltip Text="@(Shocker.IsPaused ? "Shocker Paused" : "Shocker Not Paused")">
+            <MudToggleIconButton Toggled="Shocker.IsPaused"
+                                 ToggledChanged="PauseShocker"
                                  Size="Size.Small"
-                                 Color="@(granted ? Color.Success : Color.Dark)"/>
-                    </MudTooltip>
-                }
-            </div>
-        }
-        else if (!_wasChanged)
-        {
-            <MudTooltip Text="@(Shocker.IsPaused ? "Shocker Paused" : "Shocker Not Paused")">
-                <MudToggleIconButton Toggled="Shocker.IsPaused"
-                                     ToggledChanged="PauseShocker"
-                                     Size="Size.Small"
-                                     Icon="@Icons.Material.Filled.Pause"
-                                     ToggledIcon="@Icons.Material.Filled.PlayArrow"/>
-            </MudTooltip>
-        }
-        else
-        {
-            <MudProgressCircular Size="Size.Small" Color="Color.Default" Indeterminate="true"/>
-        }
-    </MudTd>
-}
-else
-{
-    <MudTd>
-        <MudText Typo="Typo.caption" Color="Color.Error">Error</MudText>
-    </MudTd>
-    <MudTd></MudTd>
-}
+                                 Icon="@Icons.Material.Filled.Pause"
+                                 ToggledIcon="@Icons.Material.Filled.PlayArrow"/>
+        </MudTooltip>
+    }
+    else
+    {
+        <MudProgressCircular Size="Size.Small" Color="Color.Default" Indeterminate="true"/>
+    }
+</MudTd>
 <MudTd>
     @Shocker.Name
     @if (Permissions != null && Shocker.IsPaused)
@@ -65,8 +54,6 @@ else
 
 
 @code {
-    private OpenShockConf.ShockerConf? _configShocker;
-
     [Parameter] public required IOpenShockShocker Shocker { get; set; }
 
     /// <summary>
@@ -93,16 +80,6 @@ else
         await OpenShockApi.Client.PauseShocker(Shocker.Id, !Shocker.IsPaused);
     }
 
-    // A refresh replaces the config's shocker dictionary wholesale, so re-resolve the entry on every parameter set
-    // rather than only once - otherwise we would keep writing to a detached ShockerConf that is never persisted.
-    protected override void OnParametersSet()
-    {
-        _configShocker = ConfigManager.Config.OpenShock.Shockers.GetValueOrDefault(Shocker.Id);
-    }
-
-    private void OnShockerConfigUpdate()
-    {
-        ConfigManager.Save();
-    }
+    private void SetEnabled(bool enabled) => OpenShockApi.SetShockerEnabled(Shocker.Id, enabled);
 
 }
