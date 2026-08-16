@@ -195,14 +195,25 @@ public sealed class Updater
 
     private readonly SemaphoreSlim _updateLock = new(1, 1);
 
-    public async Task CheckUpdate()
+    /// <summary>
+    /// The outcome of an update check. <see cref="UpdateAvailable"/> alone cannot tell being on the latest version
+    /// apart from not having found out, since both leave it false.
+    /// </summary>
+    public enum UpdateCheckResult
+    {
+        Failed,
+        UpToDate,
+        UpdateAvailable
+    }
+
+    public async Task<UpdateCheckResult> CheckUpdate()
     {
         await _updateLock.WaitAsync();
 
         try
         {
             CheckingForUpdate.Value = true;
-            await CheckUpdateInternal();
+            return await CheckUpdateInternal();
         }
         finally
         {
@@ -211,7 +222,7 @@ public sealed class Updater
         }
     }
 
-    private async Task CheckUpdateInternal()
+    private async Task<UpdateCheckResult> CheckUpdateInternal()
     {
         IsPostponed = false;
         UpdateAvailable.Value = false;
@@ -220,7 +231,7 @@ public sealed class Updater
         if (latestVersion == null)
         {
             UpdateAvailable.Value = false;
-            return;
+            return UpdateCheckResult.Failed;
         }
 
         var comparison = CurrentVersion.ComparePrecedenceTo(latestVersion.Value.Version);
@@ -229,7 +240,7 @@ public sealed class Updater
             _logger.LogInformation("OpenShock Desktop is up to date ([{Version}] >= [{LatestVersion}]) ({Comp})", CurrentVersion,
                 latestVersion.Value.Version, comparison);
             UpdateAvailable.Value = false;
-            return;
+            return UpdateCheckResult.UpToDate;
         }
         
         LatestReleaseInfo = latestVersion.Value;
@@ -241,12 +252,14 @@ public sealed class Updater
             _logger.LogInformation(
                 "OpenShock Desktop is not up to date. Skipping update due to previous postpone");
             IsPostponed = true;
-            return;
+            return UpdateCheckResult.UpdateAvailable;
         }
 
         _logger.LogWarning(
             "OpenShock Desktop is not up to date. Newest version is [{NewVersion}] but you are on [{CurrentVersion}]!",
             latestVersion.Value.Version, CurrentVersion);
+
+        return UpdateCheckResult.UpdateAvailable;
     }
 
     public async Task DoUpdate()

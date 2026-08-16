@@ -17,7 +17,7 @@
     private static readonly DialogOptions UpdateDialogOptions = new() { NoHeader = true, BackdropClick = false };
     private static readonly DialogOptions LoginDialogOptions = new() { FullScreen = true, CloseButton = true };
 
-    private bool _updateDialogOpen;
+    private int _updateDialogOpen;
 
     /// <summary>
     /// Opens the update dialog unless one is already up. The manual check and the UpdateAvailable subscription can
@@ -26,13 +26,21 @@
     /// </summary>
     private async Task OpenUpdateDialog()
     {
-        if (_updateDialogOpen) return;
-        _updateDialogOpen = true;
+        if (Interlocked.Exchange(ref _updateDialogOpen, 1) != 0) return;
 
-        var dialog = await DialogService.ShowAsync<UpdateDialog>("Update", UpdateDialogOptions);
+        IDialogReference dialog;
+        try
+        {
+            dialog = await DialogService.ShowAsync<UpdateDialog>("Update", UpdateDialogOptions);
+        }
+        catch
+        {
+            Volatile.Write(ref _updateDialogOpen, 0);
+            throw;
+        }
 
         // Release the guard once the dialog closes, without holding up the caller.
-        _ = dialog.Result.ContinueWith(_ => _updateDialogOpen = false, TaskScheduler.Default);
+        _ = dialog.Result.ContinueWith(_ => Volatile.Write(ref _updateDialogOpen, 0), TaskScheduler.Default);
     }
 
     private readonly List<IAsyncDisposable> _disposables = new();
@@ -58,11 +66,21 @@
 
     private async Task CheckForUpdates()
     {
-        await Updater.CheckUpdate();
+        var result = await Updater.CheckUpdate();
 
-        // Also covers an update that was already known, where the value never changes and the subscription never fires.
-        if (Updater.UpdateAvailable.Value) await OpenUpdateDialog();
-        else Snackbar.Add($"You are running the latest version ({Constants.Version})", Severity.Success);
+        switch (result)
+        {
+            // Also covers an update that was already known, where the value never changes and the subscription never fires.
+            case Updater.UpdateCheckResult.UpdateAvailable:
+                await OpenUpdateDialog();
+                break;
+            case Updater.UpdateCheckResult.UpToDate:
+                Snackbar.Add($"You are running the latest version ({Constants.Version})", Severity.Success);
+                break;
+            case Updater.UpdateCheckResult.Failed:
+                Snackbar.Add("Could not check for updates, please try again later", Severity.Warning);
+                break;
+        }
     }
 
     private async Task Logout()
@@ -94,10 +112,17 @@
         await DialogService.ShowAsync<Authenticate>("Login", LoginDialogOptions);
     }
 
-    private bool IsActive(string href) =>
-        NavigationManager.ToBaseRelativePath(NavigationManager.Uri)
-            .TrimStart('/')
-            .StartsWith(href.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Whether we are on <paramref name="href"/> or below it, matched on route boundaries.
+    /// </summary>
+    private bool IsActive(string href)
+    {
+        var current = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).Split('?', '#')[0].Trim('/');
+        var route = href.Trim('/');
+
+        return current.Equals(route, StringComparison.OrdinalIgnoreCase) ||
+               current.StartsWith($"{route}/", StringComparison.OrdinalIgnoreCase);
+    }
 
     private Color ActiveColor(string href) => IsActive(href) ? Color.Primary : Color.Default;
 

@@ -58,26 +58,37 @@ public class WindowsTrayService : ITrayService, IAsyncDisposable
         new("Quit OpenShock", Quit)
     ];
 
-    private static void ShowMainWindow()
+    /// <summary>
+    /// Runs an action on the MAUI UI thread. Tray callbacks arrive on <see cref="TrayIcon"/>'s own STA message pump.
+    /// </summary>
+    private static void OnUiThread(Action action)
     {
-        var window = Application.Current?.Windows[0];
+        var dispatcher = Application.Current?.Dispatcher;
+
+        if (dispatcher == null) action();
+        else dispatcher.Dispatch(action);
+    }
+
+    private static void ShowMainWindow() => OnUiThread(() =>
+    {
+        var window = Application.Current?.Windows.FirstOrDefault();
         var nativeWindow = window?.Handler?.PlatformView;
         if (nativeWindow == null) return;
 
         var appWindow = WindowUtils.GetAppWindow(nativeWindow);
 
         appWindow.ShowOnTop();
-    }
+    });
 
     private static void Quit()
     {
-        if (Application.Current != null)
+        if (Application.Current == null)
         {
-            Application.Current.Quit();
+            Environment.Exit(0);
             return;
         }
 
-        Environment.Exit(0);
+        OnUiThread(() => Application.Current?.Quit());
     }
 
     private bool _disposed;

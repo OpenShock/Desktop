@@ -69,8 +69,15 @@ public sealed class BackendHubManager
     {
         _logger.LogDebug("Device update received {DeviceId} {UpdateType}", update.HubId, update.UpdateType);
 
-        // Not filtered to known hubs: an update for an unknown one is a hub someone has just shared with us.
-        await _openShockApi.RefreshAllHubs();
+        try
+        {
+            // Not filtered to known hubs: an update for an unknown one is a hub someone has just shared with us.
+            await _openShockApi.RefreshAllHubs();
+        }
+        catch (HubRefreshException e)
+        {
+            _logger.LogWarning(e, "Failed to refresh hubs after a device update, keeping the previous hub data");
+        }
     }
 
 

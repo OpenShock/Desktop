@@ -59,13 +59,26 @@ public partial class StatePart : ComponentBase, IAsyncDisposable
         // pointed at the current client.
         if (ReferenceEquals(_subscribedClient, Client)) return;
 
+        if (_disposed) return;
+
         await UnsubscribeAsync();
         _subscribedClient = Client;
 
         if (Client == null) return;
 
-        _stateSubscription = await Client.State.Updated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
-        _latencySubscription = await Client.Latency.Updated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+        var stateSubscription = await Client.State.Updated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+        var latencySubscription = await Client.Latency.Updated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+
+        // Disposal can also land while those two awaits are in flight.
+        if (_disposed)
+        {
+            await stateSubscription.DisposeAsync();
+            await latencySubscription.DisposeAsync();
+            return;
+        }
+
+        _stateSubscription = stateSubscription;
+        _latencySubscription = latencySubscription;
     }
 
     private async Task UnsubscribeAsync()

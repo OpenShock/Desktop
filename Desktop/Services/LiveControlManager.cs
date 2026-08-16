@@ -271,7 +271,15 @@ public sealed class LiveControlManager : IAsyncDisposable
         {
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
-                await PruneConnectionsAsync(idleEviction: true);
+                try
+                {
+                    await PruneConnectionsAsync(idleEviction: true);
+                }
+                catch (Exception e)
+                {
+                    // The loop never restarts, so one bad sweep must not take it down.
+                    _logger.LogError(e, "Failed to sweep live control connections");
+                }
             }
         }
         catch (OperationCanceledException)

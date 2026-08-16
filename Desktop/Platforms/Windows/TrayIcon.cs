@@ -2,6 +2,7 @@
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Serilog;
 
 // ReSharper disable once CheckNamespace
 namespace OpenShock.Desktop.Platforms.Windows;
@@ -13,6 +14,8 @@ namespace OpenShock.Desktop.Platforms.Windows;
 /// </summary>
 public sealed class TrayIcon : IDisposable
 {
+    private static readonly Serilog.ILogger Logger = Log.ForContext<TrayIcon>();
+
     public sealed record MenuItem(string Text, Action? OnClick = null)
     {
         public static readonly MenuItem Separator = new(string.Empty);
@@ -132,8 +135,14 @@ public sealed class TrayIcon : IDisposable
         _hIcon = LoadImageW(IntPtr.Zero, iconPath, ImageIcon, GetSystemMetrics(SmCxSmIcon),
             GetSystemMetrics(SmCySmIcon), LrLoadFromFile);
 
+        if (_hIcon == IntPtr.Zero)
+            Logger.Error(new Win32Exception(Marshal.GetLastWin32Error()), "Failed to load tray icon from {IconPath}",
+                iconPath);
+
         var data = CreateIconData();
-        data.uFlags = NifMessage | NifIcon | NifTip;
+
+        // Shell_NotifyIcon accepts NIF_ICON with a null handle and gives an invisible entry, so drop the flag instead.
+        data.uFlags = _hIcon == IntPtr.Zero ? NifMessage | NifTip : NifMessage | NifIcon | NifTip;
         data.uCallbackMessage = WmTrayCallback;
         data.hIcon = _hIcon;
         data.szTip = tooltip;
@@ -180,6 +189,24 @@ public sealed class TrayIcon : IDisposable
         szInfoTitle = string.Empty
     };
 
+    /// <summary>
+    /// Runs a callback, swallowing whatever it throws. We are called from a native frame (DispatchMessage), and an
+    /// exception crossing that boundary takes the process with it.
+    /// </summary>
+    private static void SafeInvoke(Action? callback, string description)
+    {
+        if (callback == null) return;
+
+        try
+        {
+            callback();
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "Tray {Description} callback failed", description);
+        }
+    }
+
     private IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam)
     {
         switch (msg)
@@ -188,11 +215,11 @@ public sealed class TrayIcon : IDisposable
                 switch ((int)(lParam.ToInt64() & 0xFFFF))
                 {
                     case WmLButtonUp:
-                        _onLeftClick?.Invoke();
+                        SafeInvoke(_onLeftClick, "left click");
                         break;
                     case WmRButtonUp:
                     case WmContextMenu:
-                        ShowContextMenu();
+                        SafeInvoke(ShowContextMenu, "context menu");
                         break;
                 }
 
@@ -240,7 +267,7 @@ public sealed class TrayIcon : IDisposable
 
             PostMessageW(_hwnd, WmNull, IntPtr.Zero, IntPtr.Zero);
 
-            if (command > 0 && command <= items.Count) items[command - 1].OnClick?.Invoke();
+            if (command > 0 && command <= items.Count) SafeInvoke(items[command - 1].OnClick, "menu item");
         }
         finally
         {

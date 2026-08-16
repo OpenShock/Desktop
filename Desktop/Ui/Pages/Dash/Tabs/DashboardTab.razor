@@ -119,10 +119,16 @@
     private void OpenGithub() => UiUtils.OpenUrl("https://github.com/OpenShock/Desktop", Snackbar);
     private void GoToModuleManager() => NavigationManager.NavigateTo("/dash/modules?OpenAvailableModules=true");
     private IAsyncDisposable _statusSubscription = null!;
-    
+    private IAsyncDisposable _liveControlSubscription = null!;
+    private IAsyncDisposable _sharedOwnersSubscription = null!;
+
     protected override async Task OnInitializedAsync()
     {
         _statusSubscription = await StatusHandler.OnWebsocketStatusChanged.SubscribeAsync(() => InvokeAsync(StateHasChanged));
+
+        // Connections open lazily and are pruned when idle, so GetClient flips with nothing else changing.
+        _liveControlSubscription = await LiveControlManager.OnStateUpdated.SubscribeAsync(() => InvokeAsync(StateHasChanged));
+        _sharedOwnersSubscription = await Api.SharedOwners.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
     
 
@@ -150,6 +156,8 @@
         if (_disposed) return;
         _disposed = true;
         await _statusSubscription.DisposeAsync();
+        await _liveControlSubscription.DisposeAsync();
+        await _sharedOwnersSubscription.DisposeAsync();
     }
 
 }

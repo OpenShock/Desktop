@@ -77,7 +77,16 @@
     {
         if (OpenShockApi.Client == null || _wasChanged) return;
         _wasChanged = true;
-        await OpenShockApi.Client.PauseShocker(Shocker.Id, !Shocker.IsPaused);
+
+        try
+        {
+            await OpenShockApi.Client.PauseShocker(Shocker.Id, !Shocker.IsPaused);
+        }
+        finally
+        {
+            _wasChanged = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private void SetEnabled(bool enabled) => OpenShockApi.SetShockerEnabled(Shocker.Id, enabled);

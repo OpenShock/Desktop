@@ -82,7 +82,7 @@ public sealed class OpenShockApi
         if (Client == null)
         {
             _logger.LogError("Client is not initialized!");
-            throw new Exception("Client is not initialized!");
+            throw new HubRefreshException("Client is not initialized!");
         }
 
         var ownResponse = await Client.GetOwnShockers();
@@ -91,8 +91,7 @@ public sealed class OpenShockApi
         if (!ownResponse.IsT0 || !sharedResponse.IsT0)
         {
             _logger.LogError("We are not authenticated with the OpenShock API!");
-            // TODO: handle unauthenticated error
-            return;
+            throw new HubRefreshException("Failed to fetch hubs, we are not authenticated with the OpenShock API.");
         }
 
         IOpenShockHub[] ownHubs = [..ownResponse.AsT0.Value.Select(x => x.ToSdkHub(this))];
@@ -148,19 +147,27 @@ public sealed class OpenShockApi
     }
 
     /// <summary>
+    /// Serializes the read-copy-replace updates of the shocker overrides.
+    /// </summary>
+    private readonly Lock _shockerOverridesLock = new();
+
+    /// <summary>
     /// Records an explicit opt-in choice for a shocker. Copy on write, so readers holding the previous dictionary are
     /// unaffected.
     /// </summary>
     public void SetShockerEnabled(Guid shockerId, bool enabled)
     {
-        var openShock = _configManager.Config.OpenShock;
-
-        openShock.Shockers = new Dictionary<Guid, OpenShockConf.ShockerConf>(openShock.Shockers)
+        lock (_shockerOverridesLock)
         {
-            [shockerId] = new() { Enabled = enabled }
-        };
+            var openShock = _configManager.Config.OpenShock;
 
-        _configManager.Save();
+            openShock.Shockers = new Dictionary<Guid, OpenShockConf.ShockerConf>(openShock.Shockers)
+            {
+                [shockerId] = new() { Enabled = enabled }
+            };
+
+            _configManager.Save();
+        }
     }
 
     /// <summary>
@@ -169,16 +176,19 @@ public sealed class OpenShockApi
     /// </summary>
     private void PruneDeadShockerOverrides(HubSnapshot snapshot)
     {
-        var openShock = _configManager.Config.OpenShock;
+        lock (_shockerOverridesLock)
+        {
+            var openShock = _configManager.Config.OpenShock;
 
-        if (openShock.Shockers.Count == 0) return;
-        if (openShock.Shockers.Keys.All(snapshot.Lookup.ContainsKey)) return;
+            if (openShock.Shockers.Count == 0) return;
+            if (openShock.Shockers.Keys.All(snapshot.Lookup.ContainsKey)) return;
 
-        openShock.Shockers = openShock.Shockers
-            .Where(x => snapshot.Lookup.ContainsKey(x.Key))
-            .ToDictionary(x => x.Key, x => x.Value);
+            openShock.Shockers = openShock.Shockers
+                .Where(x => snapshot.Lookup.ContainsKey(x.Key))
+                .ToDictionary(x => x.Key, x => x.Value);
 
-        _configManager.Save();
+            _configManager.Save();
+        }
     }
 
     public void Logout()

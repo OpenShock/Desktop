@@ -120,11 +120,17 @@
 @code {
     private IAsyncDisposable _statusSubscription = null!;
     private IAsyncDisposable _authStateSubscription = null!;
+    private IAsyncDisposable _liveControlSubscription = null!;
+    private IAsyncDisposable _sharedOwnersSubscription = null!;
 
     protected override async Task OnInitializedAsync()
     {
         _statusSubscription = await StatusHandler.OnWebsocketStatusChanged.SubscribeAsync(() => InvokeAsync(StateHasChanged));
         _authStateSubscription = await AuthService.AuthState.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+
+        // Connections open lazily and are pruned when idle, so GetClient flips with nothing else changing.
+        _liveControlSubscription = await LiveControlManager.OnStateUpdated.SubscribeAsync(() => InvokeAsync(StateHasChanged));
+        _sharedOwnersSubscription = await Api.SharedOwners.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
 
     private struct PermissionInfo
@@ -159,6 +165,8 @@
         _disposed = true;
         await _statusSubscription.DisposeAsync();
         await _authStateSubscription.DisposeAsync();
+        await _liveControlSubscription.DisposeAsync();
+        await _sharedOwnersSubscription.DisposeAsync();
     }
 
 }
