@@ -59,6 +59,13 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
         return _backendHubManager.Control(shocks.Select(SdkDtoMappings.ToSdkControl), customName);
     }
 
+    public Task ControlAll(ushort duration, byte intensity, ControlType type, bool exclusive = false,
+        string? customName = null)
+    {
+        return _backendHubManager.ControlAll(duration, intensity, (SDK.CSharp.Models.ControlType)type, exclusive,
+            customName);
+    }
+
     public void LiveControl(IEnumerable<Guid> shockers, byte intensity, ControlType type)
     {
         _liveControlManager.ControlShockers(shockers, intensity, (SDK.CSharp.Models.ControlType)type);

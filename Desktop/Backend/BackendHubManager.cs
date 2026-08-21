@@ -120,6 +120,28 @@ public sealed class BackendHubManager
     }
 
     /// <summary>
+    /// Control command via signalr targeting every shocker we know of, owned and shared alike. Resolves the shocker
+    /// list from the api snapshot in a single read rather than having callers concatenate the owned and shared hub
+    /// lists, which are two separate assignments per refresh and can be caught half updated.
+    /// </summary>
+    public Task ControlAll(ushort duration, byte intensity, ControlType type, bool exclusive = false,
+        string? customName = null)
+    {
+        var shocksToSend = _openShockApi.ShockerLookup.Keys
+            .Where(x => CanControl(x, type))
+            .Select(x => new Control
+            {
+                Id = x,
+                Duration = duration,
+                Intensity = intensity,
+                Type = type,
+                Exclusive = exclusive
+            });
+
+        return _openShockHubClient.Control(shocksToSend, customName);
+    }
+
+    /// <summary>
     /// Whether the given shocker may be controlled with the given control type: it must be enabled in config, exist and
     /// not be paused, and for shared shockers we must hold the permission matching the control type.
     /// </summary>
