@@ -1,10 +1,15 @@
+@using OpenShock.Desktop.ModuleBase
 @using OpenShock.Desktop.ModuleManager
 
 @* Everything rendered here comes from LoadedModule.Ui, which was read and validated once at load
    time. Do not reach through to LoadedModule.Module - the sidebar renders on every page, so module
    code that throws from here takes down the entire app, not just the module. *@
 
-@if (LoadedModule.Ui.RootComponent is not null || LoadedModule.Ui.NavigationItems.Length == 0)
+@if (LoadedModule.Fault is not null)
+{
+    <ModuleNavLink Icon="@FaultedIcon" Href="@("/dash/module/" + LoadedModule.Id)">@LoadedModule.Name</ModuleNavLink>
+}
+else if (LoadedModule.Ui.RootComponent is not null || LoadedModule.Ui.NavigationItems.Length == 0)
 {
     <ModuleNavLink Icon="LoadedModule.Ui.Icon" Href="@("/dash/module/" + LoadedModule.Id)">@LoadedModule.Name</ModuleNavLink>
 }
@@ -21,4 +26,6 @@ else
 
 @code {
     [Parameter] public required LoadedModule LoadedModule { get; set; }
+
+    private static readonly IconOneOf FaultedIcon = IconOneOf.FromSvg(Icons.Material.Filled.ExtensionOff);
 }

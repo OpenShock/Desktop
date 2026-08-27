@@ -132,6 +132,10 @@ public sealed class StartupService
             catch (Exception e)
             {
                 _logger.LogError(e, "Error while setting up module {Module}", moduleManagerModule.Key);
+
+                // The module is now half initialised. Flag it so the UI can keep it out of the
+                // render tree instead of presenting it as a working module.
+                moduleManagerModule.Value.MarkFaulted("Setup", e);
             }
         }
 
@@ -149,6 +153,10 @@ public sealed class StartupService
             catch (Exception e)
             {
                 _logger.LogError(e, "Error while starting module {Module}", moduleManagerModule.Key);
+
+                // The module is now half initialised. Flag it so the UI can keep it out of the
+                // render tree instead of presenting it as a working module.
+                moduleManagerModule.Value.MarkFaulted("Start", e);
             }
         }
 

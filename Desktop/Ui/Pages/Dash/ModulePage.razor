@@ -11,6 +11,14 @@
         <MudText Typo="Typo.h6">Module not found [@Module]</MudText>
     </MudPaper>
 }
+else if (_loadedModule.Fault is not null)
+{
+    @* Its services never finished registering, so rendering its components would only produce a
+       worse version of this message. *@
+    <ModuleFaultNotice Title="@($"{_loadedModule.Name} failed to start")"
+                       Message="@($"The module threw during {_loadedModule.Fault.Phase.ToLowerInvariant()} and has been disabled for this session. Updating or reinstalling it usually fixes this.")"
+                       Details="@_loadedModule.Fault.Exception.ToString()"/>
+}
 else if (_componentType is not null)
 {
     <ContainerWithExceptionHandling MaximumErrorCount="10">

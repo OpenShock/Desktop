@@ -25,7 +25,22 @@ public sealed class LoadedModule
     /// </summary>
     public ModuleUiSurface Ui { get; internal set; } = ModuleUiSurface.Empty;
 
+    /// <summary>
+    /// Set when the module failed to initialise. A faulted module keeps its sidebar entry so the
+    /// user can see something is wrong, but its components are never rendered - they would be
+    /// running against half initialised state.
+    /// </summary>
+    public ModuleFault? Fault { get; private set; }
+
+    /// <summary>
+    /// Records the first failure. Later ones are almost always fallout from the first, so the
+    /// original is the one worth showing.
+    /// </summary>
+    public void MarkFaulted(string phase, Exception exception) => Fault ??= new ModuleFault(phase, exception);
 
     public string Id => ModuleAttribute.Id;
     public string Name => ModuleAttribute.Name;
 }
+
+/// <param name="Phase">What the module was doing when it broke, e.g. "Setup" or "Start".</param>
+public sealed record ModuleFault(string Phase, Exception Exception);
