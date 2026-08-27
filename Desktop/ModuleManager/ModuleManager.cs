@@ -374,6 +374,9 @@ public sealed class ModuleManager : IAsyncDisposable
             return;
         }
 
+        // Read the module's UI surface once, here, where a bad module can only break itself.
+        loadedModule.Ui = ModuleUiSurface.Capture(module, loadedModule.Id, _logger);
+
         if (!Modules.TryAdd(loadedModule.Id, loadedModule)) throw new Exception("Module already loaded!");
     }
 

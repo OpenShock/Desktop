@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using OpenShock.Desktop.ModuleBase;
 using OpenShock.SDK.CSharp.Models;
 using Semver;
@@ -18,8 +18,14 @@ public sealed class LoadedModule
     public required SemVersion? AvailableVersion { get; set; }
     
     public required IReadOnlyList<PermissionType> RequiredPermissions { get; init; } = [];
-    
-    
+
+    /// <summary>
+    /// The module's navigation and page metadata, read once at load time. Always use this instead of
+    /// going to <see cref="Module"/> from the UI, see <see cref="ModuleUiSurface"/>.
+    /// </summary>
+    public ModuleUiSurface Ui { get; internal set; } = ModuleUiSurface.Empty;
+
+
     public string Id => ModuleAttribute.Id;
     public string Name => ModuleAttribute.Name;
 }

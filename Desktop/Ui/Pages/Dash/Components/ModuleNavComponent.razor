@@ -1,13 +1,17 @@
-﻿@using OpenShock.Desktop.ModuleManager
+@using OpenShock.Desktop.ModuleManager
 
-@if (LoadedModule.Module.RootComponent is not null)
+@* Everything rendered here comes from LoadedModule.Ui, which was read and validated once at load
+   time. Do not reach through to LoadedModule.Module - the sidebar renders on every page, so module
+   code that throws from here takes down the entire app, not just the module. *@
+
+@if (LoadedModule.Ui.RootComponent is not null || LoadedModule.Ui.NavigationItems.Length == 0)
 {
-    <ModuleNavLink Icon="LoadedModule.Module.Icon" Href="@("/dash/module/" + LoadedModule.Id)">@LoadedModule.Name</ModuleNavLink>
+    <ModuleNavLink Icon="LoadedModule.Ui.Icon" Href="@("/dash/module/" + LoadedModule.Id)">@LoadedModule.Name</ModuleNavLink>
 }
 else
 {
-    <ModuleNavGroup Icon="@LoadedModule.Module.Icon" Title="@LoadedModule.Name">
-        @foreach (var subComponent in LoadedModule.Module.NavigationComponents)
+    <ModuleNavGroup Icon="@LoadedModule.Ui.Icon" Title="@LoadedModule.Name">
+        @foreach (var subComponent in LoadedModule.Ui.NavigationItems)
         {
             <ModuleNavLink Icon="@subComponent.Icon" Href="@("/dash/module/" + LoadedModule.Id + "/" + subComponent.Name)">@(subComponent.Name)</ModuleNavLink>
         }
