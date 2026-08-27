@@ -7,7 +7,7 @@
     <OpenShockHostAssembly Include="OpenShock.MinimalEvents" Version="0.0.1" />
 
     <!-- UI framework -->
-    <OpenShockHostAssembly Include="MudBlazor" Version="9.8.0" />
+    <OpenShockHostAssembly Include="MudBlazor" Version="9.9.0" />
 
     <!-- OpenShock SDKs -->
     <OpenShockHostAssembly Include="OpenShock.SDK.CSharp" Version="0.0.42" />
