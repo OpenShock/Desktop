@@ -4,61 +4,109 @@
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
+@using OpenShock.Desktop.Ui.Utils
 @inject RepositoryManager RepositoryManager
 @inject ModuleManager ModuleManager
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
 
-<MudStack Spacing="3" Class="pa-4 h-full">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-        <MudText Typo="Typo.h5">Modules</MudText>
+<PageContainer Title="Modules" Description="Integrations that add features to the app, like VRChat support.">
+    <HeaderContent>
+        <div class="d-flex align-center gap-1">
+            @if (RepositoryManager.FetcherState.Value == FetcherState.Idle)
+            {
+                <MudButton Size="Size.Small" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="RepositoryManager.FetchRepositories">Refresh
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Size="Size.Small" Variant="Variant.Text" Disabled="true">
+                    <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"
+                                         Style="width: 20px; height: 20px;"/>
+                    <MudText Typo="Typo.button" Class="ml-2">Refresh</MudText>
+                </MudButton>
+            }
 
-        <MudButton OnClick="OpenAppdataFolder"
-                   Variant="Variant.Outlined"
-                   StartIcon="@Icons.Material.Filled.FolderOpen"
-                   Color="Color.Primary"
-                   Class="mb-2">Open AppData
-        </MudButton>
-    </MudStack>
+            <MudButton Size="Size.Small" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.FolderOpen"
+                       OnClick="OpenAppdataFolder">Open AppData
+            </MudButton>
+        </div>
+    </HeaderContent>
 
-
-    <MudCard Class="module-manager-tabs-paper grow h-full">
-
+    <ChildContent>
+        <MudPaper Outlined="true" Class="rounded-lg">
             <MudTabs @ref="_tabs" Class="module-manager-tabs" Rounded="true" ApplyEffectsToContainer="true"
-                     TabPanelsClass="pa-3">
+                     TabPanelsClass="pa-3" Elevation="0">
                 <MudTabPanel Text="Installed" Icon="@Icons.Material.Filled.CheckCircle"
                              BadgeData="@_installedModules.Count">
-                    <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
-                        @foreach (var module in _installedModules)
-                        {
-                            <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
-                                               LoadedModule="@module.Value"/>
-                        }
-                    </div>
+                    @if (_installedModules.Count == 0)
+                    {
+                        <ModuleListEmpty Message="No modules installed yet."
+                                         Hint="Open the Available tab to see what you can add."/>
+                    }
+                    else
+                    {
+                        <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
+                            @foreach (var module in _installedModules)
+                            {
+                                <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value.RepositoryModule"
+                                                   LoadedModule="@module.Value"/>
+                            }
+                        </div>
+                    }
                 </MudTabPanel>
 
 
-                <MudTabPanel Text="Unknown Source" Icon="@Icons.Material.Filled.QuestionMark"
-                             BadgeData="@_unknownModules.Count" Visible="_unknownModules.Count > 0">
-                    <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
-                        @foreach (var module in _unknownModules)
-                        {
-                            <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
-                        }
-                    </div>
-                </MudTabPanel>
+                @* Left out entirely rather than Visible="false": a hidden panel keeps its wrapper in
+                   the tab bar, and the equal-width rule below still hands that wrapper a share of the
+                   row, leaving a blank slot where the tab used to be. *@
+                @if (_unknownModules.Count > 0)
+                {
+                    <MudTabPanel Text="Unknown Source" Icon="@Icons.Material.Filled.QuestionMark"
+                                 BadgeData="@_unknownModules.Count">
+                        <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
+                            @foreach (var module in _unknownModules)
+                            {
+                                <ModuleManagerItem ModuleId="@module.Key" LoadedModule="module.Value"/>
+                            }
+                        </div>
+                    </MudTabPanel>
+                }
 
                 <MudTabPanel Text="Available" Icon="@Icons.Material.Filled.Apps" BadgeData="@_installableModules.Count"
                              @ref="_appsTab">
-                    <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
-                        @foreach (var module in _installableModules)
+                    @if (_installableModules.Count == 0)
+                    {
+                        @if (RepositoryManager.FetcherState.Value != FetcherState.Idle)
                         {
-                            <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
+                            <ModuleListEmpty Message="Fetching repositories." Loading="true"/>
                         }
-                    </div>
+                        else if (_installedModules.Count > 0 || _unknownModules.Count > 0)
+                        {
+                            <ModuleListEmpty Message="Everything on offer is already installed."/>
+                        }
+                        else
+                        {
+                            <ModuleListEmpty Message="No modules on offer."
+                                             Hint="Repositories are configured in Settings."
+                                             ActionText="Open settings" OnAction="GoToSettings"/>
+                        }
+                    }
+                    else
+                    {
+                        <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
+                            @foreach (var module in _installableModules)
+                            {
+                                <ModuleManagerItem ModuleId="@module.Key" RepoModule="@module.Value"/>
+                            }
+                        </div>
+                    }
                 </MudTabPanel>
             </MudTabs>
-    </MudCard>
-
-</MudStack>
+        </MudPaper>
+    </ChildContent>
+</PageContainer>
 
 <style>
     .module-manager-tabs .mud-tabs-tabbar-wrapper {
@@ -89,9 +137,23 @@
     private ImmutableDictionary<string, Module> _installableModules = null!;
     private ImmutableDictionary<string, LoadedModule> _installedModules = null!;
 
-    protected override void OnInitialized()
+    private readonly List<IAsyncDisposable> _disposables = [];
+
+    protected override async Task OnInitializedAsync()
     {
         PopulateModuleLists();
+
+        // Repositories are usually still being fetched when this page opens, and the lists are built
+        // from them. Without this the Available tab stays empty until the user navigates away and back.
+        _disposables.Add(await RepositoryManager.FetcherState.ValueUpdated.SubscribeAsync(_ => Refresh()));
+        _disposables.Add(await RepositoryManager.FetchedRepositories.ValueUpdated.SubscribeAsync(_ => Refresh()));
+        _disposables.Add(await RepositoryManager.RepositoriesStateChanged.SubscribeAsync(_ => Refresh()));
+    }
+
+    private async Task Refresh()
+    {
+        PopulateModuleLists();
+        await InvokeAsync(StateHasChanged);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -116,6 +178,8 @@
         _installedModules = loadedModules.Where(x => x.Value.RepositoryModule != null).ToImmutableDictionary();
     }
 
+    private void GoToSettings() => NavigationManager.NavigateTo("/dash/settings");
+
     private void OpenAppdataFolder()
     {
         Process.Start(new ProcessStartInfo
@@ -124,6 +188,19 @@
             UseShellExecute = true,
             Verb = "open"
         });
+    }
+
+    private bool _disposed;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        foreach (var disposable in _disposables)
+        {
+            await disposable.DisposeAsync();
+        }
     }
 
 }

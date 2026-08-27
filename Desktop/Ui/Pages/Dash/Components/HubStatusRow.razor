@@ -1,0 +1,40 @@
+@using OpenShock.Desktop.Ui.Utils
+
+@* One hub, spelled out. The sidebar has the compact icon form of this; the dashboard is where the
+   state is written down instead of hidden behind a tooltip. *@
+
+<div class="d-flex align-center gap-3 py-2">
+    <MudTooltip Text="@Gateway" Disabled="@(Gateway is null)" Arrow="true" Placement="Placement.Top">
+        <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="@StateColor"
+                 Style="@(Gateway is null ? null : "cursor: help;")"/>
+    </MudTooltip>
+
+    <div>
+        <MudText Typo="Typo.body2">@Hub.Name.Truncate(28)</MudText>
+        @if (SharedBy is not null)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Shared by @SharedBy.Truncate(20)</MudText>
+        }
+    </div>
+
+    <div class="flex-grow-1"></div>
+
+    <MudText Typo="Typo.caption" Class="mud-text-secondary">@ShockerLabel</MudText>
+    <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="@StateSlotStyle">@StateLabel</MudText>
+    <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="@LatencySlotStyle">@LatencyText</MudText>
+</div>
+
+@code {
+
+    private const string StateSlotStyle = "min-width: 74px; text-align: right;";
+
+    /// <summary>
+    /// Fixed width tabular slot, so a latency going from 9ms to 112ms does not shove the row sideways
+    /// on every tick.
+    /// </summary>
+    private const string LatencySlotStyle =
+        "font-variant-numeric: tabular-nums; min-width: 52px; text-align: right;";
+
+    private string ShockerLabel => Hub.Shockers.Count == 1 ? "1 shocker" : $"{Hub.Shockers.Count} shockers";
+
+}

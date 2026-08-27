@@ -1,15 +1,18 @@
-﻿.module-manager-item-root {
-  padding: 15px;
-  height: 150px;
-  flex: 1 1 48%;
-  
+.module-manager-item-root {
+  // Not a fixed height: the description wraps to two lines for some modules and one for others,
+  // and the grid stretches every card in a row to the tallest anyway.
+  min-height: 118px;
+
   &:hover {
     box-shadow: 0 0 10px 0 rgba(124, 124, 124, 0.39);
   }
-  
+
   & .icon {
-    height: 100%;
+    width: 48px;
+    height: 48px;
+    flex: none;
     aspect-ratio: 1 / 1;
+    object-fit: cover;
   }
 
   .slim-split-button button {

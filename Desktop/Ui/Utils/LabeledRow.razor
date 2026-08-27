@@ -1,0 +1,51 @@
+@* Label and optional description on the left, whatever the caller puts on the right. *@
+
+<div class="@Classname" style="@Style" @attributes="UserAttributes">
+    <div>
+        @if (LabelContent is not null)
+        {
+            @LabelContent
+        }
+        else
+        {
+            <MudText Typo="@LabelTypo">@Label</MudText>
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@Description</MudText>
+            }
+        }
+    </div>
+    <div class="@ContentClass">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+
+    [Parameter] public string? Label { get; set; }
+
+    [Parameter] public string? Description { get; set; }
+
+    /// <summary>Replaces <see cref="Label"/> and <see cref="Description"/> when a row needs more there.</summary>
+    [Parameter] public RenderFragment? LabelContent { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [Parameter] public Typo LabelTypo { get; set; } = Typo.body2;
+
+    /// <summary>
+    /// Layout of the right hand side. The default never shrinks, which is what a single control
+    /// wants; something that should wrap instead needs its own classes.
+    /// </summary>
+    [Parameter] public string ContentClass { get; set; } = "d-flex align-center gap-3 flex-none";
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? UserAttributes { get; set; }
+
+    private string Classname => $"d-flex align-center justify-space-between gap-4 py-3 {Class}".TrimEnd();
+
+}

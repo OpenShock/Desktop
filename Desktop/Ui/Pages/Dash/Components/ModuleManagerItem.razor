@@ -10,20 +10,33 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<MudPaper Class="d-flex module-manager-item-root rounded-lg gap-10" Outlined="true">
+<MudPaper Class="module-manager-item-root rounded-lg pa-4 d-flex gap-4" Outlined="true">
     @switch (_moduleIcon?.Index)
     {
         case 0:
-            <img src="@_moduleIcon.AsT0" alt="Module Icon" class="icon rounded-lg"/>
+            <img src="@_moduleIcon.AsT0" alt="" class="icon rounded-lg"/>
             break;
         case 1:
-            <MudIcon Icon="@_moduleIcon.AsT1"/>
+            <MudIcon Icon="@_moduleIcon.AsT1" Class="icon"/>
             break;
     }
 
-    <div class="d-flex flex-column justify-space-evenly overflow-hidden">
-        <MudText Typo="Typo.h4">@_moduleName</MudText>
-        <MudText Typo="Typo.body1">@(RepoModule?.Description ?? "Description unavailable")</MudText>
+    <div class="d-flex flex-column gap-1 overflow-hidden">
+        <div class="d-flex align-center gap-2">
+            <MudText Typo="Typo.h6">@_moduleName</MudText>
+
+            @if (LoadedModule?.Fault is not null)
+            {
+                @* The one place a broken module can actually be fixed, so say so here. *@
+                <MudTooltip Arrow="true" Placement="Placement.Top"
+                            Text="@($"This module threw while {LoadedModule.Fault.Phase.ToLowerInvariant()} was running, and is disabled for this session.")">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text"
+                             Icon="@Icons.Material.Filled.ErrorOutline" Value="@("failed")"/>
+                </MudTooltip>
+            }
+        </div>
+
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">@Description</MudText>
     </div>
 
     <div class="ml-auto flex-shrink-0 d-flex flex-column gap-2">
@@ -122,6 +135,15 @@
     [Parameter] public required string ModuleId { get; init; }
 
     private string _moduleName = null!;
+
+    /// <summary>
+    /// Only a repository carries a description. Saying so beats "unavailable", which reads like
+    /// something went wrong when nothing did.
+    /// </summary>
+    private string Description => RepoModule?.Description
+                                  ?? (LoadedModule is null
+                                      ? "No description provided."
+                                      : "Installed from outside a repository, so there is no description.");
     private IconOneOf? _moduleIcon;
 
     private SemVersion? LatestVersion => RepoModule?.Versions.Keys.Where(x => x.IsRelease).OrderByDescending(x => x, SemVersion.PrecedenceComparer).FirstOrDefault();
@@ -143,7 +165,7 @@
         }
         else
         {
-            _moduleIcon = LoadedModule?.Module.Icon;
+            _moduleIcon = LoadedModule?.Ui.Icon;
         }
 
         _availableVersions = GetAvailableVersions();

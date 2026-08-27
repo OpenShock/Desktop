@@ -51,3 +51,57 @@
   flex-basis: 100%;
   flex: 1;
 }
+
+// --- Sections ---
+
+// Header strip of a SectionCard, and of anything that has to line up with one.
+.section-header {
+  background: var(--mud-palette-action-default-hover);
+
+  // Also used on table header rows, which must not light up the way the data rows below them do.
+  &:hover {
+    background: var(--mud-palette-action-default-hover) !important;
+  }
+
+  &.clickable {
+    cursor: pointer;
+    user-select: none;
+  }
+}
+
+// Group header row of a MudTable. Named after the MudBlazor example it comes from.
+.mud-table-cell-custom-group {
+  font-weight: 700;
+}
+
+// --- Dashboard ---
+
+// Liveness indicator for the dashboard headline. The animation is the point: a steady dot reads as
+// "settled", a pulsing one as "working on it", so the state is legible without reading the text.
+.status-beacon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+  background: currentColor;
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 22%, transparent);
+
+  &.pulsing {
+    animation: status-beacon-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes status-beacon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 30%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-beacon.pulsing {
+    animation: none;
+  }
+}

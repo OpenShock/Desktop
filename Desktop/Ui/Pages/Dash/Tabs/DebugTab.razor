@@ -1,63 +1,76 @@
-﻿@page "/dash/debug"
+@page "/dash/debug"
 @using System.Runtime.InteropServices
 @using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.Services
+@using OpenShock.Desktop.Ui.Utils
 @using OpenShock.SDK.CSharp.Models
 @inject AuthService AuthService
 @inject ModuleManager ModuleManager
 
-<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
-    <MudText>Information</MudText>
-    <MudDivider/>
+<PageContainer MaxWidth="@PageContainer.NarrowWidth" Title="Debug"
+               Description="Internal state and diagnostics, worth including in a bug report.">
 
-    <div class="d-flex gap-5 align-center pt-2">
-        <span class="d-flex align-center">
-            <MudText>Version: </MudText>
-            <MudChip Value="Constants.Version"></MudChip>    
-        </span>
+    <SectionCard Icon="@Icons.Material.Filled.Info" Title="Information">
+        <LabeledRow Label="Version">
+            <MudChip T="string" Size="Size.Small" Value="@Constants.Version.ToString()"/>
+        </LabeledRow>
 
-        <span class="d-flex align-center">
-            <MudText>Runtime: </MudText>
-            <MudChip Value="RuntimeInformation.RuntimeIdentifier"></MudChip>    
-        </span>
-    </div>
-</MudPaper>
+        <MudDivider/>
 
-<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
-    <MudText>Token</MudText>
-    <MudDivider/>
+        <LabeledRow Label="Runtime">
+            <MudChip T="string" Size="Size.Small" Value="@RuntimeInformation.RuntimeIdentifier"/>
+        </LabeledRow>
+    </SectionCard>
 
-    <div class="d-flex gap-5 align-center pt-2">
-        <span class="d-flex align-center">
-            <MudText>Permissions: </MudText>
-            <br/>
-            @if (AuthService.TokenSelf is not null)
+    <SectionCard Icon="@Icons.Material.Filled.Key" Title="Token">
+        <LabeledBlock Label="Permissions" Description="What this app's API token is allowed to do."
+                      ContentClass="@ChipListClass">
+            @if (AuthService.TokenSelf is null)
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">No token loaded.</MudText>
+            }
+            else if (AuthService.TokenSelf.Permissions.Count == 0)
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">None granted.</MudText>
+            }
+            else
             {
                 @foreach (var permission in AuthService.TokenSelf.Permissions)
                 {
-                    <MudChip Value="PermissionTypeBindings.PermissionTypeToName[permission].Name"></MudChip>
+                    <MudChip T="string" Size="Size.Small"
+                             Value="@PermissionTypeBindings.PermissionTypeToName[permission].Name"/>
                 }
             }
-        </span>
-    </div>
-</MudPaper>
+        </LabeledBlock>
+    </SectionCard>
 
-<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
-    <MudText>Modules</MudText>
-    <MudDivider/>
+    @* Materialised once: RequiredPermissions is a lazy query over every loaded module. *@
+    @{ var requiredPermissions = ModuleManager.RequiredPermissions.ToArray(); }
 
-    <div class="d-flex gap-5 align-center pt-2">
-        <span class="d-flex align-center">
-            <MudText>Required Permissions: </MudText>
-            <br/>
-            @foreach (var permission in ModuleManager.RequiredPermissions)
+    <SectionCard Icon="@Icons.Material.Filled.Extension" Title="Modules">
+        <LabeledBlock Label="Required permissions"
+                      Description="Everything the installed modules ask for, combined."
+                      ContentClass="@ChipListClass">
+            @if (requiredPermissions.Length == 0)
             {
-                <MudChip Value="PermissionTypeBindings.PermissionTypeToName[permission].Name"></MudChip>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">No module requires a permission.</MudText>
             }
-        </span>
-    </div>
-</MudPaper>
+            else
+            {
+                @foreach (var permission in requiredPermissions)
+                {
+                    <MudChip T="string" Size="Size.Small"
+                             Value="@PermissionTypeBindings.PermissionTypeToName[permission].Name"/>
+                }
+            }
+        </LabeledBlock>
+    </SectionCard>
+
+</PageContainer>
 
 @code {
+
+    /// <summary>A permission list can be long, so it wraps rather than running off the card.</summary>
+    private const string ChipListClass = "d-flex flex-wrap align-center gap-1 mt-1";
 
 }

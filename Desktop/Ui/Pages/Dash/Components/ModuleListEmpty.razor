@@ -1,0 +1,39 @@
+@* Empty state for a module tab. An empty list should say why it is empty and what to do next. *@
+
+<div class="d-flex flex-column align-center justify-center gap-2 pa-8">
+    @if (Loading)
+    {
+        <MudProgressCircular Size="Size.Medium" Color="Color.Primary" Indeterminate="true"/>
+    }
+    else
+    {
+        <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Large" Class="mud-text-secondary"/>
+    }
+
+    <MudText Typo="Typo.body1">@Message</MudText>
+
+    @if (!string.IsNullOrEmpty(Hint))
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">@Hint</MudText>
+    }
+
+    @if (!string.IsNullOrEmpty(ActionText))
+    {
+        <MudButton Variant="Variant.Outlined" Size="Size.Small" Class="mt-2" OnClick="OnAction">@ActionText</MudButton>
+    }
+</div>
+
+@code {
+
+    [Parameter] public required string Message { get; set; }
+
+    [Parameter] public string? Hint { get; set; }
+
+    [Parameter] public string? ActionText { get; set; }
+
+    [Parameter] public EventCallback OnAction { get; set; }
+
+    /// <summary>Swaps the icon for a spinner, for an empty list that is still being filled.</summary>
+    [Parameter] public bool Loading { get; set; }
+
+}

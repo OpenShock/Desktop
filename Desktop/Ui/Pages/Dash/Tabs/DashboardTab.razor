@@ -1,18 +1,21 @@
-﻿@using System.Reflection
+@using System.Reflection
+@using LucHeart.WebsocketLibrary
 @using Microsoft.AspNetCore.SignalR.Client
 @using OpenShock.Desktop.Backend
 @using OpenShock.Desktop.Config
+@using OpenShock.Desktop.ModuleBase.StableInterfaces
+@using OpenShock.Desktop.ModuleManager
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
 @using OpenShock.Desktop.Ui.Utils
 @using OpenShock.Desktop.Utils
 @using OpenShock.SDK.CSharp.Hub
 @using Semver
-@using StatePart = OpenShock.Desktop.Ui.Pages.Dash.Components.StatePart
 @inject StatusHandler StatusHandler
 @inject LiveControlManager LiveControlManager
 @inject OpenShockApi Api
 @inject OpenShockHubClient ApiHubClient
+@inject ModuleManager ModuleManager
 @inject ISnackbar Snackbar
 @inject ConfigManager ConfigManager
 @inject NavigationManager NavigationManager
@@ -20,107 +23,224 @@
 
 @page "/dash/dashboard"
 
-@* ShockOSC download notice (dismissible) *@
-@if (!ConfigManager.Config.App.ShockOscNoticeDismissed)
-{
-    <div style="padding-bottom: 20px;">
-        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Elevation="0" ShowCloseIcon="true" CloseIconClicked="DismissShockOscNotice" Class="alert-center-icon">
-            <div class="d-flex" style="align-items: center; gap: 12px; flex-wrap: wrap;">
-                <MudText Typo="Typo.body2">New here? For VRChat integration download and install ShockOSC.</MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Download" OnClick="GoToModuleManager">Go to Module Manager</MudButton>
+<PageContainer MaxWidth="@PageContainer.NarrowWidth">
+
+    @* The page title is the answer to the question you opened the app to ask. *@
+    <TitleContent>
+        <div class="d-flex align-center gap-4">
+            <span class="@BeaconClass" style="@($"color: var(--mud-palette-{BeaconPalette});")"></span>
+            <div>
+                <MudText Typo="Typo.h5">@StatusHeadline</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">@StatusDetail</MudText>
             </div>
-        </MudAlert>
-    </div>
-}
-
-<div class="dashboard-box">
-    <MudPaper Outlined="true" Elevation="1" Class="rounded-lg mud-paper-padding item" Style="text-align: center">
-        <MudText Typo="Typo.h6">Welcome to OpenShock Desktop</MudText>
-        <MudText Typo="Typo.body2">Version @(Version.WithoutMetadata().ToString())</MudText>
-        <br/>
-        <br/>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Custom.Brands.GitHub" OnClick="OpenGithub">GitHub</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Bolt" OnClick="OpenOpenShock">OpenShock</MudButton>
-    </MudPaper>
-
-    <MudPaper Outlined="true" Elevation="1" Class="rounded-lg mud-paper-padding item" Style="text-align: center">
-        <MudText Typo="Typo.h6">Connection Status</MudText>
-
-        <div class="d-flex gap-5" style="flex-wrap: wrap; margin: 10px 0;">
-
-            <div style="display: flex; flex-direction: column" class="child-div-align-center flex-grow-1">
-                <MudText Style="font-size: 10pt">SignalR</MudText>
-                <MudTooltip Arrow="true" Placement="Placement.Top" Text="@ApiHubClient.State.ToString()">
-                    <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@GetConnectionStateColor(ApiHubClient.State)"/>
-                </MudTooltip>
-            </div>
-
-            @foreach (var device in Api.Hubs.Value)
-            {
-                <StatePart Text="@device.Name.Truncate(13)"
-                           Online="device.Status.Online"
-                           Client="LiveControlManager.GetClient(device.Id)"/>
-            }
-
-            @if (Api.SharedOwners.Value.Count > 0)
-            {
-                <SharedHubsPart Owners="Api.SharedOwners.Value" GetClient="LiveControlManager.GetClient"/>
-            }
         </div>
-    </MudPaper>
+    </TitleContent>
 
-    <MudPaper Outlined="true" Elevation="1" Class="rounded-lg mud-paper-padding item d-flex"
-              Style="text-align: center; flex-direction: column; align-items: center">
-        <MudText Typo="Typo.h6">Discord</MudText>
-        <div style="flex-grow: 1"></div>
-        <div>
-            <DiscordInvite InviteCode="OpenShock"/>
-        </div>
-    </MudPaper>
-</div>
+    <ChildContent>
 
-<style>
-    .dashboard-box {
-        display: grid;
-        
-        align-items: stretch;
-
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(3, 1fr);
-        
-        grid-gap: 10px;
-
-        justify-items: stretch;
-        
-        width: 100%;
-        height: 100%;
-        
-        overflow: auto;
-        
-    }
-    
-    .dashboard-box .item {
-
-    }
-    
-    .dashboard-box .discord {
-            grid-area: 2 / 2 / 4 / 4;
+        @if (!ConfigManager.Config.App.ShockOscNoticeDismissed)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Elevation="0" ShowCloseIcon="true"
+                      CloseIconClicked="DismissShockOscNotice" Class="alert-center-icon rounded-lg">
+                <div class="d-flex align-center gap-4" style="flex-wrap: wrap;">
+                    <MudText Typo="Typo.body2">Control your shockers from VRChat by installing ShockOSC.</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Download" OnClick="GoToModuleManager">
+                        Install ShockOSC
+                    </MudButton>
+                </div>
+            </MudAlert>
         }
 
-    .dashboard-box .item:hover {
-        box-shadow: 0 0 10px 0 rgba(124, 124, 124, 0.39);
-    }
-</style>
+        <SectionCard Icon="@Icons.Material.Filled.Router" Title="Hubs" MaxContentHeight="@ListMaxHeight">
+            <HeaderContent>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@HubCountLabel</MudText>
+            </HeaderContent>
+            <ChildContent>
+                @if (OwnedHubs.Count == 0 && SharedOwners.Count == 0)
+                {
+                    <LabeledRow Label="No hubs yet"
+                                Description="Add a hub on openshock.app and it shows up here.">
+                        <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.OpenInNew" OnClick="OpenOpenShock">
+                            Open OpenShock
+                        </MudButton>
+                    </LabeledRow>
+                }
+
+                @foreach (var hub in OwnedHubs)
+                {
+                    <HubStatusRow Hub="hub" Client="LiveControlManager.GetClient(hub.Id)"/>
+                }
+
+                @foreach (var owner in SharedOwners)
+                {
+                    @foreach (var hub in owner.Hubs)
+                    {
+                        <HubStatusRow Hub="hub" Client="LiveControlManager.GetClient(hub.Id)" SharedBy="@owner.Name"/>
+                    }
+                }
+            </ChildContent>
+        </SectionCard>
+
+        <SectionCard Icon="@Icons.Material.Filled.Extension" Title="Modules" MaxContentHeight="@ListMaxHeight">
+            <HeaderContent>
+                <MudButton Size="Size.Small" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ViewModule"
+                           OnClick="GoToModuleManagerInstalled">Manage
+                </MudButton>
+            </HeaderContent>
+            <ChildContent>
+                @if (Modules.Count == 0)
+                {
+                    <LabeledRow Label="No modules installed"
+                                Description="Modules add integrations, like VRChat support.">
+                        <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Add" OnClick="GoToModuleManager">
+                            Browse modules
+                        </MudButton>
+                    </LabeledRow>
+                }
+
+                @foreach (var module in Modules)
+                {
+                    <LabeledRow Label="@module.Name" Description="@($"Version {module.Version}")">
+                        @if (module.Fault is not null)
+                        {
+                            <MudTooltip Arrow="true" Placement="Placement.Top"
+                                        Text="@($"Threw during {module.Fault.Phase.ToLowerInvariant()}. Open the module for details.")">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text"
+                                         Icon="@Icons.Material.Filled.ErrorOutline" Value="@("failed")"/>
+                            </MudTooltip>
+                        }
+                        else if (module.AvailableVersion is not null)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text"
+                                     Icon="@Icons.Material.Filled.Update"
+                                     Value="@($"{module.AvailableVersion} available")"/>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">up to date</MudText>
+                        }
+                    </LabeledRow>
+                }
+            </ChildContent>
+        </SectionCard>
+
+        <SectionCard Icon="@Icons.Material.Filled.Info" Title="About">
+            <LabeledRow Label="OpenShock Desktop" Description="@($"Version {Version.WithoutMetadata()}")">
+                <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Custom.Brands.GitHub"
+                           OnClick="OpenGithub">GitHub
+                </MudButton>
+                <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Bolt"
+                           OnClick="OpenOpenShock">OpenShock
+                </MudButton>
+            </LabeledRow>
+
+            <MudDivider/>
+
+            <LabeledRow Label="Discord" Description="Support, and the people who build this.">
+                <DiscordInvite InviteCode="OpenShock"/>
+            </LabeledRow>
+        </SectionCard>
+
+    </ChildContent>
+</PageContainer>
 
 @code {
-    private static readonly SemVersion Version = SemVersion.Parse(typeof(SideBar).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, SemVersionStyles.Strict);
+    /// <summary>
+    /// Both lists are as long as the account makes them, so they scroll rather than pushing the
+    /// cards below them off the page. Roughly seven rows.
+    /// </summary>
+    private const string ListMaxHeight = "320px";
+
+    private static readonly SemVersion Version = SemVersion.Parse(
+        typeof(SideBar).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+        SemVersionStyles.Strict);
+
+    private IReadOnlyList<IOpenShockHub> OwnedHubs => Api.Hubs.Value;
+
+    private IReadOnlyList<Models.SharedHubOwner> SharedOwners => Api.SharedOwners.Value;
+
+    private IEnumerable<IOpenShockHub> AllHubs => OwnedHubs.Concat(SharedOwners.SelectMany(x => x.Hubs));
+
+    private List<LoadedModule> Modules => ModuleManager.Modules.Values.OrderBy(x => x.Name).ToList();
+
+    private int OnlineHubs => AllHubs.Count(x => x.Status.Online);
+
+    private int TotalHubs => AllHubs.Count();
+
+    private int LiveHubs => AllHubs.Count(x =>
+        LiveControlManager.GetClient(x.Id)?.State.Value == WebsocketConnectionState.Connected);
+
+    private bool BackendConnected => ApiHubClient.State == HubConnectionState.Connected;
+
+    private bool BackendSettling => ApiHubClient.State is HubConnectionState.Connecting or HubConnectionState.Reconnecting;
+
+    #region Headline
+
+    /// <summary>
+    /// The one line the page exists for. Backend first: without it nothing else on the page is
+    /// trustworthy, so it outranks whatever the hubs last reported.
+    /// </summary>
+    private string StatusHeadline
+    {
+        get
+        {
+            if (BackendSettling) return "Reconnecting";
+            if (!BackendConnected) return "Not connected";
+
+            if (TotalHubs == 0) return "Connected";
+            if (OnlineHubs == 0) return "No hubs online";
+
+            return OnlineHubs == TotalHubs ? "All hubs online" : $"{OnlineHubs} of {TotalHubs} hubs online";
+        }
+    }
+
+    private string StatusDetail
+    {
+        get
+        {
+            if (BackendSettling) return "Trying to reach the OpenShock backend.";
+            if (!BackendConnected) return "Can't reach the OpenShock backend. Check your internet connection.";
+
+            if (TotalHubs == 0) return "No hubs on your account yet.";
+            if (OnlineHubs == 0) return "Connected to the backend, but no hub is reachable right now.";
+
+            return LiveHubs == 0
+                ? "Live control opens as soon as something sends a command."
+                : $"Live control open on {LiveHubs} of {OnlineHubs}.";
+        }
+    }
+
+    private string BeaconClass => BackendSettling ? "status-beacon pulsing" : "status-beacon";
+
+    private string BeaconPalette
+    {
+        get
+        {
+            if (BackendSettling) return "warning";
+            if (!BackendConnected) return "error";
+
+            if (TotalHubs == 0) return "info";
+
+            return OnlineHubs == 0 ? "warning" : "success";
+        }
+    }
+
+    private string HubCountLabel => TotalHubs == 0 ? "none" : $"{OnlineHubs} of {TotalHubs} online";
+
+    #endregion
 
     private void OpenOpenShock() => UiUtils.OpenUrl("https://openshock.org", Snackbar);
     private void OpenGithub() => UiUtils.OpenUrl("https://github.com/OpenShock/Desktop", Snackbar);
     private void GoToModuleManager() => NavigationManager.NavigateTo("/dash/modules?OpenAvailableModules=true");
+    private void GoToModuleManagerInstalled() => NavigationManager.NavigateTo("/dash/modules");
+
     private IAsyncDisposable _statusSubscription = null!;
     private IAsyncDisposable _liveControlSubscription = null!;
     private IAsyncDisposable _sharedOwnersSubscription = null!;
+    private IAsyncDisposable _hubsSubscription = null!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,35 +249,27 @@
         // Connections open lazily and are pruned when idle, so GetClient flips with nothing else changing.
         _liveControlSubscription = await LiveControlManager.OnStateUpdated.SubscribeAsync(() => InvokeAsync(StateHasChanged));
         _sharedOwnersSubscription = await Api.SharedOwners.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
+        _hubsSubscription = await Api.Hubs.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged));
     }
-    
 
-    private static Color GetConnectionStateColor(HubConnectionState state) =>
-        state switch
-        {
-            HubConnectionState.Connected => Color.Success,
-            HubConnectionState.Reconnecting => Color.Warning,
-            HubConnectionState.Connecting => Color.Warning,
-            HubConnectionState.Disconnected => Color.Error,
-            _ => Color.Error
-        };
-    
     private async Task DismissShockOscNotice()
     {
         ConfigManager.Config.App.ShockOscNoticeDismissed = true;
         ConfigManager.Save();
         await InvokeAsync(StateHasChanged);
     }
-    
-    private bool _disposed = false;
-    
+
+    private bool _disposed;
+
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
         _disposed = true;
+
         await _statusSubscription.DisposeAsync();
         await _liveControlSubscription.DisposeAsync();
         await _sharedOwnersSubscription.DisposeAsync();
+        await _hubsSubscription.DisposeAsync();
     }
 
 }

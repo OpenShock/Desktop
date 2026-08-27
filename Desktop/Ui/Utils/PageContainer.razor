@@ -1,0 +1,73 @@
+@* Page shell: an optional title block, then whatever the page stacks underneath it. *@
+
+<div class="@Classname" style="@Stylename" @attributes="UserAttributes">
+    @if (HasHeader)
+    {
+        <div class="d-flex align-center justify-space-between gap-4">
+            <div>
+                @if (TitleContent is not null)
+                {
+                    @TitleContent
+                }
+                else
+                {
+                    <MudText Typo="@TitleTypo">@Title</MudText>
+                    @if (!string.IsNullOrEmpty(Description))
+                    {
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@Description</MudText>
+                    }
+                }
+            </div>
+            @HeaderContent
+        </div>
+    }
+    @ChildContent
+</div>
+
+@code {
+
+    /// <summary>
+    /// Width of a reading column. Pages that are a list of settings or a single form are far easier
+    /// to scan at this width than stretched across a maximised window.
+    /// </summary>
+    public const string NarrowWidth = "780px";
+
+    [Parameter] public string? Title { get; set; }
+
+    [Parameter] public string? Description { get; set; }
+
+    /// <summary>Replaces <see cref="Title"/> and <see cref="Description"/> when a page needs more there.</summary>
+    [Parameter] public RenderFragment? TitleContent { get; set; }
+
+    /// <summary>Right aligned page level actions, such as an add button.</summary>
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [Parameter] public Typo TitleTypo { get; set; } = Typo.h6;
+
+    /// <summary>
+    /// Centred column width, for example <see cref="NarrowWidth"/>. Null or empty fills the page,
+    /// which is what a table or a grid of cards wants.
+    /// </summary>
+    [Parameter] public string? MaxWidth { get; set; }
+
+    /// <summary>MudBlazor spacing step between the header and each child.</summary>
+    [Parameter] public int Gap { get; set; } = 4;
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? UserAttributes { get; set; }
+
+    private bool HasHeader => TitleContent is not null || HeaderContent is not null || !string.IsNullOrEmpty(Title);
+
+    private string Classname => $"d-flex flex-column gap-{Gap} {Class}".TrimEnd();
+
+    private string? Stylename => string.IsNullOrEmpty(MaxWidth)
+        ? Style
+        : $"max-width: {MaxWidth}; margin: 0 auto;{(string.IsNullOrEmpty(Style) ? string.Empty : " " + Style)}";
+
+}

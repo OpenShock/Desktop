@@ -1,0 +1,139 @@
+@* A titled card: tinted header with icon and title, optional header control, content beneath. *@
+
+<MudPaper Outlined="@Outlined" Elevation="@Elevation" Class="@Classname" Style="@Style" @attributes="UserAttributes">
+    <div class="@HeaderClassname" @onclick="OnHeaderClick">
+        <div class="d-flex align-center gap-3">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <MudIcon Icon="@Icon" Size="Size.Small" Color="@IconColor"/>
+            }
+            @if (TitleContent is not null)
+            {
+                @TitleContent
+            }
+            else
+            {
+                <MudText Typo="Typo.overline" Style="@TitleStyle">@Title</MudText>
+            }
+        </div>
+
+        @* Header controls belong to the caller, so a click on one must not also toggle the card. *@
+        <div class="d-flex align-center gap-2" @onclick:stopPropagation="Collapsible">
+            @HeaderContent
+            @if (Collapsible)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Size="Size.Small"
+                         Style="@($"transition: transform 200ms; transform: rotate({(IsExpanded ? 180 : 0)}deg);")"/>
+            }
+        </div>
+    </div>
+
+    @if (Collapsible)
+    {
+        <MudCollapse Expanded="IsExpanded">
+            <MudDivider/>
+            <div class="@ContentClass">
+                @ChildContent
+            </div>
+        </MudCollapse>
+    }
+    else
+    {
+        @* Deliberately not wrapped in a MudCollapse: it clips, and content such as a popover in a
+           table needs to be able to overflow the card. *@
+        <MudDivider/>
+        <div class="@ContentClass" style="@ContentStyle">
+            @ChildContent
+        </div>
+    }
+</MudPaper>
+
+@code {
+
+    /// <summary>
+    /// Header strip fill, defined in GlobalUtils.scss. Put it on anything that has to line up with a
+    /// card header, such as the header row of a table inside one.
+    /// </summary>
+    public const string HeaderClass = "section-header";
+
+    /// <summary>Overline is uppercase already, but only weight 400.</summary>
+    public const string TitleStyle = "font-weight: 700; text-transform: uppercase;";
+
+    [Parameter] public string? Icon { get; set; }
+
+    [Parameter] public Color IconColor { get; set; } = Color.Primary;
+
+    [Parameter] public string? Title { get; set; }
+
+    /// <summary>Replaces the plain <see cref="Title"/> text when a card needs more in its header.</summary>
+    [Parameter] public RenderFragment? TitleContent { get; set; }
+
+    /// <summary>Right aligned control in the header, for a card wide toggle or a note.</summary>
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Makes the header a toggle that folds the content away.</summary>
+    [Parameter] public bool Collapsible { get; set; }
+
+    [Parameter] public bool Expanded { get; set; }
+
+    [Parameter] public EventCallback<bool> ExpandedChanged { get; set; }
+
+    /// <summary>Padding around the content. Pass an empty string for content that runs edge to edge.</summary>
+    [Parameter] public string ContentClass { get; set; } = "px-4 pb-1";
+
+    /// <summary>
+    /// Caps the content and scrolls it past that height, so a card holding a list that can grow
+    /// without limit cannot run the page on forever. Any CSS length, for example "320px".
+    /// </summary>
+    [Parameter] public string? MaxContentHeight { get; set; }
+
+    [Parameter] public bool Outlined { get; set; } = true;
+
+    [Parameter] public int Elevation { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? UserAttributes { get; set; }
+
+    /// <summary>
+    /// Tracked here as well as in <see cref="Expanded"/> so the card also works uncontrolled, without
+    /// the caller having to bind and store a bool it does not otherwise care about.
+    /// </summary>
+    private bool _expanded;
+
+    private bool _initialised;
+
+    private bool IsExpanded => !Collapsible || _expanded;
+
+    private string Classname => $"rounded-lg {Class}".TrimEnd();
+
+    private string? ContentStyle => string.IsNullOrEmpty(MaxContentHeight)
+        ? null
+        : $"max-height: {MaxContentHeight}; overflow-y: auto;";
+
+    private string HeaderClassname =>
+        $"d-flex align-center justify-space-between gap-4 px-4 py-3 {HeaderClass}{(Collapsible ? " clickable" : string.Empty)}";
+
+    protected override void OnParametersSet()
+    {
+        // A bound Expanded stays authoritative; an unbound one only seeds the initial state.
+        if (!ExpandedChanged.HasDelegate && _initialised) return;
+
+        _expanded = Expanded;
+        _initialised = true;
+    }
+
+    private Task OnHeaderClick()
+    {
+        if (!Collapsible) return Task.CompletedTask;
+
+        _expanded = !_expanded;
+        return ExpandedChanged.InvokeAsync(_expanded);
+    }
+
+}

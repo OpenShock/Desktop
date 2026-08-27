@@ -1,4 +1,4 @@
-﻿@inject ConfigManager ConfigManager
+@inject ConfigManager ConfigManager
 @inject Updater Updater
 @using System.Diagnostics
 @using System.Runtime.InteropServices
@@ -6,6 +6,7 @@
 @using OpenShock.Desktop.ModuleManager.Repository
 @using OpenShock.Desktop.Services
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
+@using OpenShock.Desktop.Ui.Utils
 @using OpenShock.SDK.CSharp.Models
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -16,225 +17,236 @@
 
 @page "/dash/settings"
 
-<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding">
-    <MudText>Desktop App</MudText>
-    <MudDivider/>
+<PageContainer MaxWidth="@PageContainer.NarrowWidth" Title="Settings"
+               Description="How the app starts, how it looks, and where it gets modules from.">
 
-    <div class="d-flex-wrap gap-5" style="align-items: center">
-        <div class="d-flex gap-5 mt-5" style="align-items: center">
-            <div style="width: 200px">
-                <MudSelect Disabled="Updater.CheckingForUpdate.Value" Variant="Variant.Outlined"
+    <SectionCard Icon="@Icons.Material.Filled.DesktopWindows" Title="Application">
+        <HeaderContent>
+            @if (Updater.CheckingForUpdate.Value)
+            {
+                <MudButton Size="Size.Small" Variant="Variant.Text" Disabled="true">
+                    <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"
+                                         Style="width: 20px; height: 20px;"/>
+                    <MudText Typo="Typo.button" Class="ml-2">Checking</MudText>
+                </MudButton>
+            }
+            else if (Updater.UpdateAvailable.Value)
+            {
+                <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Update" OnClick="OpenUpdateDialog">Update available
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Size="Size.Small" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="Updater.CheckUpdate">Check for update
+                </MudButton>
+            }
+        </HeaderContent>
+        <ChildContent>
+            <LabeledRow Label="Update channel"
+                        Description="Pre-release ships new features earlier, at the cost of stability.">
+                <MudSelect T="UpdateChannel" Dense="true" Margin="Margin.Dense" Variant="Variant.Outlined"
+                           Style="width: 180px;" Disabled="Updater.CheckingForUpdate.Value"
                            @bind-Value="ConfigManager.Config.App.UpdateChannel"
-                           Label="Update Channel"
                            @bind-Value:after="UpdateChannelChanged">
-                    @foreach (UpdateChannel channel in Enum.GetValues(typeof(UpdateChannel)))
+                    @foreach (var channel in Enum.GetValues<UpdateChannel>())
                     {
                         <MudSelectItem Value="@channel">@channel</MudSelectItem>
                     }
                 </MudSelect>
-            </div>
+            </LabeledRow>
 
-            <div style="width: 250px">
-                @if (Updater.CheckingForUpdate.Value)
+            <MudDivider/>
+
+            <LabeledRow Label="Minimize on launch" Description="Start into the tray instead of opening the window.">
+                <MudSwitch T="bool" Color="Color.Primary"
+                           @bind-Value="ConfigManager.Config.App.MinimizeOnLaunch"
+                           @bind-Value:after="OnSettingsValueChange"/>
+            </LabeledRow>
+
+            <MudDivider/>
+
+            <LabeledRow Label="Close to tray" Description="Keep running in the background when the window is closed.">
+                <MudSwitch T="bool" Color="Color.Primary"
+                           @bind-Value="ConfigManager.Config.App.CloseToTray"
+                           @bind-Value:after="OnSettingsValueChange"/>
+            </LabeledRow>
+
+            @if (OperatingSystem.IsWindows())
+            {
+                <MudDivider/>
+
+                <LabeledRow Label="Start with Windows" Description="Launch the app when you sign in.">
+                    <MudSwitch T="bool" Color="Color.Primary"
+                               @bind-Value="ConfigManager.Config.App.OSAutoStart"
+                               @bind-Value:after="OnOSAutoStartChange"/>
+                </LabeledRow>
+
+                <MudDivider/>
+
+                <LabeledRow Label="Start with VRChat"
+                            Description="Requires VRCX, with the App Launcher enabled in its advanced settings.">
+                    <MudSwitch T="bool" Color="Color.Primary"
+                               @bind-Value="ConfigManager.Config.App.VRCAutoStart"
+                               @bind-Value:after="OnVRCAutoStartChange"/>
+                </LabeledRow>
+            }
+        </ChildContent>
+    </SectionCard>
+
+    <SectionCard Icon="@Icons.Material.Filled.Palette" Title="Appearance">
+        <HeaderContent>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Might need a restart to fully apply</MudText>
+        </HeaderContent>
+        <ChildContent>
+            <LabeledRow Label="Theme" Description="Colour palette used across the whole app.">
+                <MudToggleGroup T="Theme" Style="width: 220px;" Delimiters="true" CheckMark="false"
+                                FixedContent="false"
+                                @bind-Value="ConfigManager.Config.App.Theme"
+                                @bind-Value:after="ThemeUpdated">
+                    @foreach (var theme in Enum.GetValues<Theme>())
+                    {
+                        <MudToggleItem Value="@theme" Text="@theme.ToString()"/>
+                    }
+                </MudToggleGroup>
+            </LabeledRow>
+        </ChildContent>
+    </SectionCard>
+
+    <SectionCard Icon="@Icons.Material.Filled.Extension" Title="Modules">
+        <LabeledRow Label="Auto update" Description="Install available module updates on startup.">
+            <MudSwitch T="bool" Color="Color.Primary"
+                       @bind-Value="ConfigManager.Config.Modules.AutoUpdate"
+                       @bind-Value:after="OnSettingsValueChange"/>
+        </LabeledRow>
+    </SectionCard>
+
+    <SectionCard Icon="@Icons.Material.Filled.Storage" Title="Module repositories">
+        <HeaderContent>
+            <div class="d-flex align-center gap-1">
+                @if (RepositoryManager.FetcherState.Value == FetcherState.Idle)
                 {
-                    <MudButton Disabled="true" Variant="Variant.Outlined" Class="mud-button-full-width">
-                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"/>
-                        <MudText Style="margin-left: 10px">Checking for updates</MudText>
+                    <MudButton Size="Size.Small" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh"
+                               OnClick="RepositoryManager.FetchRepositories">Refresh
                     </MudButton>
                 }
                 else
                 {
-                    @if (Updater.UpdateAvailable.Value)
+                    <MudButton Size="Size.Small" Variant="Variant.Text" Disabled="true">
+                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"
+                                             Style="width: 20px; height: 20px;"/>
+                        <MudText Typo="Typo.button" Class="ml-2">Refresh</MudText>
+                    </MudButton>
+                }
+                <MudButton Size="Size.Small" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="() => _addFieldOpen = true">Add
+                </MudButton>
+            </div>
+        </HeaderContent>
+        <ChildContent>
+            <MudCollapse Expanded="_addFieldOpen">
+                <div class="d-flex align-center gap-2 py-3">
+                    <MudTextField T="string" Placeholder="Repository URL" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" @bind-Value="_newUrl"/>
+
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="AddNewModuleRepository">Add
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close" OnClick="CancelAdd">
+                        Cancel
+                    </MudButton>
+                </div>
+            </MudCollapse>
+
+            <MudTable Class="mb-3" Elevation="0" HeaderClass="@SectionCard.HeaderClass" GroupHeaderClass="@SectionCard.HeaderClass"
+                      Dense="true" Items="_uiRepoData" Hover="true" Breakpoint="Breakpoint.Sm"
+                      GroupBy="@_groupDefinition" FixedHeader="true" Height="320px">
+                <HeaderContent>
+                    <MudTh Style="font-weight: 700">URL</MudTh>
+                    <MudTh Style="width: 0"></MudTh>
+                    <MudTh Style="width: 0"></MudTh>
+                </HeaderContent>
+                <GroupHeaderTemplate>
+                    <MudTh Class="mud-table-cell-custom-group"
+                           colspan="5">@((bool)context.Key! ? "Built-In Repositories" : "Custom Repositories")</MudTh>
+                </GroupHeaderTemplate>
+
+                <RowTemplate>
+                    <MudTd DataLabel="URL">@context.Url</MudTd>
+
+                    @if (context.Context == null)
                     {
-                        <MudButton Variant="Variant.Filled" Class="mud-button-full-width" Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.Update" OnClick="OpenUpdateDialog">Update available
-                        </MudButton>
+                        <MudTd>
+                            <MudTooltip RootClass="d-flex" Text="This repository has not been fetched yet">
+                                <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Warning"></MudIcon>
+                            </MudTooltip>
+
+                        </MudTd>
                     }
                     else
                     {
-                        <MudButton Variant="Variant.Outlined" Class="mud-button-full-width"
-                                   StartIcon="@Icons.Material.Filled.Refresh" OnClick="Updater.CheckUpdate">Check for update
-                        </MudButton>
+                        @switch (context.Context.State.Value)
+                        {
+                            case RepositoryLoadContextState.Queued:
+                                <MudTd>
+                                    <MudTooltip RootClass="d-flex" Text="Queued for fetching...">
+                                        <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Info"></MudIcon>
+                                    </MudTooltip>
+                                </MudTd>
+                                break;
+                            case RepositoryLoadContextState.Loading:
+                                <MudTd>
+                                    <MudTooltip RootClass="d-flex" Text="Fetching...">
+                                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"
+                                                             Style="width: 24px; height: 24px;"/>
+                                    </MudTooltip>
+                                </MudTd>
+                                break;
+                            case RepositoryLoadContextState.Loaded:
+                                <MudTd>
+                                    <MudTooltip RootClass="d-flex"
+                                                Text="@(context.Context.Repository!.Modules.Count + " Module(s) fetched")">
+                                        <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Success"></MudIcon>
+                                    </MudTooltip>
+                                </MudTd>
+                                break;
+                            case RepositoryLoadContextState.Failed:
+                                <MudTd>
+                                    <MudTooltip RootClass="d-flex"
+                                                Text="There was an error fetching the repository, click for more info">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Adjust" Color="Color.Error"
+                                                       OnClick="() => ToggleErrorPopover(context)" Style="padding: 0"/>
+                                    </MudTooltip>
+                                    <ErrorPopover ErrorPopoverOpen="@context.ErrorPopoverOpen"
+                                                  Error="@context.Context.LastError"/>
+                                </MudTd>
+                                break;
+                        }
                     }
-                }
-            </div>
-        </div>
-        <div>
-            <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.MinimizeOnLaunch"
-                         Label="Minimize On Launch" @bind-Value:after="OnSettingsValueChange"/>
-            <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.CloseToTray"
-                         Label="Close to Tray" @bind-Value:after="OnSettingsValueChange"/>
-            @if (OperatingSystem.IsWindows())
-            {
-                <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.OSAutoStart"
-                             Label="Start with Windows" @bind-Value:after="OnOSAutoStartChange"/>
-                <MudTooltip Text="Enable The App Launcher in VRCX's Advanced Settings">
-                    <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.App.VRCAutoStart"
-                                 Label="Start with VRChat (Requires VRCX)" @bind-Value:after="OnVRCAutoStartChange"/>
-                </MudTooltip>
-                
-            }
-        </div>
-    </div>
-</MudPaper>
 
-<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding-margin">
-    <MudText>Theme <span style="color: var(--mud-palette-dark-lighten)">(Might need a restart to fully apply)</span></MudText>
-    <MudDivider/>
-    
-    <MudRadioGroup @bind-Value="ConfigManager.Config.App.Theme" @bind-Value:after="ThemeUpdated">
-        @foreach (Theme theme in Enum.GetValues(typeof(Theme)))
-        {
-            <MudRadio Value="@theme">@theme</MudRadio>
-        }
-    </MudRadioGroup>
-</MudPaper>
+                    <MudTd>
+                        <MudTooltip RootClass="d-flex"
+                                    Text="@(context.IsBuiltIn ? "This is a built-in repository, it cant be removed" : "Remove repository")">
+                            <MudIconButton Disabled="@context.IsBuiltIn" Size="Size.Small"
+                                           OnClick="() => RemoveModuleRepository(context.Url)"
+                                           Icon="@Icons.Material.Filled.RemoveCircleOutline"></MudIconButton>
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </ChildContent>
+    </SectionCard>
 
-<MudPaper Outlined="true" Class="rounded-lg mud-paper-padding-margin">
-    <MudText>Module Settings</MudText>
-    <MudDivider/>
-
-    <div class="d-flex gap-5" style="align-items: center">
-        <MudCheckBox Class="option-width option-checkbox-height" @bind-Value="ConfigManager.Config.Modules.AutoUpdate"
-                     Label="Auto Update" @bind-Value:after="OnSettingsValueChange"/>
-    </div>
-</MudPaper>
-
-
-<MudPaper Outlined="true" Class="rounded-lg lg mud-paper-padding-margin">
-    <div class="d-flex justify-space-between">
-        <MudText>Module Repositories</MudText>
-        <span>
-            <span>
-                @if (RepositoryManager.FetcherState.Value == FetcherState.Idle)
-                {
-                    <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.Refresh"
-                               OnClick="RepositoryManager.FetchRepositories">Refresh</MudButton>
-                }
-                else
-                {
-                    <MudButton Size="Size.Small"><MudProgressCircular Size="Size.Small" Color="Color.Primary"
-                                                                      Indeterminate="true"
-                                                                      Style="margin-right: 10px; width: 22px; height:  22px"/> Refresh</MudButton>
-                }
-            </span>
-            <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" OnClick="() => _addFieldOpen = true">Add Repository</MudButton>
-        </span>
-    </div>
-    <MudDivider/>
-
-    <br/>
-    @if (_addFieldOpen)
-    {
-        <div class="d-flex align-center gap-2 mb-3">
-            <MudTextField Style="height: 37px" Placeholder="Repository URL" Variant="Variant.Outlined"
-                          @bind-Value="@_newUrl"></MudTextField>
-
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="AddNewModuleRepository">Add
+    <SectionCard Icon="@Icons.Material.Filled.Tune" Title="Advanced" Collapsible="true">
+        <LabeledRow Label="Debug" Description="Internal state and diagnostics, useful for bug reports.">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.BugReport"
+                       OnClick="GoToDebugTab">Open
             </MudButton>
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="CancelAdd">Cancel
-            </MudButton>
+        </LabeledRow>
+    </SectionCard>
 
-        </div>
-    }
-
-    <MudTable HeaderClass="repo-table-headers" Dense="true" Items="_uiRepoData"
-              Hover="true" Breakpoint="Breakpoint.Sm" GroupBy="@_groupDefinition" GroupHeaderClass="repo-table-headers"
-              FixedHeader="true" Height="400px">
-        <HeaderContent>
-            <MudTh Style="font-weight: 1000">URL</MudTh>
-            <MudTh Style="width: 0"></MudTh>
-            <MudTh Style="width: 0"></MudTh>
-        </HeaderContent>
-        <GroupHeaderTemplate>
-            <MudTh Class="mud-table-cell-custom-group"
-                   colspan="5">@((bool)context.Key! ? "Built-In Repositories" : "Custom Repositories")</MudTh>
-        </GroupHeaderTemplate>
-
-        <RowTemplate>
-            <MudTd DataLabel="URL">@context.Url</MudTd>
-
-            @if (context.Context == null)
-            {
-                <MudTd>
-                    <MudTooltip RootClass="d-flex" Text="This repository has not been fetched yet">
-                        <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Warning"></MudIcon>
-                    </MudTooltip>
-
-                </MudTd>
-            }
-            else
-            {
-                @switch (context.Context.State.Value)
-                {
-                    case RepositoryLoadContextState.Queued:
-                        <MudTd>
-                            <MudTooltip RootClass="d-flex" Text="Queued for fetching...">
-                                <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Info"></MudIcon>
-                            </MudTooltip>
-                        </MudTd>
-                        break;
-                    case RepositoryLoadContextState.Loading:
-                        <MudTd>
-                            <MudTooltip RootClass="d-flex" Text="Fetching...">
-                                <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true"
-                                                     Style="width: 24px; height: 24px;"/>
-                            </MudTooltip>
-                        </MudTd>
-                        break;
-                    case RepositoryLoadContextState.Loaded:
-                        <MudTd>
-                            <MudTooltip RootClass="d-flex"
-                                        Text="@(context.Context.Repository!.Modules.Count + " Module(s) fetched")">
-                                <MudIcon Icon="@Icons.Material.Filled.Adjust" Color="Color.Success"></MudIcon>
-                            </MudTooltip>
-                        </MudTd>
-                        break;
-                    case RepositoryLoadContextState.Failed:
-                        <MudTd>
-                            <MudTooltip RootClass="d-flex"
-                                        Text="There was an error fetching the repository, click for more info">
-                                <MudIconButton Icon="@Icons.Material.Filled.Adjust" Color="Color.Error"
-                                               OnClick="() => ToggleErrorPopover(context)" Style="padding: 0"/>
-                            </MudTooltip>
-                            <ErrorPopover ErrorPopoverOpen="@context.ErrorPopoverOpen"
-                                          Error="@context.Context.LastError"/>
-                        </MudTd>
-                        break;
-                }
-            }
-
-            <MudTd>
-                <MudTooltip RootClass="d-flex"
-                            Text="@(context.IsBuiltIn ? "This is a built-in repository, it cant be removed" : "Remove repository")">
-                    <MudIconButton Disabled="@context.IsBuiltIn" Size="Size.Small"
-                                   OnClick="() => RemoveModuleRepository(context.Url)"
-                                   Icon="@Icons.Material.Filled.RemoveCircleOutline"></MudIconButton>
-                </MudTooltip>
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
-
-</MudPaper>
-
-<MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.BugReport"OnClick="GoToDebugTab">Debug</MudButton>
-
-<style>
-
-    .mud-table-cell-custom-group {
-        font-weight: 800;
-    }
-
-    .repo-table-headers {
-        background-color: var(--mud-palette-dark-lighten);
-    }
-
-    .repo-table-headers:hover {
-        background-color: var(--mud-palette-dark-lighten) !important;
-    }
-
-</style>
+</PageContainer>
 
 @code {
 
@@ -260,7 +272,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(_ => UpdateView())); 
+        _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(_ => UpdateView()));
         _disposables.Add(await RepositoryManager.FetcherState.ValueUpdated.SubscribeAsync(_ => UpdateView()));
         _disposables.Add(await RepositoryManager.FetchedRepositories.ValueUpdated.SubscribeAsync(_ => UpdateView()));
         _disposables.Add(await RepositoryManager.RepositoriesStateChanged.SubscribeAsync(_ => UpdateView()));
@@ -268,9 +280,9 @@
         UpdateRepositoriesWithFetchedData();
     }
 
-    #region Event Handlers 
-    
-    
+    #region Event Handlers
+
+
     private async Task UpdateView()
     {
         UpdateRepositoriesWithFetchedData();
@@ -280,7 +292,7 @@
     private void OnSettingsValueChange()
     {
         ConfigManager.Save();
-        
+
     }
 
     private async Task UpdateChannelChanged()
@@ -373,12 +385,12 @@
     }
 
     private bool _disposed;
-    
+
     public async ValueTask DisposeAsync()
     {
         if(_disposed) return;
         _disposed = true;
-        
+
         foreach (var disposable in _disposables)
         {
             await disposable.DisposeAsync();
@@ -395,7 +407,7 @@
     {
         NavigationManager.NavigateTo(NavigationManager.Uri, true);
     }
-    
+
     private void GoToDebugTab()
     {
         NavigationManager.NavigateTo("/dash/debug");
