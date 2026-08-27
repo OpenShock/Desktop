@@ -1,6 +1,7 @@
-@inject ISnackbar Snackbar
+﻿@inject ISnackbar Snackbar
 @using OpenShock.Desktop.Logging
 @using OpenShock.Desktop.Services
+@using OpenShock.Desktop.Ui.ErrorHandling
 @inherits LayoutComponentBase
 
 <style>
@@ -17,9 +18,12 @@
         
         <MudDivider Vertical="true" FlexItem="true"/>
 
-        <div Style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden" Class="pa-6">
+        @* Keeps a failing page - a module page above all - from replacing the whole shell,
+           including the sidebar the user needs to navigate back out of it. *@
+        <ContainerWithExceptionHandling Style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden"
+                                        Class="pa-6" MaximumErrorCount="25">
             @Body
-        </div>
+        </ContainerWithExceptionHandling>
     </div>
 </MudLayout>
 

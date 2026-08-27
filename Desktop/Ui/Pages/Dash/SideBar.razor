@@ -6,6 +6,7 @@
 @using OpenShock.Desktop.Ui.Utils
 @using OpenShock.SDK.CSharp.Hub
 @using OpenShock.Desktop.Ui.Pages.Dash.Components
+@using OpenShock.Desktop.Ui.ErrorHandling
 @using OpenShock.SDK.CSharp.Models
 @using StatePart = OpenShock.Desktop.Ui.Pages.Dash.Components.StatePart
 @inject OpenShockApi Api
@@ -44,7 +45,22 @@
 
             @foreach (var modules in ModuleManager.Modules)
             {
-                <ModuleNavComponent LoadedModule="@modules.Value"></ModuleNavComponent>
+                @* The sidebar renders on every page, so an exception escaping a module's entry
+                   would take the whole app with it. Contain it to the one entry. *@
+                <ContainerWithExceptionHandling MaximumErrorCount="5">
+                    <ChildContent>
+                        <ModuleNavComponent LoadedModule="@modules.Value"></ModuleNavComponent>
+                    </ChildContent>
+                    <ErrorContent>
+                        <MudTooltip Arrow="true" Placement="Placement.Right"
+                                    Text="@("This module's navigation could not be rendered: " + context.Message)">
+                            <div class="mud-nav-link" style="cursor: default">
+                                <MudIcon Icon="@Icons.Material.Filled.ExtensionOff" Color="Color.Error"/>
+                                <div class="mud-nav-link-text">@modules.Value.Name</div>
+                            </div>
+                        </MudTooltip>
+                    </ErrorContent>
+                </ContainerWithExceptionHandling>
             }
         </MudNavMenu>
 

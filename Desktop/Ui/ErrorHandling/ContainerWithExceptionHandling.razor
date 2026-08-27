@@ -1,10 +1,20 @@
-﻿<div @attributes="Attributes">
-    <ErrorBoundary @ref="_boundary">
+@implements IDisposable
+@inject NavigationManager NavigationManager
+
+<div @attributes="Attributes">
+    <ErrorBoundary @ref="_boundary" MaximumErrorCount="MaximumErrorCount">
         <ChildContent>
             @ChildContent
         </ChildContent>
         <ErrorContent Context="ex">
-            <ExceptionView Exception="ex" OnResume="() => _boundary.Recover()"></ExceptionView>
+            @if (ErrorContent is not null)
+            {
+                @ErrorContent(ex)
+            }
+            else
+            {
+                <ExceptionView Exception="ex" OnResume="Recover"></ExceptionView>
+            }
         </ErrorContent>
     </ErrorBoundary>
 </div>
@@ -15,6 +25,39 @@
     public Dictionary<string, object>? Attributes { get; set; }
 
     [Parameter] public required RenderFragment ChildContent { get; set; }
-    
+
+    /// <summary>
+    /// Renders instead of the full page <see cref="ExceptionView"/> when set.
+    /// </summary>
+    [Parameter] public RenderFragment<Exception>? ErrorContent { get; set; }
+
+    /// <summary>
+    /// How many exceptions this boundary swallows before it gives up and rethrows into the renderer,
+    /// which takes down the whole app. Nested boundaries keep this low so one module that throws on
+    /// every render cannot burn through the budget for everyone else.
+    /// </summary>
+    [Parameter] public int MaximumErrorCount { get; set; } = 100;
+
     private ErrorBoundary _boundary = null!;
+
+    protected override void OnInitialized()
+    {
+        // ErrorBoundary has no idea the location changed - it has no NavigationManager and no Router
+        // cascade - so without this it keeps showing the error after the user navigates away, forever.
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(Recover);
+
+    private void Recover()
+    {
+        // Also resets the boundary's internal error count.
+        _boundary?.Recover();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
 }
