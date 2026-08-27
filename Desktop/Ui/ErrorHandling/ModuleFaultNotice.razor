@@ -1,0 +1,42 @@
+@* Shared presentation for "a module is broken", used both for load/startup faults and for
+   components that could not be created. Deliberately inline and self contained so it can render
+   inside the content pane without taking over the page. *@
+
+<MudPaper Outlined="true" Class="rounded-lg pa-6">
+    <div class="d-flex gap-4 align-center">
+        <MudIcon Icon="@Icons.Material.Filled.ExtensionOff" Color="Color.Error" Size="Size.Large"/>
+        <div class="d-flex flex-column">
+            <MudText Typo="Typo.h6">@Title</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">@Message</MudText>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Details))
+    {
+        <MudExpansionPanels Class="mt-4" Elevation="0">
+            <MudExpansionPanel Text="Details">
+                <CodeBlock Value="@Details"/>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    }
+
+    <div class="d-flex gap-2 mt-4">
+        @* ReSharper disable once Html.PathError *@
+        <MudButton Href="/dash/modules" Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.ViewModule">
+            Manage Modules
+        </MudButton>
+        @* ReSharper disable once Html.PathError *@
+        <MudButton Href="/dash/logs" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Article">
+            Open Logs
+        </MudButton>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter] public required string Title { get; set; }
+
+    [Parameter] public required string Message { get; set; }
+
+    [Parameter] public string? Details { get; set; }
+}

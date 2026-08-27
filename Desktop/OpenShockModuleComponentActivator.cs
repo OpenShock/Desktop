@@ -1,7 +1,8 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using OpenShock.Desktop.ModuleBase;
 using OpenShock.Desktop.ModuleManager;
+using OpenShock.Desktop.Ui.ErrorHandling;
 
 namespace OpenShock.Desktop;
 
@@ -20,27 +21,36 @@ public class OpenShockModuleComponentActivator : IComponentActivator
 
     public IComponent CreateInstance(Type componentType)
     {
+        var module = FindOwningModule(componentType);
+
+        // Not a module component. Our own bugs should keep surfacing as exceptions.
+        if (module is null) return (IComponent)ActivatorUtilities.CreateInstance(_defaultProvider, componentType);
+
         try
         {
-            var module = _moduleManager.Modules.Where(x => x.Value.Assembly == componentType.Assembly)
-                .Select(x => x.Value).FirstOrDefault();
-            if (module != null)
-            {
-                var componentObject = ActivatorUtilities.CreateInstance(_defaultProvider, componentType);
-                var component = (IComponent)componentObject;
+            var componentObject = ActivatorUtilities.CreateInstance(_defaultProvider, componentType);
 
-                InjectModuleDependencies(componentObject, componentType, module);
+            InjectModuleDependencies(componentObject, componentType, module);
 
-                return component;
-            }
-
-            return (IComponent)ActivatorUtilities.CreateInstance(_defaultProvider, componentType);
-        } catch (Exception e)
+            return (IComponent)componentObject;
+        }
+        catch (Exception e)
         {
-            _logger.LogError(e, "Failed to create component {ComponentType}", componentType.Name);
-            throw;
+            // This runs inside the renderer, mid diff. Throwing here hands the exception to whatever
+            // error boundary happens to be above us, which in practice means a broken module wipes
+            // out the page it was rendered on. Standing in a placeholder keeps the failure the size
+            // of the component that actually failed.
+            _logger.LogError(e, "Failed to create component {ComponentType} of module {ModuleId}", componentType.FullName,
+                module.Id);
+
+            return ModuleComponentFailed.Create(module, componentType, e);
         }
     }
+
+    private LoadedModule? FindOwningModule(Type componentType) => _moduleManager.Modules
+        .Where(x => x.Value.Assembly == componentType.Assembly)
+        .Select(x => x.Value)
+        .FirstOrDefault();
 
     private void InjectModuleDependencies(object instance, Type componentType, LoadedModule module)
     {

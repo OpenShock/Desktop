@@ -1,0 +1,38 @@
+@using OpenShock.Desktop.ModuleManager
+@* Substituted by OpenShockModuleComponentActivator for a module component that could not be
+   constructed. See the remarks on Create below for why the parameters are captured and dropped. *@
+
+<ModuleFaultNotice Title="@($"{ModuleName} could not be displayed")"
+                   Message="@($"The component {ComponentName} failed to initialise. The module is most likely broken or only partially installed - reinstalling or updating it usually fixes this.")"
+                   Details="@Details"/>
+
+@code {
+
+    /// <summary>
+    /// The renderer hands this component the parameters that were meant for the component it is
+    /// standing in for. They belong to a type we know nothing about, so swallow them - without this
+    /// every one of them would throw "does not have a property matching the name", turning a
+    /// contained failure back into an unhandled one.
+    /// </summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? SubstitutedParameters { get; set; }
+
+    private string ModuleName { get; init; } = "A module";
+    private string ComponentName { get; init; } = "unknown";
+    private string? Details { get; init; }
+
+    /// <summary>
+    /// Builds the substitute. Not a set of [Parameter]s, because the renderer overwrites those with
+    /// the failed component's parameters right after we hand the instance back.
+    /// </summary>
+    public static ModuleComponentFailed Create(LoadedModule module, Type componentType, Exception exception)
+    {
+        return new ModuleComponentFailed
+        {
+            ModuleName = module.Name,
+            ComponentName = componentType.Name,
+            Details = exception.ToString()
+        };
+    }
+
+}
