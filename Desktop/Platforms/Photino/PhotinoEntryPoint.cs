@@ -1,13 +1,9 @@
 ﻿#if PHOTINO
-using System.IO.Pipes;
-using System.Text.Json;
 using Microsoft.Extensions.FileProviders;
 using OpenShock.Desktop.Cli;
-using OpenShock.Desktop.Cli.Uri;
-using OpenShock.Desktop.Services.Pipes;
 using OpenShock.Desktop.Ui;
+using OpenShock.Desktop.Utils;
 using Photino.Blazor;
-using UriParser = OpenShock.Desktop.Cli.Uri.UriParser;
 
 namespace OpenShock.Desktop.Platforms.Photino;
 
@@ -47,8 +43,28 @@ public static class PhotinoEntryPoint
         ParseHelper.Parse<CliOptions>(args, Start);
     }
     
+    /// <summary>
+    /// How long to keep trying to hand our request to the running instance. It may still be
+    /// starting up, in which case its pipe server is not listening yet.
+    /// </summary>
+    private static readonly TimeSpan ForwardTimeout = TimeSpan.FromSeconds(15);
+
     private static void Start(CliOptions config)
     {
+        // Claim single instance ownership before doing anything else, headless included. This
+        // used to be decided by trying to connect to the named pipe, but that pipe only appears
+        // once the host has booted far enough to start PipeServerService - a minute after launch
+        // on a cold start. A launch inside that window found no pipe and started a second full
+        // instance, and the two then raced over the module folder: one deletes module files the
+        // other has loaded.
+        if (!SingleInstanceGuard.TryAcquire())
+        {
+            Console.WriteLine(SingleInstanceGuard.TryForwardToRunningInstance(config.Uri, ForwardTimeout)
+                ? "Another instance of OpenShock Desktop is already running. Forwarded request to it."
+                : "Another instance of OpenShock Desktop is already running, but it could not be reached.");
+            return;
+        }
+
         if (config.Headless)
         {
             Console.WriteLine("Running in headless mode.");
@@ -58,11 +74,6 @@ public static class PhotinoEntryPoint
 
             return;
         }
-
-        // If another instance is already running, forward the request to it and exit.
-        // .NET named pipes map to Unix domain sockets on Linux, so this is the same
-        // single-instance mechanism the Windows entry point uses.
-        if (TryForwardToRunningInstance(config.Uri)) return;
 
 
         var compositeFileProvider = new CompositeFileProvider(
@@ -107,49 +118,5 @@ public static class PhotinoEntryPoint
         app.Run();
     }
 
-    /// <summary>
-    /// Tries to connect to an already-running instance over the named pipe and forward the
-    /// incoming URI (or a plain show request). Returns true if a running instance handled it,
-    /// in which case this process should exit. Returns false if no instance is running, making
-    /// this process the primary instance.
-    /// </summary>
-    private static bool TryForwardToRunningInstance(string? uri)
-    {
-        try
-        {
-            using var pipeClientStream = new NamedPipeClientStream(".", "OpenShock.Desktop", PipeDirection.Out);
-            pipeClientStream.Connect(500);
-
-            using var writer = new StreamWriter(pipeClientStream) { AutoFlush = true };
-
-            PipeMessage? message = null;
-            if (!string.IsNullOrEmpty(uri))
-            {
-                var parsedUri = UriParser.Parse(uri);
-                message = parsedUri.Type switch
-                {
-                    UriParameterType.Show => new PipeMessage { Type = PipeMessageType.Show },
-                    UriParameterType.Token => new PipeMessage
-                    {
-                        Type = PipeMessageType.Token, Data = string.Join('/', parsedUri.Arguments)
-                    },
-                    _ => null
-                };
-            }
-
-            // Fall back to a show request (focus existing instance) for a bare relaunch.
-            message ??= new PipeMessage { Type = PipeMessageType.Show };
-
-            writer.WriteLine(JsonSerializer.Serialize(message));
-
-            Console.WriteLine("Another instance of OpenShock Desktop is already running. Forwarded request to it.");
-            return true;
-        }
-        catch (TimeoutException)
-        {
-            // No running instance — this process becomes the primary instance.
-            return false;
-        }
-    }
 }
 #endif

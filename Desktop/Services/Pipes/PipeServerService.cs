@@ -32,7 +32,7 @@ public sealed class PipeServerService
     {
         var id = _clientCount++;
 
-        await using var pipeServerStream = new NamedPipeServerStream("OpenShock.Desktop", PipeDirection.In, 20,
+        await using var pipeServerStream = new NamedPipeServerStream(Constants.PipeName, PipeDirection.In, 20,
             PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 
 

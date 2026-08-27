@@ -15,6 +15,11 @@ public static class Constants
     public static readonly string LogsFile = Path.Combine(LogsFolder, "log.txt");
     public static readonly string ModuleData = Path.Combine(AppdataFolder, "moduleData");
     public static readonly string UserAgent = UserAgentUtil.GetUserAgent();
+
+    /// <summary>
+    /// Name of the named pipe a running instance listens on for show / token messages.
+    /// </summary>
+    public const string PipeName = "OpenShock.Desktop";
     
     public static readonly SemVersion Version = SemVersion.Parse(typeof(Constants).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, SemVersionStyles.Strict);
     public static readonly SemVersion VersionWithoutMetadata = Version.WithoutMetadata();
