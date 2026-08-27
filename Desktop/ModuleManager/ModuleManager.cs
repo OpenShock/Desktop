@@ -34,6 +34,13 @@ public sealed class ModuleManager : IAsyncDisposable
 
     private static string ModuleDirectory => Path.Combine(Constants.AppdataFolder, "modules");
 
+    /// <summary>
+    /// Holds module folders that have been replaced or removed but could not be deleted yet
+    /// because something still has files in them open. Dot prefixed so <see cref="GetModules"/>
+    /// never mistakes it for a module.
+    /// </summary>
+    private static string TrashDirectory => Path.Combine(ModuleDirectory, ".trash");
+
     private static readonly HttpClient HttpClient;
     
     public readonly ConcurrentDictionary<string, LoadedModule> Modules = new();
@@ -72,35 +79,61 @@ public sealed class ModuleManager : IAsyncDisposable
 
     public async Task ProcessTaskList()
     {
-        foreach (var moduleTask in _configManager.Config.Modules.ModuleTasks)
+        PurgeTrash();
+
+        foreach (var moduleTask in _configManager.Config.Modules.ModuleTasks.ToArray())
         {
+            bool completed;
+
             try
             {
-                await ProcessTask(moduleTask);
+                completed = await ProcessTask(moduleTask);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process task for module {ModuleId}", moduleTask.Key);
+                completed = false;
             }
+
+            // Only drop a task once it has actually run. A task that failed on something
+            // transient (locked files, no network) stays queued and is retried on the next
+            // startup instead of being silently thrown away.
+            if (completed) _configManager.Config.Modules.ModuleTasks.Remove(moduleTask.Key);
         }
 
-        _configManager.Config.Modules.ModuleTasks.Clear();
         _configManager.Save();
     }
 
-    private async Task ProcessTask(KeyValuePair<string, ModuleTask> moduleTask)
+    /// <returns>
+    /// True when the task is done with and can be dropped from the queue, false when it should be
+    /// kept and retried on the next startup.
+    /// </returns>
+    private async Task<bool> ProcessTask(KeyValuePair<string, ModuleTask> moduleTask)
     {
-        await moduleTask.Value.Match(async install =>
+        return await moduleTask.Value.Match(async install =>
             {
                 _logger.LogInformation("Installing module {ModuleId} version {Version}", moduleTask.Key,
                     install.Version);
-                await DownloadModule(moduleTask.Key, install.Version);
+
+                var result = await DownloadModule(moduleTask.Key, install.Version);
+
+                return result.Match(
+                    success => true,
+                    error => false,
+                    notFound =>
+                    {
+                        // No repository offers this version, so retrying it would never succeed.
+                        _logger.LogError(
+                            "Module {ModuleId} version {Version} was not found in any repository, dropping the task",
+                            moduleTask.Key, install.Version);
+                        return true;
+                    });
             },
             remove =>
             {
                 _logger.LogInformation("Removing module {ModuleId}", moduleTask.Key);
                 RemoveModule(moduleTask.Key);
-                return Task.CompletedTask;
+                return Task.FromResult(true);
             });
     }
 
@@ -108,14 +141,72 @@ public sealed class ModuleManager : IAsyncDisposable
 
     private void RemoveModule(string moduleId)
     {
-        var moduleFolderPath = Path.Combine(ModuleDirectory, moduleId);
-        if (Directory.Exists(moduleFolderPath)) Directory.Delete(moduleFolderPath, true);
+        MoveToTrash(Path.Combine(ModuleDirectory, moduleId));
+        PurgeTrash();
+    }
+
+    /// <summary>
+    /// Moves a module folder out of the way instead of deleting it in place, and returns where it
+    /// went (null if there was nothing there).
+    /// </summary>
+    /// <remarks>
+    /// Deleting in place is not safe. A module DLL that any process has loaded is image mapped and
+    /// cannot be deleted, and Directory.Delete(recursive) is not atomic: it deletes everything it
+    /// can and only then throws, leaving a gutted folder holding nothing but the locked DLL - which
+    /// still passes the "exactly one DLL in the root" check in <see cref="GetModules"/> and gets
+    /// loaded with all of its dependencies missing. Renaming a folder works even while files inside
+    /// it are mapped, so this either swaps the install out completely or leaves it untouched.
+    /// </remarks>
+    private static string? MoveToTrash(string moduleFolderPath)
+    {
+        if (!Directory.Exists(moduleFolderPath)) return null;
+
+        Directory.CreateDirectory(TrashDirectory);
+
+        var trashPath = Path.Combine(TrashDirectory, $"{Path.GetFileName(moduleFolderPath)}-{Guid.NewGuid():N}");
+        Directory.Move(moduleFolderPath, trashPath);
+
+        return trashPath;
+    }
+
+    /// <summary>
+    /// Best effort cleanup of the folders parked by <see cref="MoveToTrash"/>.
+    /// </summary>
+    private void PurgeTrash()
+    {
+        if (!Directory.Exists(TrashDirectory)) return;
+
+        foreach (var staleFolder in Directory.GetDirectories(TrashDirectory))
+        {
+            try
+            {
+                Directory.Delete(staleFolder, true);
+            }
+            catch (Exception ex)
+            {
+                // Whoever had it loaded still has it open. It is parked where nothing loads from,
+                // so leave it and try again on the next startup.
+                _logger.LogDebug(ex, "Could not delete stale module folder {Folder}, retrying on next startup",
+                    staleFolder);
+            }
+        }
     }
 
     private async Task<OneOf<Success, Error, NotFound>> DownloadModule(string moduleId, SemVersion version)
     {
-        var module = _repositoryManager.Repositories
+        var loadedRepositories = _repositoryManager.Repositories
             .Where(x => x.Value.Repository != null)
+            .ToArray();
+
+        // Not a single repository has data (offline, or every fetch failed). Telling the caller
+        // NotFound here would make it drop the task for good, so report a retryable error.
+        if (loadedRepositories.Length == 0)
+        {
+            _logger.LogWarning("No repository data available, cannot install module {ModuleId} right now", moduleId);
+            return new Error();
+        }
+
+        var module = loadedRepositories
             .SelectMany(x => x.Value.Repository!.Modules)
             .Where(x => x.Key == moduleId).Select(x => x.Value).FirstOrDefault();
 
@@ -175,11 +266,38 @@ public sealed class ModuleManager : IAsyncDisposable
 
         var moduleFolderPath = Path.Combine(ModuleDirectory, moduleId);
 
-        if (Directory.Exists(moduleFolderPath)) Directory.Delete(moduleFolderPath, true);
+        // Park the current install rather than deleting it, see MoveToTrash.
+        var trashPath = MoveToTrash(moduleFolderPath);
 
-        Directory.CreateDirectory(moduleFolderPath);
-        fileMemoryStream.Seek(0, SeekOrigin.Begin);
-        ZipFile.ExtractToDirectory(fileMemoryStream, moduleFolderPath, true);
+        try
+        {
+            Directory.CreateDirectory(moduleFolderPath);
+            fileMemoryStream.Seek(0, SeekOrigin.Begin);
+            await ZipFile.ExtractToDirectoryAsync(fileMemoryStream, moduleFolderPath, true);
+        }
+        catch
+        {
+            // Put the old install back, so a failed extract never leaves the module gone. The
+            // half written folder is brand new, nothing has it loaded, so it deletes cleanly.
+            if (trashPath is not null)
+            {
+                try
+                {
+                    if (Directory.Exists(moduleFolderPath)) Directory.Delete(moduleFolderPath, true);
+                    Directory.Move(trashPath, moduleFolderPath);
+                }
+                catch (Exception rollbackEx)
+                {
+                    _logger.LogError(rollbackEx,
+                        "Failed to restore the previous install of module {ModuleId} from {TrashPath}", moduleId,
+                        trashPath);
+                }
+            }
+
+            throw;
+        }
+
+        PurgeTrash();
 
         return new Success();
     }
@@ -314,6 +432,9 @@ public sealed class ModuleManager : IAsyncDisposable
 
         foreach (var moduleFolder in Directory.GetDirectories(ModuleDirectory))
         {
+            // Dot prefixed folders are ours (.trash), never modules.
+            if (Path.GetFileName(moduleFolder).StartsWith('.')) continue;
+
             try
             {
                 _logger.LogTrace("Searching for module in {Path}", moduleFolder);
@@ -363,7 +484,17 @@ public sealed class ModuleManager : IAsyncDisposable
             _logger.LogTrace("Checking for updates for {ModuleId}", availableModule.FolderName);
             try
             {
-                var assemblyDef = AssemblyDef.Load(availableModule.ModuleDll);
+                // ModuleDefMD memory maps the file and has to be disposed. AssemblyDef.Load hands
+                // back nothing disposable and leaks the mapping for the lifetime of the process.
+                using var moduleDef = ModuleDefMD.Load(availableModule.ModuleDll);
+
+                var assemblyDef = moduleDef.Assembly;
+                if (assemblyDef is null)
+                {
+                    _logger.LogError("{ModuleDll} is a .NET module, not a .NET assembly", availableModule.ModuleDll);
+                    continue;
+                }
+
                 var customAttributes = assemblyDef.CustomAttributes;
                 var informationalVersion = customAttributes.FirstOrDefault(x => x.AttributeType.FullName == InformationalVersionTypeName);
                 
