@@ -5,70 +5,55 @@
 @using OpenShock.SDK.CSharp.Live
 @implements IAsyncDisposable
 
-<div style="display: flex; flex-direction: column; position: relative;" class="child-div-align-center flex-grow-1">
-    <MudText Style="font-size: 10pt; text-align: center">Shared @OnlineHubs/@TotalHubs</MudText>
+@* A set of hubs as one indicator in the sidebar, with the detail a click away. The rail is 250px
+   wide, so a row per hub does not fit; the dashboard is where they are all written out. *@
 
-    <MudIconButton Icon="@Icons.Material.Filled.Group" Color="AggregateColor()" Class="pa-0 d-block ma-auto"
-                   OnClick="@(() => _open = !_open)" aria-label="Shared hubs"/>
+<div style="position: relative;">
+    <div class="sidebar-status-row clickable" role="button" tabindex="0" aria-label="@PopoverTitle"
+         @onclick="@(() => _open = !_open)">
+        <span class="dot" style="@($"background: var(--mud-palette-{AggregatePalette});")"></span>
+        <MudText Typo="Typo.body2" Class="label">@Label</MudText>
+        <MudText Typo="Typo.caption" Class="value">@OnlineHubs/@TotalHubs</MudText>
+    </div>
 
     @* Must render before the popover so it sits behind it in the stack. *@
     <MudOverlay Visible="_open" OnClick="@(() => _open = false)" LockScroll="false"/>
 
     <MudPopover Open="_open" AnchorOrigin="Origin.TopCenter" TransformOrigin="Origin.BottomCenter"
-                Class="shared-hubs-popover rounded-lg">
+                Class="hubs-popover rounded-lg">
         @* Fixed width, not min/max: a content sized popover resizes on every latency tick. *@
         <div style="width: 272px; padding: 12px 14px 10px;">
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-                <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small"/>
-                <MudText Typo="Typo.subtitle2">Shared hubs</MudText>
+                <MudIcon Icon="@Icon" Size="Size.Small"/>
+                <MudText Typo="Typo.subtitle2">@PopoverTitle</MudText>
                 <div style="flex-grow: 1"></div>
                 <MudText Typo="Typo.caption" Style="opacity: 0.6">@OnlineHubs/@TotalHubs online</MudText>
             </div>
             <MudDivider Style="margin-bottom: 8px;"/>
 
-            @foreach (var owner in Owners)
+            @foreach (var group in Groups)
             {
-                @if (owner.Hubs.Count == 1)
+                @if (group.Name is null)
                 {
-                    // A single hub is redundant with the owner, so collapse into one row.
-                    var hub = owner.Hubs[0];
-                    <div style="display: flex; align-items: center; gap: 8px; padding: 3px 0;">
-                        <MudTooltip Text="@GatewayOf(hub)" Disabled="@(GatewayOf(hub) is null)"
-                                    Arrow="true" Placement="Placement.Top">
-                            <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small"
-                                     Color="HubColor(hub)" Style="@DotStyle(hub)"/>
-                        </MudTooltip>
-                        <MudText Typo="Typo.body2">@owner.Name.Truncate(20)</MudText>
-                        <div style="flex-grow: 1; min-width: 12px"></div>
-                        <MudText Typo="Typo.caption" Style="opacity: 0.6">@StateLabel(hub)</MudText>
-                        @if (LatencyText(hub) is { } latency)
-                        {
-                            <MudText Typo="Typo.caption" Style="@LatencySlotStyle">@latency</MudText>
-                        }
-                    </div>
+                    @foreach (var hub in group.Hubs)
+                    {
+                        @Row(hub, hub.Name, false)
+                    }
+                }
+                else if (group.Hubs.Count == 1)
+                {
+                    // A single hub is redundant with the group, so collapse into one row.
+                    @Row(group.Hubs[0], group.Name, false)
                 }
                 else
                 {
                     <div style="display: flex; align-items: center; gap: 6px; padding: 6px 0 2px;">
                         <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="opacity: 0.7"/>
-                        <MudText Typo="Typo.body2" Style="font-weight: 600">@owner.Name.Truncate(20)</MudText>
+                        <MudText Typo="Typo.body2" Style="font-weight: 600">@group.Name.Truncate(20)</MudText>
                     </div>
-                    @foreach (var hub in owner.Hubs)
+                    @foreach (var hub in group.Hubs)
                     {
-                        <div style="display: flex; align-items: center; gap: 8px; padding: 2px 0 2px 20px;">
-                            <MudTooltip Text="@GatewayOf(hub)" Disabled="@(GatewayOf(hub) is null)"
-                                        Arrow="true" Placement="Placement.Top">
-                                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small"
-                                         Color="HubColor(hub)" Style="@DotStyle(hub)"/>
-                            </MudTooltip>
-                            <MudText Typo="Typo.caption">@hub.Name.Truncate(22)</MudText>
-                            <div style="flex-grow: 1; min-width: 12px"></div>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.6">@StateLabel(hub)</MudText>
-                            @if (LatencyText(hub) is { } latency)
-                            {
-                                <MudText Typo="Typo.caption" Style="@LatencySlotStyle">@latency</MudText>
-                            }
-                        </div>
+                        @Row(hub, hub.Name, true)
                     }
                 }
             }
@@ -77,7 +62,7 @@
 </div>
 
 <style>
-    .shared-hubs-popover {
+    .hubs-popover {
         border: solid 1px var(--mud-palette-lines-default);
         /* Clips the content to the rounded corners, which the border would otherwise cut across. */
         overflow: hidden;
@@ -87,11 +72,20 @@
 @code {
     private bool _open;
 
-    /// <summary>
-    /// The shared hubs grouped by owner, summarized in a single aggregate indicator.
-    /// </summary>
+    /// <summary>The hubs to show, in the groups they should be listed under.</summary>
     [Parameter]
-    public required IReadOnlyList<SharedHubOwner> Owners { get; set; }
+    public required IReadOnlyList<HubGroup> Groups { get; set; }
+
+    /// <summary>Short label above the icon, for example "Hubs" or "Shared".</summary>
+    [Parameter]
+    public required string Label { get; set; }
+
+    [Parameter]
+    public required string Icon { get; set; }
+
+    /// <summary>Heading inside the popover, for example "Your hubs".</summary>
+    [Parameter]
+    public required string PopoverTitle { get; set; }
 
     /// <summary>
     /// Resolves the active live control client for a hub, or null when no live control connection is open.
@@ -99,17 +93,36 @@
     [Parameter]
     public required Func<Guid, IOpenShockLiveControlClient?> GetClient { get; set; }
 
-    private IEnumerable<IOpenShockHub> AllHubs => Owners.SelectMany(o => o.Hubs);
+    private RenderFragment Row(IOpenShockHub hub, string name, bool indented) =>
+        @<div style="@($"display: flex; align-items: center; gap: 8px; padding: {(indented ? "2px 0 2px 20px" : "3px 0")};")">
+            <MudTooltip Text="@GatewayOf(hub)" Disabled="@(GatewayOf(hub) is null)"
+                        Arrow="true" Placement="Placement.Top">
+                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small"
+                         Color="HubColor(hub)" Style="@DotStyle(hub)"/>
+            </MudTooltip>
+            <MudText Typo="@(indented ? Typo.caption : Typo.body2)">@name.Truncate(indented ? 22 : 20)</MudText>
+            <div style="flex-grow: 1; min-width: 12px"></div>
+            <MudText Typo="Typo.caption" Style="opacity: 0.6">@StateLabel(hub)</MudText>
+            @if (LatencyText(hub) is { } latency)
+            {
+                <MudText Typo="Typo.caption" Style="@LatencySlotStyle">@latency</MudText>
+            }
+        </div>;
+
+    private IEnumerable<IOpenShockHub> AllHubs => Groups.SelectMany(g => g.Hubs);
 
     private int OnlineHubs => AllHubs.Count(h => h.Status.Online);
     private int TotalHubs => AllHubs.Count();
 
-    private Color AggregateColor()
+    private string AggregatePalette
     {
-        if (AllHubs.Any(h => GetClient(h.Id)?.State.Value == WebsocketConnectionState.Connected))
-            return Color.Success;
+        get
+        {
+            if (AllHubs.Any(h => GetClient(h.Id)?.State.Value == WebsocketConnectionState.Connected))
+                return "success";
 
-        return OnlineHubs > 0 ? Color.Info : Color.Dark;
+            return OnlineHubs > 0 ? "info" : "dark";
+        }
     }
 
     private Color HubColor(IOpenShockHub hub)

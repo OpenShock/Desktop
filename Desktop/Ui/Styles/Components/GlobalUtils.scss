@@ -105,3 +105,55 @@
     animation: none;
   }
 }
+
+// --- Sidebar ---
+
+// One status per row rather than side by side columns. At 250px a column is ~70px wide, which is
+// not enough for "Shared 1/20" - it wrapped to two lines and pushed that column's icon out of line
+// with its neighbours. A row gives every entry the same geometry no matter how long its label is.
+.sidebar-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: 6px;
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  .label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Tabular so a count going from 9/9 to 10/20 does not shift the label.
+  .value {
+    flex: none;
+    opacity: 0.6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      background: var(--mud-palette-action-default-hover);
+    }
+  }
+}
+
+.sidebar-section-label {
+  display: block;
+  padding: 6px 16px 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
