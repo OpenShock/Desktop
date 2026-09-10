@@ -1,4 +1,4 @@
-@inject IDialogService DialogService
+﻿@inject IDialogService DialogService
 @inject ConfigManager ConfigManager
 @inject Updater Updater
 @inject NavigationManager NavigationManager
@@ -49,7 +49,7 @@
     {
         _disposables.Add(await Updater.UpdateAvailable.ValueUpdated.SubscribeAsync(UpdateAvailableOnValueChanged));
         _disposables.Add(await Updater.CheckingForUpdate.ValueUpdated.SubscribeAsync(b => InvokeAsync(StateHasChanged)));
-        _disposables.Add(await AuthService.AuthState.ValueUpdated.SubscribeAsync(type => InvokeAsync(StateHasChanged)));
+        _disposables.Add(await AuthService.AuthState.ValueUpdated.SubscribeAsync(OnAuthStateChanged));
 
         NavigationManager.LocationChanged += OnLocationChanged;
 
@@ -57,6 +57,20 @@
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    /// <summary>
+    /// A failed login used to be a red icon and nothing else, which said nothing about whether the
+    /// token expired, the backend was down, or this build is too old to read what it sent back.
+    /// </summary>
+    private Task OnAuthStateChanged(AuthStateType state) => InvokeAsync(() =>
+    {
+        if (state == AuthStateType.FailedAuth && AuthService.FailureMessage is { } failureMessage)
+            Snackbar.Add(failureMessage, Severity.Error);
+
+        StateHasChanged();
+    });
+
+    private Task RetryLogin() => AuthService.Authenticate();
 
     private async Task UpdateAvailableOnValueChanged(bool v)
     {
@@ -130,7 +144,7 @@
     {
         AuthStateType.Authed => AuthService.SelfResponse?.Name ?? "Account",
         AuthStateType.Authenticating => "Logging in...",
-        AuthStateType.FailedAuth => "Login Failed",
+        AuthStateType.FailedAuth => AuthService.FailureMessage ?? "Login Failed",
         _ => "Not Logged In"
     };
 
@@ -176,6 +190,14 @@
                 <div class="px-4 py-1">
                     <MudText Typo="Typo.body2">@AuthService.SelfResponse?.Name</MudText>
                 </div>
+                <MudDivider Class="my-1"/>
+            }
+            else if (AuthService.AuthState.Value == AuthStateType.FailedAuth && AuthService.FailureMessage is not null)
+            {
+                <div class="px-4 py-1" style="max-width: 320px; white-space: normal;">
+                    <MudText Typo="Typo.body2" Color="Color.Error">@AuthService.FailureMessage</MudText>
+                </div>
+                <MudMenuItem Icon="@Icons.Material.Filled.Autorenew" OnClick="RetryLogin">Try Again</MudMenuItem>
                 <MudDivider Class="my-1"/>
             }
 
