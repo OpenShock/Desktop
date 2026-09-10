@@ -19,6 +19,7 @@ public class ExampleDesktopModule : DesktopModuleBase
         var services = new ServiceCollection();
 
         services.AddSingleton<ExampleService>();
+        services.AddSingleton<BrokenService>();
         
         ModuleServiceProvider = services.BuildServiceProvider();
     }
@@ -36,6 +37,14 @@ public class ExampleDesktopModule : DesktopModuleBase
             Name = "Subcomponent 2",
             ComponentType = typeof(SubComponent2),
             Icon = IconOneOf.FromSvg(Icons.Material.Filled.Refresh)
+        },
+        // Repro: its injected service cannot be constructed, so the activator has to substitute
+        // ModuleComponentFailed for it. Opening this page is the failure the shell has to contain.
+        new NavigationItem
+        {
+            Name = "Broken Page",
+            ComponentType = typeof(BrokenComponent),
+            Icon = IconOneOf.FromSvg(Icons.Material.Filled.ExtensionOff)
         }
     ];
 

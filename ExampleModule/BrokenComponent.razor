@@ -1,0 +1,14 @@
+@using OpenShock.Desktop.ModuleBase
+
+@* Never renders. Resolving BrokenService throws, so the activator substitutes
+   ModuleComponentFailed for this component. Clicking this page in the sidebar is the repro. *@
+
+<h3>BrokenComponent</h3>
+<p>@BrokenService.GetBrokenString()</p>
+
+@code {
+
+    [ModuleInject]
+    private BrokenService BrokenService { get; set; } = null!;
+
+}
