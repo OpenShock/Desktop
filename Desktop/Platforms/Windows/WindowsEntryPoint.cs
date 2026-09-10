@@ -4,6 +4,7 @@ using CommandLine;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Dispatching;
 using OpenShock.Desktop.Cli;
+using OpenShock.Desktop.Cli.Uri;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Utils;
 using OpenShock.Desktop;
@@ -74,6 +75,10 @@ public static class WindowsEntryPoint
             Environment.Exit(1);
             return;
         }
+
+        // We are the instance that stays up, so nobody is going to forward this to us over the
+        // pipe. Hand it to the host instead once it has booted.
+        StartupUri.Capture(config.Uri);
 
         if (config.Headless)
         {

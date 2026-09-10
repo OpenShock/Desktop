@@ -1,6 +1,7 @@
 ﻿#if PHOTINO
 using Microsoft.Extensions.FileProviders;
 using OpenShock.Desktop.Cli;
+using OpenShock.Desktop.Cli.Uri;
 using OpenShock.Desktop.Ui;
 using OpenShock.Desktop.Utils;
 using Photino.Blazor;
@@ -64,6 +65,10 @@ public static class PhotinoEntryPoint
                 : "Another instance of OpenShock Desktop is already running, but it could not be reached.");
             return;
         }
+
+        // We are the instance that stays up, so nobody is going to forward this to us over the
+        // pipe. Hand it to the host instead once it has booted.
+        StartupUri.Capture(config.Uri);
 
         if (config.Headless)
         {

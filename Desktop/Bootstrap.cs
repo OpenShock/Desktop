@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using MudBlazor.Services;
 using OpenShock.Desktop.Backend;
+using OpenShock.Desktop.Cli.Uri;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Logging;
 using OpenShock.Desktop.ModuleManager.Repository;
@@ -131,11 +132,39 @@ public static class Bootstrap
 
         var config = services.GetRequiredService<ConfigManager>();
 
+        ApplyStartupUri(services, config);
 
         // <---- Warmup ---->
         services.GetRequiredService<PipeServerService>().StartServer();
 
         var startupService = services.GetRequiredService<StartupService>();
         var startupTask = OsTask.Run(startupService.StartupApp);
+    }
+
+    /// <summary>
+    /// Applies a deep link this process was launched with. Only relevant on a cold start: when an
+    /// instance is already running the OS launch forwards over the named pipe and exits, and
+    /// <see cref="StartupUri"/> is empty here.
+    /// </summary>
+    private static void ApplyStartupUri(IServiceProvider services, ConfigManager config)
+    {
+        var startupUri = StartupUri.Consume();
+        if (startupUri is null) return;
+
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Bootstrap");
+
+        switch (startupUri.Type)
+        {
+            case UriParameterType.Token when startupUri.Arguments.Count > 0:
+                logger.LogInformation("Applying API token from the URI we were launched with");
+                config.Config.OpenShock.Token = string.Join('/', startupUri.Arguments);
+                config.Save();
+                break;
+
+            // Show is the OS asking for the window, which is what launching us does anyway.
+            default:
+                logger.LogDebug("Launched with a {Type} URI, nothing to apply", startupUri.Type);
+                break;
+        }
     }
 }

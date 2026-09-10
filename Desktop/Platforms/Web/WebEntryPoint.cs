@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.Extensions.FileProviders;
 using OpenShock.Desktop.Cli;
+using OpenShock.Desktop.Cli.Uri;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Utils;
 
@@ -16,6 +17,8 @@ public static class WebEntryPoint
 
     private static async Task Start(CliOptions config)
     {
+        StartupUri.Capture(config.Uri);
+
         if (config.Headless)
         {
             Console.WriteLine("Running in headless mode.");
