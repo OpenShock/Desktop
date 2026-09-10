@@ -1,4 +1,4 @@
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 using System.Text.Json;
 using OpenShock.Desktop.Cli.Uri;
 using OpenShock.Desktop.Services.Pipes;
@@ -22,6 +22,9 @@ public static class SingleInstanceGuard
     // Unprefixed: session scoped on Windows (what we want - the app is per user), and portable
     // to the Unix named mutex implementation, which rejects backslashes in names.
     private const string MutexName = "OpenShock.Desktop.SingleInstance";
+
+    // Per attempt, the overall budget is the caller's timeout.
+    private static readonly TimeSpan ConnectTimeout = TimeSpan.FromMilliseconds(500);
 
     // Held for the lifetime of the process, released implicitly when it exits.
     private static Mutex? _mutex;
@@ -83,16 +86,27 @@ public static class SingleInstanceGuard
             try
             {
                 using var pipeClientStream = new NamedPipeClientStream(".", Constants.PipeName, PipeDirection.Out);
-                pipeClientStream.ConnectAsync(500);
+
+                // Synchronously on purpose. This used to call ConnectAsync without awaiting it, so
+                // the write below always ran against a stream that was not connected yet and threw
+                // InvalidOperationException - which the filter here did not catch either, so every
+                // deep link ended as an unhandled exception instead of reaching the running app.
+                pipeClientStream.Connect((int)ConnectTimeout.TotalMilliseconds);
 
                 using var writer = new StreamWriter(pipeClientStream) { AutoFlush = true };
                 writer.WriteLine(JsonSerializer.Serialize(message));
 
                 return true;
             }
-            catch (Exception ex) when (ex is TimeoutException or IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is TimeoutException or IOException or UnauthorizedAccessException
+                                           or InvalidOperationException)
             {
-                if (DateTime.UtcNow >= deadline) return false;
+                if (DateTime.UtcNow >= deadline)
+                {
+                    Console.WriteLine($"Could not hand the request to the running instance: {ex.Message}");
+                    return false;
+                }
+
                 Thread.Sleep(250);
             }
         }
@@ -102,15 +116,20 @@ public static class SingleInstanceGuard
     {
         if (string.IsNullOrEmpty(uri)) return new PipeMessage { Type = PipeMessageType.Show };
 
-        var parsedUri = UriParser.Parse(uri);
+        var parsedUri = UriParser.TryParse(uri);
+        if (parsedUri is null)
+        {
+            Console.WriteLine($"Could not understand the URI we were launched with: {uri}");
+            return new PipeMessage { Type = PipeMessageType.Show };
+        }
 
         return parsedUri.Type switch
         {
-            UriParameterType.Token => new PipeMessage
+            UriParameterType.Token when parsedUri.Arguments.Count > 0 => new PipeMessage
             {
                 Type = PipeMessageType.Token, Data = string.Join('/', parsedUri.Arguments)
             },
-            // Anything else (including an unparsable URI) just focuses the running instance.
+            // Anything else (including a token link with no token) just focuses the running instance.
             _ => new PipeMessage { Type = PipeMessageType.Show }
         };
     }
