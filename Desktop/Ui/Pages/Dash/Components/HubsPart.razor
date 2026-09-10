@@ -3,6 +3,7 @@
 @using OpenShock.Desktop.ModuleBase.StableInterfaces
 @using OpenShock.Desktop.Ui.Utils
 @using OpenShock.SDK.CSharp.Live
+@using OpenShock.SDK.CSharp.Models
 @implements IAsyncDisposable
 
 @* A set of hubs as one indicator in the sidebar, with the detail a click away. The rail is 250px
@@ -95,7 +96,7 @@
 
     private RenderFragment Row(IOpenShockHub hub, string name, bool indented) =>
         @<div style="@($"display: flex; align-items: center; gap: 8px; padding: {(indented ? "2px 0 2px 20px" : "3px 0")};")">
-            <MudTooltip Text="@GatewayOf(hub)" Disabled="@(GatewayOf(hub) is null)"
+            <MudTooltip Text="@GatewayOf(hub).GetGatewayDisplayUrl()" Disabled="@(GatewayOf(hub) is null)"
                         Arrow="true" Placement="Placement.Top">
                 <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small"
                          Color="HubColor(hub)" Style="@DotStyle(hub)"/>
@@ -165,7 +166,7 @@
         return $"{client.Latency.Value}ms";
     }
 
-    private string? GatewayOf(IOpenShockHub hub) => GetClient(hub.Id)?.Gateway;
+    private LcgResponseV2? GatewayOf(IOpenShockHub hub) => GetClient(hub.Id)?.Gateway;
 
     private string DotStyle(IOpenShockHub hub) => GatewayOf(hub) is null ? string.Empty : "cursor: help;";
 

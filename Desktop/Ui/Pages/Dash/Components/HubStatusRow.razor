@@ -1,10 +1,11 @@
 @using OpenShock.Desktop.Ui.Utils
+@using OpenShock.SDK.CSharp.Models
 
 @* One hub, spelled out. The sidebar has the compact icon form of this; the dashboard is where the
    state is written down instead of hidden behind a tooltip. *@
 
 <div class="d-flex align-center gap-3 py-2">
-    <MudTooltip Text="@Gateway" Disabled="@(Gateway is null)" Arrow="true" Placement="Placement.Top">
+    <MudTooltip Text="@Gateway.GetGatewayDisplayUrl()" Disabled="@(Gateway is null)" Arrow="true" Placement="Placement.Top">
         <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="@StateColor"
                  Style="@(Gateway is null ? null : "cursor: help;")"/>
     </MudTooltip>

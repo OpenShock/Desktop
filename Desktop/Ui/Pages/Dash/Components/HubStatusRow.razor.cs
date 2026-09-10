@@ -3,6 +3,7 @@ using LucHeart.WebsocketLibrary;
 using Microsoft.AspNetCore.Components;
 using OpenShock.Desktop.ModuleBase.StableInterfaces;
 using OpenShock.SDK.CSharp.Live;
+using OpenShock.SDK.CSharp.Models;
 using Color = MudBlazor.Color;
 
 namespace OpenShock.Desktop.Ui.Pages.Dash.Components;
@@ -65,7 +66,7 @@ public partial class HubStatusRow : ComponentBase, IAsyncDisposable
         ? $"{Client.Latency.Value}ms"
         : string.Empty;
 
-    private string? Gateway => Client?.Gateway;
+    private LcgResponseV2? Gateway => Client?.Gateway;
 
     private bool _disposed;
     private IOpenShockLiveControlClient? _subscribedClient;
