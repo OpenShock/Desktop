@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -19,6 +19,11 @@
         -->
         <Compile Include="..\Desktop\ModuleManager\ModuleAssemblyLoadContext.cs"
                  Link="Loader\ModuleAssemblyLoadContext.cs" />
+
+        <!-- Same deal for the deep link parser, it only depends on BCL types. -->
+        <Compile Include="..\Desktop\Cli\Uri\UriParser.cs" Link="Cli\UriParser.cs" />
+        <Compile Include="..\Desktop\Cli\Uri\UriParameter.cs" Link="Cli\UriParameter.cs" />
+        <Compile Include="..\Desktop\Cli\Uri\UriParameterType.cs" Link="Cli\UriParameterType.cs" />
     </ItemGroup>
 
     <ItemGroup>
