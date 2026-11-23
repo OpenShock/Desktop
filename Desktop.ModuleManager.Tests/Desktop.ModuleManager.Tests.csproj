@@ -13,8 +13,8 @@
     <ItemGroup>
         <!--
             Compile the loader source directly into the test assembly. ProjectReference to
-            Desktop.csproj is impractical: it's an Sdk.Web exe, multi-targets net10.0-windows
-            for the MAUI build, and pulls in MudBlazor/MAUI/Photino. The loader has no
+            Desktop.csproj is impractical: it's an Sdk.Web exe that pulls in
+            Avalonia, MudBlazor and Photino depending on the configuration. The loader has no
             internal coupling beyond BCL types, so linking the source is clean.
         -->
         <Compile Include="..\Desktop\ModuleManager\ModuleAssemblyLoadContext.cs"

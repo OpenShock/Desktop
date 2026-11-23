@@ -43,7 +43,7 @@ public static class Bootstrap
         var isDebug = Environment.GetCommandLineArgs()
             .Any(x => x.Equals("--debug", StringComparison.InvariantCultureIgnoreCase));
 
-#if DEBUG_WINDOWS || DEBUG_PHOTINO || DEBUG_AVALONIA
+#if DEBUG_PHOTINO || DEBUG_AVALONIA
         isDebug = true;
 #endif
         if (isDebug)
@@ -103,10 +103,6 @@ public static class Bootstrap
 
     public static void AddCommonBlazorServices(this IServiceCollection services)
     {
-#if DEBUG_WINDOWS
-        services.AddBlazorWebViewDeveloperTools();
-#endif
-
         services.AddMudServices();
 
         services.AddSingleton<ThemeDefinition>();

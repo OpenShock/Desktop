@@ -46,9 +46,7 @@
     private async Task CopyTextToClipboard()
 #pragma warning restore CS1998
     {
-#if WINDOWS
-        await Clipboard.SetTextAsync(Value);
-#elif AVALONIA
+#if AVALONIA
         // The page is served from http://127.0.0.1, which browsers treat as a secure context.
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", Value);
 #endif

@@ -8,7 +8,7 @@ using AvaloniaApplication = Avalonia.Application;
 namespace OpenShock.Desktop.Platforms.AvaloniaShell;
 
 /// <summary>
-/// Tray icon through Avalonia, so every platform gets one (the MAUI build used a Win32-only one).
+/// Tray icon through Avalonia, so every platform gets one.
 /// </summary>
 public sealed class AvaloniaTrayService : ITrayService, IAsyncDisposable
 {

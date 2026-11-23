@@ -21,8 +21,7 @@ A OpenShock Application with module support. This allows you to install modules 
 ## Contribute
 
 - Install the latest .NET SDK
-- Optionally if your targeting Windows with MAUI, install the MAUI workload `dotnet workload install maui-windows`
-- Open the Project in Jetbrains Rider and select the the Debug- build configuration you want to target.
+- Open the Project in Jetbrains Rider and select the Debug- build configuration you want to target (`Debug-Avalonia` on Windows).
 - Click on Run/Debug
 
 ## Credits

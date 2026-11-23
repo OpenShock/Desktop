@@ -1,8 +1,4 @@
-﻿#if WINDOWS
-using OpenShock.Desktop.Platforms.Windows;
-#endif
-
-namespace OpenShock.Desktop;
+﻿namespace OpenShock.Desktop;
 
 public static class HeadlessProgram
 {
@@ -12,10 +8,6 @@ public static class HeadlessProgram
         builder.ConfigureServices(services =>
         {
             services.AddOpenShockDesktopServices();
-
-#if WINDOWS
-            services.AddWindowsServices();
-#endif
         });
         
         var app = builder.Build();

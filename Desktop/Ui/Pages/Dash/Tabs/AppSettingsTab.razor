@@ -418,7 +418,7 @@
         ConfigManager.Save();
         if (ConfigManager.Config.App.OSAutoStart)
         {
-            #if WINDOWS || AVALONIA
+            #if AVALONIA
             if (OperatingSystem.IsWindows())
             {
                 string exePath = Environment.ProcessPath!;
@@ -459,7 +459,7 @@
             return;
         if (ConfigManager.Config.App.VRCAutoStart)
         {
-#if WINDOWS || AVALONIA
+#if AVALONIA
             if (OperatingSystem.IsWindows())
             {
             string exePath = Environment.ProcessPath!;

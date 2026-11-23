@@ -51,7 +51,7 @@ libs/
   <rid>/…                          # native + RID-specific files copied from runtimes/
 ```
 
-Assemblies the host already ships (MudBlazor, Serilog, the MAUI/Blazor stack,
+Assemblies the host already ships (MudBlazor, Serilog, the Avalonia/Blazor stack,
 OpenShock SDKs, `Microsoft.Extensions.*`, etc.) are **excluded automatically** so
 your ZIP stays small and you don't risk loading a second copy at runtime. The
 authoritative list lives in

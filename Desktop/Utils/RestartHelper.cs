@@ -8,23 +8,13 @@ namespace OpenShock.Desktop.Utils;
 /// </summary>
 public static class RestartHelper
 {
-#if WINDOWS || AVALONIA
+#if AVALONIA
     private static readonly string PowerShellLogFile = Path.Combine(Constants.LogsFolder, "restart.log");
 #endif
 
     public static void RestartApp()
     {
-#if WINDOWS
-        StartWindowsRelauncher();
-
-        if (Application.Current != null)
-        {
-            Application.Current.Quit();
-            return;
-        }
-
-        Environment.Exit(0);
-#elif PHOTINO
+#if PHOTINO
         StartUnixRelauncher();
         Environment.Exit(0);
 #elif AVALONIA
@@ -38,7 +28,7 @@ public static class RestartHelper
 #endif
     }
 
-#if WINDOWS || AVALONIA
+#if AVALONIA
     /// <summary>
     /// Starts a hidden PowerShell helper that waits for this process to exit (up to 30s), then relaunches it.
     /// </summary>

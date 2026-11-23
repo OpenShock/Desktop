@@ -2,9 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <SingleProject>true</SingleProject>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
-        <ApplicationTitle>OpenShock</ApplicationTitle>
 
         <AssemblyName>OpenShock.Desktop</AssemblyName>
         <RootNamespace>OpenShock.Desktop</RootNamespace>
@@ -18,28 +16,9 @@
         <SatelliteResourceLanguages>en-US;en</SatelliteResourceLanguages>
         <IsPackable>false</IsPackable>
 
-        <DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+        <Configurations>Release-Photino;Debug-Photino;Release-Avalonia;Debug-Avalonia</Configurations>
 
-        <Configurations>Release-Windows;Debug-Windows;Release-Photino;Debug-Photino;Release-Avalonia;Debug-Avalonia</Configurations>
-
-        <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
-        <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)' == 'Debug-Windows' Or '$(Configuration)' == 'Release-Windows'">
-        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
-        <WindowsPackageType>None</WindowsPackageType>
-        <UseMaui>true</UseMaui>
-        <DefineConstants>MAUI</DefineConstants>
-        <StartupObject>OpenShock.Desktop.Platforms.Windows.WindowsEntryPoint</StartupObject>
-        <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(Configuration)' == 'Debug-Windows' Or '$(Configuration)' == 'Release-Windows'">
-        <PackageReference Include="Microsoft.Maui.Controls" />
-        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" />
-    </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
         <TargetFramework>net10.0</TargetFramework>

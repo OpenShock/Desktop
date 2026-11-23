@@ -59,7 +59,7 @@ jobs:
           path: ${{ github.workspace }}/test-results
           if-no-files-found: ignore
 
-  build-windows-maui:
+  build-windows:
     runs-on: windows-latest
     timeout-minutes: 20
 
@@ -71,32 +71,29 @@ jobs:
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          
-      - name: Install maui workload for windows
-        run: dotnet workload install maui-windows
 
       - name: Cache NuGet packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
-          key: windows-maui-nuget
+          key: windows-nuget
           restore-keys: |
-            windows-maui-nuget
+            windows-nuget
 
       - name: Publish OpenShock Desktop Windows
-        run: dotnet publish Desktop/Desktop.csproj -c Release-Windows -o ./publish/Windows-Maui
+        run: dotnet publish Desktop/Desktop.csproj -c Release-Avalonia -r win-x64 -o ./publish/Windows
 
       - name: Upload OpenShock Desktop Windows artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: OpenShock Desktop Windows MAUI
-          path: publish/Windows-Maui/*
+          name: OpenShock Desktop Windows
+          path: publish/Windows/*
           retention-days: 1
           if-no-files-found: error
-  
-  installer-windows-maui:
+
+  installer-windows:
     runs-on: windows-latest
-    needs: build-windows-maui
+    needs: build-windows
     timeout-minutes: 10
 
     steps:
@@ -109,7 +106,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: OpenShock Desktop Windows MAUI
+          name: OpenShock Desktop Windows
           path: publish/
 
       - name: Create nsis installer
@@ -125,39 +122,6 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-
-  # Avalonia shell, built next to MAUI/Photino until it replaces them. Not part of the release yet.
-  build-windows-avalonia:
-    runs-on: windows-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup .NET SDK ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: windows-avalonia-nuget
-          restore-keys: |
-            windows-avalonia-nuget
-
-      - name: Publish OpenShock Desktop Avalonia (Windows)
-        run: dotnet publish Desktop/Desktop.csproj -c Release-Avalonia -r win-x64 -o ./publish/Windows-Avalonia
-
-      - name: Upload OpenShock Desktop Avalonia (Windows) artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: OpenShock Desktop Windows Avalonia
-          path: publish/Windows-Avalonia/*
-          retention-days: 7
-          if-no-files-found: error
 
   build-linux-photino:
     runs-on: ubuntu-latest

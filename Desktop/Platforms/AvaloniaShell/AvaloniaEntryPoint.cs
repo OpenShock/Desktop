@@ -35,16 +35,18 @@ public static class AvaloniaEntryPoint
     public static int Main(string[] args)
     {
         var exitCode = 0;
-        ParseHelper.Parse<MauiCliOptions>(args, options => exitCode = Start(options, args));
+        ParseHelper.Parse<DesktopCliOptions>(args, options => exitCode = Start(options, args));
         return exitCode;
     }
 
-    private static int Start(MauiCliOptions options, string[] args)
+    private static int Start(DesktopCliOptions options, string[] args)
     {
         // WinExe has no console of its own.
         if (options.Console && OperatingSystem.IsWindows() && !AttachConsole(AttachParentProcess)) AllocConsole();
 
-        // Claim single instance ownership before doing anything else, see WindowsEntryPoint for why.
+        // Claim single instance ownership before doing anything else, headless included. Deciding this by
+        // looking for the named pipe is not enough: the pipe only appears once the host has booted, and a
+        // launch in that window would start a second instance that races the first over the module folder.
         if (!SingleInstanceGuard.TryAcquire())
         {
             if (SingleInstanceGuard.TryForwardToRunningInstance(options.Uri, ForwardTimeout))

@@ -99,7 +99,7 @@ collect_refs "$MODULEBASE_CSPROJ"
 
 # Create a temporary project to resolve transitive dependencies.
 # We can't run `dotnet list` on Desktop.csproj directly because it may
-# require workloads (Maui) that aren't installed in all environments.
+# carries platform-specific packages (Photino) we resolve separately.
 TMPDIR=$(mktemp -d)
 trap "rm -rf '$TMPDIR'" EXIT
 
@@ -109,7 +109,7 @@ for name in "${!DIRECT_REFS[@]}"; do
   version="${DIRECT_REFS[$name]}"
   # Skip platform-specific packages that need workloads
   case "$name" in
-    Microsoft.Maui.*|Microsoft.AspNetCore.Components.WebView.Maui|Photino.*)
+    Photino.*)
       continue ;;
   esac
   PKG_REFS="$PKG_REFS    <PackageReference Include=\"$name\" Version=\"$version\" />"$'\n'
@@ -145,7 +145,7 @@ declare -A HOST_DEPS
 # Add platform-specific packages we skipped (they're still host-provided)
 for name in "${!DIRECT_REFS[@]}"; do
   case "$name" in
-    Microsoft.Maui.*|Microsoft.AspNetCore.Components.WebView.Maui|Photino.*)
+    Photino.*)
       HOST_DEPS["$name"]="${DIRECT_REFS[$name]}" ;;
   esac
 done
