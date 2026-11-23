@@ -33,17 +33,15 @@ public static class Bootstrap
                 outputTemplate:
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
-#if AVALONIA
         // The UI is served over loopback HTTP here, and ASP.NET logs every single request and static file at
         // Information, which buries everything else in the log view.
         loggerConfiguration.MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning);
-#endif
 
         // ReSharper disable once RedundantAssignment
         var isDebug = Environment.GetCommandLineArgs()
             .Any(x => x.Equals("--debug", StringComparison.InvariantCultureIgnoreCase));
 
-#if DEBUG_PHOTINO || DEBUG_AVALONIA
+#if DEBUG
         isDebug = true;
 #endif
         if (isDebug)

@@ -1,4 +1,3 @@
-#if AVALONIA
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
@@ -55,7 +54,7 @@ public sealed class MainWindow : Window
 
     private void OnEnvironmentRequested(object? sender, WebViewEnvironmentRequestedEventArgs e)
     {
-#if DEBUG_AVALONIA
+#if DEBUG
         e.EnableDevTools = true;
 #endif
 
@@ -112,4 +111,3 @@ public sealed class MainWindow : Window
             Shell.Quit();
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if AVALONIA
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -49,4 +48,3 @@ public static class ConfirmDialog
         return dialog.ShowDialog<bool>(owner);
     }
 }
-#endif

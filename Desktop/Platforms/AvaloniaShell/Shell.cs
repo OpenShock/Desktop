@@ -1,4 +1,3 @@
-#if AVALONIA
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
@@ -59,4 +58,3 @@ public static class Shell
         _lifetime?.Shutdown();
     });
 }
-#endif

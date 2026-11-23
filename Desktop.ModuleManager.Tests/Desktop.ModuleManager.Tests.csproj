@@ -14,7 +14,7 @@
         <!--
             Compile the loader source directly into the test assembly. ProjectReference to
             Desktop.csproj is impractical: it's an Sdk.Web exe that pulls in
-            Avalonia, MudBlazor and Photino depending on the configuration. The loader has no
+            Avalonia and MudBlazor. The loader has no
             internal coupling beyond BCL types, so linking the source is clean.
         -->
         <Compile Include="..\Desktop\ModuleManager\ModuleAssemblyLoadContext.cs"

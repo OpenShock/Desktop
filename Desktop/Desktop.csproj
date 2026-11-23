@@ -1,55 +1,36 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <!--
+          Stays Exe: Microsoft.AspNetCore.App.Internal.Assets only adds _framework/blazor.web.js to projects whose
+          OutputType is exactly 'Exe'. The Windows apphost still gets the GUI subsystem (no console window) through
+          _UseWindowsGraphicalUserInterface below, which is what WinExe would set.
+        -->
         <OutputType>Exe</OutputType>
+        <StartupObject>OpenShock.Desktop.Platforms.AvaloniaShell.AvaloniaEntryPoint</StartupObject>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
 
         <AssemblyName>OpenShock.Desktop</AssemblyName>
         <RootNamespace>OpenShock.Desktop</RootNamespace>
-        
+
         <ApplicationIcon>wwwroot/images/openshock-icon.ico</ApplicationIcon>
+        <!-- Without the supported OS list, NativeWebView cannot create its child window on Windows. -->
+        <ApplicationManifest>Platforms/AvaloniaShell/app.manifest</ApplicationManifest>
         <SelfContained>true</SelfContained>
+        <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+        <!-- After RuntimeIdentifier, which it depends on. -->
+        <_UseWindowsGraphicalUserInterface Condition="$(RuntimeIdentifier.StartsWith('win'))">true</_UseWindowsGraphicalUserInterface>
 
         <PackageIcon>wwwroot/images/Icon512.png</PackageIcon>
 
         <ResourceLanguages>en</ResourceLanguages>
         <SatelliteResourceLanguages>en-US;en</SatelliteResourceLanguages>
         <IsPackable>false</IsPackable>
-
-        <Configurations>Release-Photino;Debug-Photino;Release-Avalonia;Debug-Avalonia</Configurations>
-
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
-        <TargetFramework>net10.0</TargetFramework>
-        <StartupObject>OpenShock.Desktop.Platforms.Photino.PhotinoEntryPoint</StartupObject>
-        <DefineConstants>PHOTINO</DefineConstants>
-        <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(Configuration)' == 'Debug-Photino' Or '$(Configuration)' == 'Release-Photino'">
-        <PackageReference Include="Photino.Blazor" />
-    </ItemGroup>
-
-    <!-- Avalonia shell. The existing Blazor UI is served by Blazor Server on loopback and shown in a NativeWebView. -->
-    <PropertyGroup Condition="'$(Configuration)' == 'Debug-Avalonia' Or '$(Configuration)' == 'Release-Avalonia'">
-        <TargetFramework>net10.0</TargetFramework>
-        <!--
-          Stays Exe: Microsoft.AspNetCore.App.Internal.Assets only adds _framework/blazor.web.js to projects whose
-          OutputType is exactly 'Exe'. The Windows apphost still gets the GUI subsystem (no console window) through
-          the flag below, which is what WinExe would set.
-        -->
-        <OutputType>Exe</OutputType>
-        <StartupObject>OpenShock.Desktop.Platforms.AvaloniaShell.AvaloniaEntryPoint</StartupObject>
-        <DefineConstants>$(DefineConstants);AVALONIA</DefineConstants>
-        <!-- Without the supported OS list, NativeWebView cannot create its child window on Windows. -->
-        <ApplicationManifest>Platforms/AvaloniaShell/app.manifest</ApplicationManifest>
-        <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
-        <!-- After RuntimeIdentifier, which it depends on. -->
-        <_UseWindowsGraphicalUserInterface Condition="$(RuntimeIdentifier.StartsWith('win'))">true</_UseWindowsGraphicalUserInterface>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(Configuration)' == 'Debug-Avalonia' Or '$(Configuration)' == 'Release-Avalonia'">
+    <!-- Avalonia shell. The Blazor UI is served by Blazor Server on loopback and shown in a NativeWebView. -->
+    <ItemGroup>
         <PackageReference Include="Avalonia" />
         <PackageReference Include="Avalonia.Desktop" />
         <PackageReference Include="Avalonia.Themes.Fluent" />

@@ -21,7 +21,7 @@ A OpenShock Application with module support. This allows you to install modules 
 ## Contribute
 
 - Install the latest .NET SDK
-- Open the Project in Jetbrains Rider and select the Debug- build configuration you want to target (`Debug-Avalonia` on Windows).
+- Open the Project in Jetbrains Rider and build the `Debug` configuration.
 - Click on Run/Debug
 
 ## Credits

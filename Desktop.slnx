@@ -1,27 +1,6 @@
 <Solution>
-  <Configurations>
-    <BuildType Name="Debug-Avalonia" />
-    <BuildType Name="Debug-Photino" />
-    <BuildType Name="Release-Avalonia" />
-    <BuildType Name="Release-Photino" />
-  </Configurations>
   <Project Path="Desktop/Desktop.csproj" />
-  <Project Path="ExampleModule/ExampleModule.csproj">
-    <Configuration Solution="Debug-Photino|Any CPU" Project="Debug|Any CPU" />
-    <Configuration Solution="Debug-Avalonia|Any CPU" Project="Debug|Any CPU" />
-    <Configuration Solution="Release-Avalonia|Any CPU" Project="Release|Any CPU" />
-    <Configuration Solution="Release-Photino|Any CPU" Project="Release|Any CPU" />
-  </Project>
-  <Project Path="ModuleBase/ModuleBase.csproj">
-    <Configuration Solution="Debug-Photino|Any CPU" Project="Debug|Any CPU" />
-    <Configuration Solution="Debug-Avalonia|Any CPU" Project="Debug|Any CPU" />
-    <Configuration Solution="Release-Avalonia|Any CPU" Project="Release|Any CPU" />
-    <Configuration Solution="Release-Photino|Any CPU" Project="Release|Any CPU" />
-  </Project>
-  <Project Path="Desktop.ModuleManager.Tests/Desktop.ModuleManager.Tests.csproj">
-    <Configuration Solution="Debug-Photino|Any CPU" Project="Debug|Any CPU" />
-    <Configuration Solution="Debug-Avalonia|Any CPU" Project="Debug|Any CPU" />
-    <Configuration Solution="Release-Avalonia|Any CPU" Project="Release|Any CPU" />
-    <Configuration Solution="Release-Photino|Any CPU" Project="Release|Any CPU" />
-  </Project>
+  <Project Path="ExampleModule/ExampleModule.csproj" />
+  <Project Path="ModuleBase/ModuleBase.csproj" />
+  <Project Path="Desktop.ModuleManager.Tests/Desktop.ModuleManager.Tests.csproj" />
 </Solution>

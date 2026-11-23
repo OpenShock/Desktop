@@ -22,7 +22,6 @@
     <PackageVersion Include="OpenShock.SDK.CSharp" Version="0.0.45" />
     <PackageVersion Include="OpenShock.SDK.CSharp.Hub" Version="0.0.45" />
     <PackageVersion Include="OpenShock.SDK.CSharp.Live" Version="0.0.45" />
-    <PackageVersion Include="Photino.Blazor" Version="4.0.13" />
     <PackageVersion Include="Semver" Version="3.0.0" />
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />

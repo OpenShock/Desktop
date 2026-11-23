@@ -1,4 +1,3 @@
-#if AVALONIA
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -135,4 +134,3 @@ public sealed class BlazorServerHost : IAsyncDisposable
 
     public async ValueTask DisposeAsync() => await App.DisposeAsync();
 }
-#endif

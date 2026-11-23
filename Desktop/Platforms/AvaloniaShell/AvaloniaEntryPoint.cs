@@ -1,4 +1,3 @@
-#if AVALONIA
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -71,7 +70,7 @@ public static class AvaloniaEntryPoint
         }
 
         var isDebug = false;
-#if DEBUG_AVALONIA
+#if DEBUG
         isDebug = true;
 #endif
 
@@ -134,4 +133,3 @@ public sealed class ShellApplication : Application
         }
     }
 }
-#endif

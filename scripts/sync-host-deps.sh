@@ -97,9 +97,8 @@ collect_refs() {
 collect_refs "$DESKTOP_CSPROJ"
 collect_refs "$MODULEBASE_CSPROJ"
 
-# Create a temporary project to resolve transitive dependencies.
-# We can't run `dotnet list` on Desktop.csproj directly because it may
-# carries platform-specific packages (Photino) we resolve separately.
+# Create a temporary project to resolve transitive dependencies, so the result
+# does not depend on Desktop.csproj's build state.
 TMPDIR=$(mktemp -d)
 trap "rm -rf '$TMPDIR'" EXIT
 
@@ -107,11 +106,6 @@ trap "rm -rf '$TMPDIR'" EXIT
 PKG_REFS=""
 for name in "${!DIRECT_REFS[@]}"; do
   version="${DIRECT_REFS[$name]}"
-  # Skip platform-specific packages that need workloads
-  case "$name" in
-    Photino.*)
-      continue ;;
-  esac
   PKG_REFS="$PKG_REFS    <PackageReference Include=\"$name\" Version=\"$version\" />"$'\n'
 done
 
@@ -141,14 +135,6 @@ LIST_OUTPUT=$(dotnet list "$TMPDIR/HostDeps.csproj" package --include-transitive
 
 # Parse the JSON output to build the full dependency map
 declare -A HOST_DEPS
-
-# Add platform-specific packages we skipped (they're still host-provided)
-for name in "${!DIRECT_REFS[@]}"; do
-  case "$name" in
-    Photino.*)
-      HOST_DEPS["$name"]="${DIRECT_REFS[$name]}" ;;
-  esac
-done
 
 # Parse top-level and transitive packages from JSON
 # Format: "id": "PackageName" followed by "resolvedVersion": "X.Y.Z"

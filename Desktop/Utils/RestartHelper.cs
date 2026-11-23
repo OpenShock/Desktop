@@ -8,27 +8,17 @@ namespace OpenShock.Desktop.Utils;
 /// </summary>
 public static class RestartHelper
 {
-#if AVALONIA
     private static readonly string PowerShellLogFile = Path.Combine(Constants.LogsFolder, "restart.log");
-#endif
 
     public static void RestartApp()
     {
-#if PHOTINO
-        StartUnixRelauncher();
-        Environment.Exit(0);
-#elif AVALONIA
         if (OperatingSystem.IsWindows()) StartWindowsRelauncher();
         else StartUnixRelauncher();
 
         // A normal shutdown, so the helper sees us exit once the host has stopped.
         Platforms.AvaloniaShell.Shell.Quit();
-#else
-        // No restart mechanism for other targets; no-op.
-#endif
     }
 
-#if AVALONIA
     /// <summary>
     /// Starts a hidden PowerShell helper that waits for this process to exit (up to 30s), then relaunches it.
     /// </summary>
@@ -77,9 +67,7 @@ public static class RestartHelper
 
         Process.Start(startInfo);
     }
-#endif
 
-#if PHOTINO || AVALONIA
     /// <summary>
     /// Starts a detached shell helper that waits for this process to exit (up to ~30s), then relaunches it.
     /// Does nothing if there is nothing to relaunch.
@@ -145,5 +133,4 @@ public static class RestartHelper
             Process.Start(startInfo);
         }
     }
-#endif
 }

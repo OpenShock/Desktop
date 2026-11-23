@@ -7,7 +7,7 @@
 HERE="$(dirname "$(readlink -f "${0}")")"
 APP_BIN="${HERE}/usr/bin/OpenShock.Desktop"
 
-# Photino on Linux renders through WebKitGTK. It is intentionally not bundled
+# The UI renders through WebKitGTK (Avalonia NativeWebView). It is intentionally not bundled
 # (GTK/webkit do not relocate cleanly), so surface a clear error if it is missing.
 if ! ldconfig -p 2>/dev/null | grep -q 'libwebkit2gtk-4\.\(0\|1\)'; then
     echo "OpenShock Desktop requires WebKitGTK (libwebkit2gtk-4.1 or 4.0) to be installed." >&2

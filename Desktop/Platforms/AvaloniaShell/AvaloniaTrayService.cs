@@ -1,4 +1,3 @@
-#if AVALONIA
 using Avalonia.Controls;
 using Avalonia.Threading;
 using OpenShock.Desktop.Services;
@@ -93,4 +92,3 @@ public sealed class AvaloniaTrayService : ITrayService, IAsyncDisposable
         }
     }
 }
-#endif

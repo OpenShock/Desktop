@@ -34,7 +34,6 @@
     <OpenShockHostAssembly Include="CommandLineParser" Version="2.9.1" />
     <OpenShockHostAssembly Include="dnlib" Version="4.5.0" />
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components.Web" Version="10.0.12" />
-    <OpenShockHostAssembly Include="Photino.Blazor" Version="4.0.13" />
     <OpenShockHostAssembly Include="LucHeart.WebsocketLibrary" Version="1.2.0" />
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.Authorization" Version="10.0.12" />
     <OpenShockHostAssembly Include="Microsoft.AspNetCore.Components" Version="10.0.12" />

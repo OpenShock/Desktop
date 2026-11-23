@@ -81,7 +81,7 @@ jobs:
             windows-nuget
 
       - name: Publish OpenShock Desktop Windows
-        run: dotnet publish Desktop/Desktop.csproj -c Release-Avalonia -r win-x64 -o ./publish/Windows
+        run: dotnet publish Desktop/Desktop.csproj -c Release -r win-x64 -o ./publish/Windows
 
       - name: Upload OpenShock Desktop Windows artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -123,7 +123,7 @@ jobs:
           if-no-files-found: error
 
 
-  build-linux-photino:
+  build-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -140,18 +140,18 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
-          key: linux-photino-nuget
+          key: linux-nuget
           restore-keys: |
-            linux-photino-nuget
+            linux-nuget
 
-      - name: Publish OpenShock Photino
-        run: dotnet publish Desktop/Desktop.csproj -c Release-Photino -o ./publish/Photino-Linux
+      - name: Publish OpenShock Desktop Linux
+        run: dotnet publish Desktop/Desktop.csproj -c Release -r linux-x64 -o ./publish/Linux
 
-      - name: Upload OpenShock Desktop Photino Linux artifacts
+      - name: Upload OpenShock Desktop Linux artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: OpenShock Desktop Photino Linux
-          path: publish/Photino-Linux/*
+          name: OpenShock Desktop Linux
+          path: publish/Linux/*
           retention-days: 7
           if-no-files-found: error
 
@@ -177,7 +177,7 @@ jobs:
                    "${APPDIR}/usr/share/applications" \
                    "${APPDIR}/usr/share/icons/hicolor/512x512/apps"
 
-          cp -r publish/Photino-Linux/. "${APPDIR}/usr/bin/"
+          cp -r publish/Linux/. "${APPDIR}/usr/bin/"
 
           install -m 0755 packaging/appimage/AppRun "${APPDIR}/AppRun"
           install -m 0644 packaging/appimage/OpenShock.Desktop.desktop \
