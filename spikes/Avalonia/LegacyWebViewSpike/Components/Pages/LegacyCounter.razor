@@ -1,0 +1,11 @@
+@page "/legacy/counter"
+
+<MudPaper Class="pa-6 ma-6">
+    <MudText Typo="Typo.h5">Legacy Blazor module page</MudText>
+    <MudText>Count: <span id="count">@_count</span></MudText>
+    <MudButton id="inc" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => _count++">Increment</MudButton>
+</MudPaper>
+
+@code {
+    private int _count;
+}

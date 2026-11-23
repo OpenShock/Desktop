@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="../../../ModuleBase/build/OpenShock.Desktop.ModuleBase.props" />
+
+  <PropertyGroup>
+    <OpenShockModuleId>openshock.spike.avaloniamodule</OpenShockModuleId>
+    <AssemblyName>OpenShock.Spike.AvaloniaModule</AssemblyName>
+    <RootNamespace>OpenShock.Spike.AvaloniaModule</RootNamespace>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../ModuleBase/ModuleBase.csproj" />
+    <ProjectReference Include="../SpikeModule.Helpers/SpikeModule.Helpers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Compile against Avalonia, but never ship it: the host provides it. -->
+    <PackageReference Include="Avalonia" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/**" />
+  </ItemGroup>
+
+  <Import Project="../../../ModuleBase/build/OpenShock.Desktop.ModuleBase.targets" />
+
+</Project>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>OpenShock.Spike.Host</AssemblyName>
+    <RootNamespace>OpenShock.Spike.Host</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The real loader, not a copy, so the spike says something about the actual code. -->
+    <Compile Include="../../../Desktop/ModuleManager/ModuleAssemblyLoadContext.cs" Link="ModuleAssemblyLoadContext.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../ModuleBase/ModuleBase.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

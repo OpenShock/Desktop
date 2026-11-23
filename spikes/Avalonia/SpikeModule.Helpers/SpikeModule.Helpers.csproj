@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A private dependency of the module. It ends up in libs/ and is only reachable through the module's ALC. -->
+  <PropertyGroup>
+    <AssemblyName>OpenShock.Spike.Helpers</AssemblyName>
+    <RootNamespace>OpenShock.Spike.Helpers</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Compile against Avalonia, but never ship it: the host provides it. -->
+    <PackageReference Include="Avalonia" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Humanizer.Core" />
+  </ItemGroup>
+</Project>

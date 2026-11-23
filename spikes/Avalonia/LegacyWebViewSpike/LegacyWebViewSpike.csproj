@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Avalonia window + NativeWebView, with the legacy Blazor UI served by Blazor Server on loopback. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>OpenShock.Spike.LegacyWebView</AssemblyName>
+    <RootNamespace>OpenShock.Spike.LegacyWebView</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Controls.WebView" />
+    <PackageReference Include="MudBlazor" />
+    <PackageReference Include="System.Drawing.Common" />
+  </ItemGroup>
+</Project>

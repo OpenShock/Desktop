@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:c="using:OpenShock.Spike.AvaloniaModule.Controls">
+  <ControlTheme x:Key="{x:Type c:Badge}" TargetType="c:Badge">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="PART_Border" Background="#E14A6D" CornerRadius="8" Padding="8,2"
+                HorizontalAlignment="Left">
+          <TextBlock Text="{TemplateBinding Text}" Foreground="White" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>
