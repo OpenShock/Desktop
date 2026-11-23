@@ -20,6 +20,12 @@ public sealed class BackendHubManager
 
     public IAsyncMinimalEventObservable<ShockerLogEventArgs> OnShockerLog => _onShockerLog;
     private readonly AsyncMinimalEvent<ShockerLogEventArgs> _onShockerLog = new();
+
+    /// <summary>
+    /// A regular control command is being sent from this instance, raised with the shocks that passed <see cref="CanControl"/>
+    /// </summary>
+    public IAsyncMinimalEventObservable<ControlSentEventArgs> OnControlSent => _onControlSent;
+    private readonly AsyncMinimalEvent<ControlSentEventArgs> _onControlSent = new();
     
     public Subject<Guid?> OnHubStatusUpdated { get; } = new();
 
@@ -115,8 +121,8 @@ public sealed class BackendHubManager
     /// <returns></returns>
     public Task Control(IEnumerable<Control> shocks, string? customName = null)
     {
-        var shocksToSend = shocks.Where(x => CanControl(x.Id, x.Type));
-        return _openShockHubClient.Control(shocksToSend, customName);
+        var shocksToSend = shocks.Where(x => CanControl(x.Id, x.Type)).ToArray();
+        return SendControl(shocksToSend, customName);
     }
 
     /// <summary>
@@ -136,9 +142,25 @@ public sealed class BackendHubManager
                 Intensity = intensity,
                 Type = type,
                 Exclusive = exclusive
+            })
+            .ToArray();
+
+        return SendControl(shocksToSend, customName);
+    }
+
+    private async Task SendControl(Control[] shocksToSend, string? customName)
+    {
+        // Start sending first so listeners never delay the actual command
+        var controlTask = _openShockHubClient.Control(shocksToSend, customName);
+
+        if (shocksToSend.Length > 0)
+            await _onControlSent.InvokeAsyncParallel(new ControlSentEventArgs
+            {
+                Shocks = shocksToSend,
+                CustomName = customName
             });
 
-        return _openShockHubClient.Control(shocksToSend, customName);
+        await controlTask;
     }
 
     /// <summary>
@@ -187,4 +209,10 @@ public readonly struct ShockerLogEventArgs
 {
     public required LogEventArgs LogEventArgs { get; init; }
     public required bool IsRemote { get; init; }
+}
+
+public readonly struct ControlSentEventArgs
+{
+    public required IReadOnlyList<Control> Shocks { get; init; }
+    public string? CustomName { get; init; }
 }

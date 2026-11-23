@@ -14,6 +14,7 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
     private readonly LiveControlManager _liveControlManager;
 
     private readonly IAsyncDisposable _onShockerLogSubscription;
+    private readonly IAsyncDisposable _onControlSentSubscription;
     
     public OpenShockControl(BackendHubManager backendHubManager, LiveControlManager liveControlManager)
     {
@@ -52,6 +53,13 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
 
             return args.IsRemote ? _onRemoteControlledShocker.InvokeAsyncParallel(baseArgs) : _onLocalControlledShocker.InvokeAsyncParallel(baseArgs);
         }).AsTask().Result;
+
+        _onControlSentSubscription = _backendHubManager.OnControlSent.SubscribeAsync(args =>
+            _onLocalControlSent.InvokeAsyncParallel(new LocalControlArgs
+            {
+                Shocks = args.Shocks.Select(SdkDtoMappings.ToModuleBaseControl).ToImmutableArray(),
+                CustomName = args.CustomName
+            })).AsTask().Result;
     }
     
     public Task Control(IEnumerable<ShockerControl> shocks, string? customName = null)
@@ -84,6 +92,9 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
         _onLocalControlledShocker;
     private readonly AsyncMinimalEvent<RemoteControlledShockerArgs> _onLocalControlledShocker = new();
 
+    public IAsyncMinimalEventObservable<LocalControlArgs> OnLocalControlSent => _onLocalControlSent;
+    private readonly AsyncMinimalEvent<LocalControlArgs> _onLocalControlSent = new();
+
     private bool _disposed;
     
     public async ValueTask DisposeAsync()
@@ -92,6 +103,7 @@ public class OpenShockControl : IOpenShockControl, IAsyncDisposable
         _disposed = true;
         
         await _onShockerLogSubscription.DisposeAsync();
+        await _onControlSentSubscription.DisposeAsync();
         GC.SuppressFinalize(this);
     }
     

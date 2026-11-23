@@ -22,6 +22,18 @@ public static class SdkDtoMappings
             Exclusive = control.Exclusive
         };
     }
+
+    public static ShockerControl ToModuleBaseControl(this Control control)
+    {
+        return new ShockerControl
+        {
+            Id = control.Id,
+            Type = (OpenShock.Desktop.ModuleBase.Models.ControlType)control.Type,
+            Intensity = control.Intensity,
+            Duration = control.Duration,
+            Exclusive = control.Exclusive
+        };
+    }
     
     public static IOpenShockShocker ToSdkShocker(this ShockerResponse shocker)
     {

@@ -52,4 +52,10 @@ public interface IOpenShockControl
     /// This OpenShock Desktop instance has controlled a shocker.
     /// </summary>
     public IAsyncMinimalEventObservable<RemoteControlledShockerArgs> OnLocalControlledShocker { get; }
+
+    /// <summary>
+    /// This OpenShock Desktop instance is sending a regular control command, from any module or the UI. Fires when
+    /// the command is sent, without waiting for the backend to log it. Live control frames are not included.
+    /// </summary>
+    public IAsyncMinimalEventObservable<LocalControlArgs> OnLocalControlSent { get; }
 }
