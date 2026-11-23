@@ -19,11 +19,6 @@
       "matchManagers": ["github-actions"],
       "matchDepTypes": ["action"],
       "groupName": "github-actions"
-    },
-    {
-      "description": "The .NET SDK and runtime images must move together",
-      "matchPackageNames": ["dotnet-sdk", "mcr.microsoft.com/dotnet/sdk", "mcr.microsoft.com/dotnet/aspnet"],
-      "groupName": "dotnet sdk and images"
     }
   ]
 }

@@ -1,9 +1,0 @@
-﻿services:
-  desktop:
-    image: ghcr.io/openshock/desktop:latest
-    restart: unless-stopped
-    volumes:
-      - ./data:/data
-    network_mode: host
-    environment:
-      ASPNETCORE_HTTP_PORTS: 8888

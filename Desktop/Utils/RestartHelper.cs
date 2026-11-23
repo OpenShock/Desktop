@@ -131,7 +131,7 @@ public static class RestartHelper
 
         Environment.Exit(0);
 #else
-        // No restart mechanism for other targets (e.g. the web host); no-op.
+        // No restart mechanism for other targets; no-op.
 #endif
     }
 }
