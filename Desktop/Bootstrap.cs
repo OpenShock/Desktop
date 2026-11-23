@@ -37,7 +37,7 @@ public static class Bootstrap
         var isDebug = Environment.GetCommandLineArgs()
             .Any(x => x.Equals("--debug", StringComparison.InvariantCultureIgnoreCase));
 
-#if DEBUG_WINDOWS || DEBUG_PHOTINO || DEBUG_WEB
+#if DEBUG_WINDOWS || DEBUG_PHOTINO
         isDebug = true;
 #endif
         if (isDebug)
