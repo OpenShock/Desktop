@@ -1,4 +1,5 @@
 ﻿@inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <MudPaper Class="rounded-lg mud-paper-padding ex-code-block" Outlined="true">
     <pre class="code">
@@ -47,6 +48,9 @@
     {
 #if WINDOWS
         await Clipboard.SetTextAsync(Value);
+#elif AVALONIA
+        // The page is served from http://127.0.0.1, which browsers treat as a secure context.
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", Value);
 #endif
         Snackbar.Add("Copied to clipboard", Severity.Success);
     }

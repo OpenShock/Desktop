@@ -1,7 +1,9 @@
 <Solution>
   <Configurations>
+    <BuildType Name="Debug-Avalonia" />
     <BuildType Name="Debug-Photino" />
     <BuildType Name="Debug-Windows" />
+    <BuildType Name="Release-Avalonia" />
     <BuildType Name="Release-Photino" />
     <BuildType Name="Release-Windows" />
   </Configurations>
@@ -10,18 +12,24 @@
     <Configuration Solution="Debug-Windows|Any CPU" Project="Debug|Any CPU" />
     <Configuration Solution="Release-Windows|Any CPU" Project="Release|Any CPU" />
     <Configuration Solution="Debug-Photino|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Debug-Avalonia|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Release-Avalonia|Any CPU" Project="Release|Any CPU" />
     <Configuration Solution="Release-Photino|Any CPU" Project="Release|Any CPU" />
   </Project>
   <Project Path="ModuleBase/ModuleBase.csproj">
     <Configuration Solution="Debug-Windows|Any CPU" Project="Debug|Any CPU" />
     <Configuration Solution="Release-Windows|Any CPU" Project="Release|Any CPU" />
     <Configuration Solution="Debug-Photino|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Debug-Avalonia|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Release-Avalonia|Any CPU" Project="Release|Any CPU" />
     <Configuration Solution="Release-Photino|Any CPU" Project="Release|Any CPU" />
   </Project>
   <Project Path="Desktop.ModuleManager.Tests/Desktop.ModuleManager.Tests.csproj">
     <Configuration Solution="Debug-Windows|Any CPU" Project="Debug|Any CPU" />
     <Configuration Solution="Release-Windows|Any CPU" Project="Release|Any CPU" />
     <Configuration Solution="Debug-Photino|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Debug-Avalonia|Any CPU" Project="Debug|Any CPU" />
+    <Configuration Solution="Release-Avalonia|Any CPU" Project="Release|Any CPU" />
     <Configuration Solution="Release-Photino|Any CPU" Project="Release|Any CPU" />
   </Project>
 </Solution>

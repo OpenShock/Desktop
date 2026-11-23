@@ -418,7 +418,9 @@
         ConfigManager.Save();
         if (ConfigManager.Config.App.OSAutoStart)
         {
-            #if WINDOWS
+            #if WINDOWS || AVALONIA
+            if (OperatingSystem.IsWindows())
+            {
                 string exePath = Environment.ProcessPath!;
                 string startupFileTarget = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), Path.GetFileName(exePath) + ".lnk");
                 string psCreateShortcut = $@"$WshShell = New-Object -ComObject WScript.Shell;
@@ -438,6 +440,7 @@
                     StartInfo = startInfo
                 };
                 process.Start();
+            }
             #endif
         }
         else if (!ConfigManager.Config.App.OSAutoStart)
@@ -456,7 +459,9 @@
             return;
         if (ConfigManager.Config.App.VRCAutoStart)
         {
-#if WINDOWS
+#if WINDOWS || AVALONIA
+            if (OperatingSystem.IsWindows())
+            {
             string exePath = Environment.ProcessPath!;
             string startupFileTarget = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VRCX/startup"), Path.GetFileName(exePath) + ".lnk");
             string psCreateShortcut = $@"$WshShell = New-Object -ComObject WScript.Shell;
@@ -476,6 +481,7 @@
                 StartInfo = startInfo
             };
             process.Start();
+            }
 #endif
         }
         else if (!ConfigManager.Config.App.VRCAutoStart)

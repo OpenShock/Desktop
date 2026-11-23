@@ -8,13 +8,42 @@ namespace OpenShock.Desktop.Utils;
 /// </summary>
 public static class RestartHelper
 {
-#if WINDOWS
+#if WINDOWS || AVALONIA
     private static readonly string PowerShellLogFile = Path.Combine(Constants.LogsFolder, "restart.log");
 #endif
 
     public static void RestartApp()
     {
 #if WINDOWS
+        StartWindowsRelauncher();
+
+        if (Application.Current != null)
+        {
+            Application.Current.Quit();
+            return;
+        }
+
+        Environment.Exit(0);
+#elif PHOTINO
+        StartUnixRelauncher();
+        Environment.Exit(0);
+#elif AVALONIA
+        if (OperatingSystem.IsWindows()) StartWindowsRelauncher();
+        else StartUnixRelauncher();
+
+        // A normal shutdown, so the helper sees us exit once the host has stopped.
+        Platforms.AvaloniaShell.Shell.Quit();
+#else
+        // No restart mechanism for other targets; no-op.
+#endif
+    }
+
+#if WINDOWS || AVALONIA
+    /// <summary>
+    /// Starts a hidden PowerShell helper that waits for this process to exit (up to 30s), then relaunches it.
+    /// </summary>
+    private static void StartWindowsRelauncher()
+    {
         var currentExePath = Environment.ProcessPath;
         var processId = Environment.ProcessId;
 
@@ -57,15 +86,16 @@ public static class RestartHelper
         };
 
         Process.Start(startInfo);
+    }
+#endif
 
-        if (Application.Current != null)
-        {
-            Application.Current.Quit();
-            return;
-        }
-
-        Environment.Exit(0);
-#elif PHOTINO
+#if PHOTINO || AVALONIA
+    /// <summary>
+    /// Starts a detached shell helper that waits for this process to exit (up to ~30s), then relaunches it.
+    /// Does nothing if there is nothing to relaunch.
+    /// </summary>
+    private static void StartUnixRelauncher()
+    {
         var pid = Environment.ProcessId;
 
         // When running from an AppImage, Environment.ProcessPath points inside the
@@ -75,11 +105,7 @@ public static class RestartHelper
         var appImage = Environment.GetEnvironmentVariable("APPIMAGE");
         var target = !string.IsNullOrEmpty(appImage) ? appImage : Environment.ProcessPath;
 
-        if (string.IsNullOrEmpty(target))
-        {
-            Environment.Exit(0);
-            return;
-        }
+        if (string.IsNullOrEmpty(target)) return;
 
         // Detached helper: wait for this process to fully exit (up to ~30s), then
         // relaunch the target. Passed as positional args so paths with spaces are safe:
@@ -128,10 +154,6 @@ public static class RestartHelper
             startInfo.ArgumentList.Add(pid.ToString()); // $2
             Process.Start(startInfo);
         }
-
-        Environment.Exit(0);
-#else
-        // No restart mechanism for other targets; no-op.
-#endif
     }
+#endif
 }

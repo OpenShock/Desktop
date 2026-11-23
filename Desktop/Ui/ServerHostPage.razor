@@ -1,0 +1,31 @@
+@* Root document when the UI is served by Blazor Server (the Avalonia shell). The webview hosts use
+   wwwroot/index.html instead. Prerendering is off so components initialise exactly once, the same as
+   in a BlazorWebView. *@
+<!DOCTYPE html>
+<html lang="en" style="overflow-x: hidden">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <title>OpenShock</title>
+    <base href="/"/>
+    <link rel="stylesheet" href="css/OpenShock.min.css"/>
+    <link rel="icon" type="image/png" href="images/Icon64.png"/>
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet"/>
+    <link href="OpenShock.Desktop.styles.css" rel="stylesheet"/>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="js/tailwindcss-browser.js"></script>
+    <script src="js/openshock.js"></script>
+</head>
+
+<body>
+<Main @rendermode="RenderMode"/>
+<script src="_framework/blazor.web.js"></script>
+</body>
+
+</html>
+
+@code {
+    private static readonly IComponentRenderMode RenderMode = new InteractiveServerRenderMode(prerender: false);
+}
