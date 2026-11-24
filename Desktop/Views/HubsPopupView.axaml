@@ -1,0 +1,61 @@
+<!-- The hubs popup from the sidebar status rows. A port of the popover in the Blazor HubsPart. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels"
+             xmlns:t="using:OpenShock.Desktop.Theming"
+             x:Class="OpenShock.Desktop.Views.HubsPopupView"
+             x:DataType="vm:HubsIndicatorViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Grid.hub">
+            <Setter Property="Margin" Value="0,3" />
+        </Style>
+        <Style Selector="Grid.hub.indented">
+            <Setter Property="Margin" Value="20,2,0,2" />
+        </Style>
+        <Style Selector="Grid.hub.indented TextBlock.name">
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Fixed width, not min/max: a content sized popup resizes on every latency tick. -->
+    <StackPanel Width="272" Margin="14,12,14,10">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,8">
+            <t:IconView Data="{Binding Icon}" Width="20" Height="20" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Classes="subtitle2" Margin="6,0" Text="{Binding PopoverTitle}"
+                       VerticalAlignment="Center" />
+            <TextBlock Grid.Column="3" Classes="caption muted" VerticalAlignment="Center"
+                       Text="{Binding CountText, StringFormat='{}{0} online'}" />
+        </Grid>
+        <Separator Margin="0,0,0,8" />
+
+        <ItemsControl ItemsSource="{Binding Entries}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:HubListEntry">
+                    <Panel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6,0,2" IsVisible="{Binding IsHeader}">
+                            <t:IconView Data="{x:Static t:MaterialIcons.Person}" Width="20" Height="20" Opacity="0.7" />
+                            <TextBlock Classes="body2" FontWeight="SemiBold" Text="{Binding Name}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Grid Classes="hub" Classes.indented="{Binding Indented}" IsVisible="{Binding IsHub}"
+                              ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                            <Ellipse Width="10" Height="10" Fill="{Binding DotBrush}" VerticalAlignment="Center"
+                                     Margin="5,0" ToolTip.Tip="{Binding Gateway}"
+                                     ToolTip.ShowDelay="200" />
+                            <TextBlock Grid.Column="1" Classes="body2 name" Margin="4,0" Text="{Binding Name}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="3" Classes="caption muted" Text="{Binding State}"
+                                       VerticalAlignment="Center" />
+                            <!-- Fixed width slot, so 9ms going to 112ms does not shove the row sideways. -->
+                            <TextBlock Grid.Column="4" Classes="caption muted" Text="{Binding Latency}" MinWidth="46"
+                                       TextAlignment="Right" VerticalAlignment="Center"
+                                       IsVisible="{Binding HasLatency}" />
+                        </Grid>
+                    </Panel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>

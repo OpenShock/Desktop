@@ -2,10 +2,13 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using OpenShock.Desktop.Cli;
 using OpenShock.Desktop.Cli.Uri;
+using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Utils;
 using Serilog;
 
@@ -112,8 +115,26 @@ public sealed class ShellApplication : Application
 
     public override void Initialize()
     {
-        Styles.Add(new FluentTheme());
+        // Fluent for the stock controls, tinted with the OpenShock colours, then our own styles on top.
+        var fluent = new FluentTheme();
+        fluent.Palettes[ThemeVariant.Dark] = new ColorPaletteResources
+        {
+            Accent = Color.Parse("#E14A6D"),
+            RegionColor = Color.Parse("#212121")
+        };
+        Styles.Add(fluent);
+        Styles.Add(new StyleInclude(new Uri("avares://OpenShock.Desktop/"))
+        {
+            Source = new Uri("avares://OpenShock.Desktop/Theming/OpenShockTheme.axaml")
+        });
         RequestedThemeVariant = ThemeVariant.Dark;
+
+        // Midnight is the dark theme with near-black background and surface, as in the Blazor ThemeDefinition.
+        if (_host.Services.GetRequiredService<ConfigManager>().Config.App.Theme == Theme.Midnight)
+        {
+            Resources["BackgroundBrush"] = new SolidColorBrush(Color.Parse("#020202"));
+            Resources["SurfaceBrush"] = new SolidColorBrush(Color.Parse("#050505"));
+        }
     }
 
     public override async void OnFrameworkInitializationCompleted()

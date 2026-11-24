@@ -1,0 +1,29 @@
+<!-- The splash while the app starts. A port of the Blazor RootPage. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels"
+             x:Class="OpenShock.Desktop.Views.StartupView"
+             x:DataType="vm:StartupViewModel"
+             Background="{DynamicResource BackgroundBrush}">
+
+    <Border Width="600" Margin="0,30,0,0" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Top"
+            Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}"
+            BorderThickness="1" CornerRadius="8">
+        <StackPanel Spacing="16">
+            <TextBlock Text="Starting OpenShock Desktop..." HorizontalAlignment="Center" />
+
+            <Panel Width="125" Height="125" HorizontalAlignment="Center">
+                <Arc Classes="spinner" StrokeThickness="10" IsVisible="{Binding !IsStarted}">
+                    <Arc.RenderTransform>
+                        <RotateTransform />
+                    </Arc.RenderTransform>
+                </Arc>
+                <Ellipse Stroke="{DynamicResource PrimaryBrush}" StrokeThickness="10" IsVisible="{Binding IsStarted}" />
+            </Panel>
+
+            <TextBlock Text="{Binding StepName}" HorizontalAlignment="Center" />
+
+            <ProgressBar Minimum="0" Maximum="{Binding ProgressMax}" Value="{Binding Progress}" Height="4" />
+        </StackPanel>
+    </Border>
+</UserControl>

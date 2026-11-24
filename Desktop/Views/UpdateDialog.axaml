@@ -1,0 +1,42 @@
+<!-- The update prompt and download progress. A port of the Blazor UpdateDialog. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenShock.Desktop.ViewModels"
+        x:Class="OpenShock.Desktop.Views.UpdateDialog"
+        x:DataType="vm:UpdateDialogViewModel"
+        Title="Update"
+        Width="640" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+
+    <DockPanel Margin="24">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
+                    Margin="0,16,0,0" IsVisible="{Binding IsPrompting}">
+            <Button Classes="text" Content="DISMISS" Command="{Binding DismissCommand}" />
+            <Button Classes="text" Content="SKIP" Command="{Binding SkipCommand}" />
+            <Button Classes="text" Content="UPDATE" Command="{Binding UpdateCommand}" />
+        </StackPanel>
+
+        <Panel>
+            <StackPanel Spacing="8" IsVisible="{Binding IsPrompting}">
+                <TextBlock Text="Update Available" FontSize="48" HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding Version}" FontSize="24" HorizontalAlignment="Center" />
+                <TextBlock Text="A new version of OpenShock Desktop is available. Would you like to update?"
+                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,8" />
+                <Border Background="#14FFFFFF" CornerRadius="8" Padding="12" MaxHeight="320">
+                    <ScrollViewer>
+                        <SelectableTextBlock Text="{Binding ReleaseNotes}" TextWrapping="Wrap" FontSize="13"
+                                             FontFamily="Cascadia Code, Consolas, Menlo, monospace" />
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="12" IsVisible="{Binding IsDownloading}">
+                <TextBlock Text="Downloading Update" FontSize="48" HorizontalAlignment="Center" />
+                <TextBlock Text="Please wait while the update is downloaded." HorizontalAlignment="Center" />
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" Height="4" />
+                <TextBlock Text="Update downloaded successfully. Restarting in one second..."
+                           HorizontalAlignment="Center" IsVisible="{Binding IsDownloaded}" />
+            </StackPanel>
+        </Panel>
+    </DockPanel>
+</Window>

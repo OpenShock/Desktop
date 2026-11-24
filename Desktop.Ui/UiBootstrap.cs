@@ -16,6 +16,9 @@ public static class UiBootstrap
 
         services.AddSingleton<ThemeDefinition>();
 
+        // How the native shell and the Blazor UI talk to each other.
+        services.AddSingleton<OpenShock.Desktop.Ui.WebUiBridge>();
+
         // Module components get their [ModuleInject] services, and a placeholder instead of an exception when
         // they fail to construct.
         services.AddScoped<IComponentActivator, OpenShockModuleComponentActivator>();

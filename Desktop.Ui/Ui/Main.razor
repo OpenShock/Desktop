@@ -1,14 +1,17 @@
 ﻿@using OpenShock.Desktop.Ui.Pages.Dash
 @using OpenShock.Desktop.Ui.Utils
 @using OpenShock.Desktop.Ui.ErrorHandling
+@using Microsoft.AspNetCore.Components.Routing
 @inject ThemeDefinition ThemeDefinition
+@inject WebUiBridge WebUiBridge
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@implements IDisposable
 
 <MudThemeProvider Theme="ThemeDefinition.GetCurrentTheme()" IsDarkMode="true"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
-
-<div style="position: absolute; top:0; left: 0; height: 1px; width: 100%; background-color: var(--mud-palette-divider); z-index: 9999"></div>
 
 <ContainerWithExceptionHandling>
     <Router AppAssembly="@typeof(Main).Assembly">
@@ -25,5 +28,35 @@
 </ContainerWithExceptionHandling>
 
 @code {
-    
+    private IDisposable? _bridgeRegistration;
+
+    protected override void OnInitialized()
+    {
+        // The sidebar is native now: it navigates us and follows where we go.
+        NavigationManager.LocationChanged += OnLocationChanged;
+        WebUiBridge.ReportLocation(CurrentPath());
+
+        _bridgeRegistration = WebUiBridge.Attach(
+            path => InvokeAsync(() => NavigationManager.NavigateTo(path)),
+            (message, severity) => InvokeAsync(() => Snackbar.Add(message, ToSeverity(severity))));
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => WebUiBridge.ReportLocation(CurrentPath());
+
+    private string CurrentPath() =>
+        "/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri).Split('?', '#')[0].TrimEnd('/');
+
+    private static Severity ToSeverity(UiNotificationSeverity severity) => severity switch
+    {
+        UiNotificationSeverity.Success => Severity.Success,
+        UiNotificationSeverity.Warning => Severity.Warning,
+        UiNotificationSeverity.Error => Severity.Error,
+        _ => Severity.Info
+    };
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+        _bridgeRegistration?.Dispose();
+    }
 }

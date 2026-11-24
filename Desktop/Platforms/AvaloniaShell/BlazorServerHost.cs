@@ -60,6 +60,8 @@ public sealed class BlazorServerHost : IAsyncDisposable
         builder.Services.AddCommonBlazorServices();
         builder.Services.AddSingleton<ITrayService, AvaloniaTrayService>();
         builder.Services.AddSingleton<IDesktopShell, AvaloniaDesktopShell>();
+        // Module embedded resources: served to the Blazor UI below, and read by the native sidebar for icons.
+        builder.Services.AddSingleton<ModuleFileProvider>();
 
         // In a build output (not a publish) _framework and _content only exist as static web assets.
         StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);
@@ -69,7 +71,7 @@ public sealed class BlazorServerHost : IAsyncDisposable
         App.Use(GuardAsync);
 
         var files = new CompositeFileProvider(App.Environment.WebRootFileProvider,
-            new ModuleFileProvider(App.Services.GetRequiredService<ModuleManager.ModuleManager>()));
+            App.Services.GetRequiredService<ModuleFileProvider>());
         App.UseStaticFiles(new StaticFileOptions { FileProvider = files });
         App.UseAntiforgery();
         // _framework/blazor.web.js is only served by the static asset endpoints, UseStaticFiles never sees it.

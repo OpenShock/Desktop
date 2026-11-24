@@ -12,14 +12,10 @@
 </style>
 
 <MudLayout>
+    @* The sidebar is native (Avalonia) and sits next to this webview, so the layout is just the page. *@
     <div class="d-flex" style="width: 100vw; height: 100vh">
 
-        <SideBar/>
-        
-        <MudDivider Vertical="true" FlexItem="true"/>
-
-        @* Keeps a failing page - a module page above all - from replacing the whole shell,
-           including the sidebar the user needs to navigate back out of it. *@
+        @* Keeps a failing page - a module page above all - from replacing the whole page. *@
         <ContainerWithExceptionHandling Style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden"
                                         Class="pa-6" MaximumErrorCount="25">
             @Body

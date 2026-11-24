@@ -11,6 +11,7 @@
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.2.0" />
     <PackageVersion Include="AspNetCore.SassCompiler" Version="1.103.1" />
     <PackageVersion Include="CommandLineParser" Version="2.9.1" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="dnlib" Version="4.5.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.12" />
@@ -29,6 +30,7 @@
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.Debug" Version="3.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageVersion Include="Svg.Controls.Skia.Avalonia" Version="12.2.0" />
     <PackageVersion Include="System.Reactive" Version="7.0.0" />
     <PackageVersion Include="System.IO.Ports" Version="10.0.12" />
     <PackageVersion Include="TUnit" Version="1.70.1" />

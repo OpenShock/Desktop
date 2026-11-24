@@ -1,56 +1,81 @@
 using Avalonia.Controls;
-using Avalonia.Media;
 using Avalonia.Platform;
-using MudBlazor.Utilities;
 using OpenShock.Desktop.Config;
-using OpenShock.Desktop.Ui.Utils;
+using OpenShock.Desktop.Platforms.AvaloniaShell;
+using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Utils;
+using OpenShock.Desktop.ViewModels;
 
-namespace OpenShock.Desktop.Platforms.AvaloniaShell;
+namespace OpenShock.Desktop.Views;
 
-/// <summary>
-/// The app window: for now a single <see cref="NativeWebView"/> showing the Blazor UI from
-/// <see cref="BlazorServerHost"/>. Native pages move in here as they get ported.
-/// </summary>
-public sealed class MainWindow : Window
+public partial class MainWindow : Window
 {
-    private readonly BlazorServerHost _host;
-    private readonly OpenShockConfig _config;
-    private readonly ILogger<MainWindow> _logger;
-    private readonly NativeWebView _webView;
+    private readonly BlazorServerHost _host = null!;
+    private readonly OpenShockConfig _config = null!;
+    private readonly ILogger<MainWindow> _logger = null!;
+    private readonly NativeWebView _webView = null!;
+    private readonly ShellViewModel _viewModel = null!;
+    private UpdateDialog? _updateDialog;
 
     /// <summary>Set when the app is really quitting, so closing is no longer intercepted.</summary>
     public bool AllowClose { get; set; }
 
-    public MainWindow(BlazorServerHost host, OpenShockConfig config)
+    /// <summary>For the XAML previewer only.</summary>
+    public MainWindow()
+    {
+        InitializeComponent();
+    }
+
+    public MainWindow(BlazorServerHost host, OpenShockConfig config) : this()
     {
         _host = host;
         _config = config;
         _logger = host.Services.GetRequiredService<ILogger<MainWindow>>();
 
-        Title = "OpenShock";
-        Width = 1280;
-        Height = 800;
-        MinWidth = 1000;
-        MinHeight = 600;
-        WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Icon = new WindowIcon(Path.Combine(AppContext.BaseDirectory, "wwwroot", "images",
             OperatingSystem.IsWindows() ? "openshock-icon.ico" : "Icon512.png"));
 
-        // Same colour as the UI, so there is no white flash before the first paint.
-        var theme = host.Services.GetRequiredService<ThemeDefinition>().GetCurrentTheme();
-        Background = new SolidColorBrush(Color.Parse(theme.PaletteDark.Background.ToString(MudColorOutputFormats.Hex)));
+        _viewModel = new ShellViewModel(host.Services);
+        _viewModel.Sidebar.UpdateDialogRequested += ShowUpdateDialog;
+        DataContext = _viewModel;
 
         _webView = new NativeWebView();
         _webView.EnvironmentRequested += OnEnvironmentRequested;
         _webView.NavigationStarted += OnNavigationStarted;
         _webView.NewWindowRequested += OnNewWindowRequested;
         _webView.ProcessTerminated += OnProcessTerminated;
-        Content = _webView;
+        PageHost.Children.Add(_webView);
+
+        Opened += (_, _) => _viewModel.Sidebar.ShowPendingUpdate();
     }
 
     /// <summary>Points the webview at the UI. Call once the host is listening.</summary>
     public void Load() => _webView.Source = _host.EntryUri();
+
+    // ===== Update dialog =====
+
+    /// <summary>
+    /// Opens the update dialog unless one is already up: the manual check and the UpdateAvailable subscription can
+    /// both ask for the same update.
+    /// </summary>
+    private void ShowUpdateDialog()
+    {
+        if (_updateDialog is not null)
+        {
+            _updateDialog.Activate();
+            return;
+        }
+
+        var services = _host.Services;
+        _updateDialog = new UpdateDialog(new UpdateDialogViewModel(services.GetRequiredService<Updater>(),
+            services.GetRequiredService<ConfigManager>()));
+        _updateDialog.Closed += (_, _) => _updateDialog = null;
+
+        if (IsVisible) _updateDialog.Show(this);
+        else _updateDialog.Show();
+    }
+
+    // ===== Webview =====
 
     private void OnEnvironmentRequested(object? sender, WebViewEnvironmentRequestedEventArgs e)
     {
@@ -86,6 +111,8 @@ public sealed class MainWindow : Window
 
     private static bool IsWebUri(Uri uri) => uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
 
+    // ===== Closing =====
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         if (AllowClose)
@@ -109,5 +136,11 @@ public sealed class MainWindow : Window
     {
         if (await ConfirmDialog.ShowAsync(this, "Close?", "Do you want to close OpenShock?", "Yes", "Cancel"))
             Shell.Quit();
+    }
+
+    protected override async void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+        if (_viewModel is not null) await _viewModel.DisposeAsync();
     }
 }

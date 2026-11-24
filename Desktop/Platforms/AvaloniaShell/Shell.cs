@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using OpenShock.Desktop.Config;
 using OpenShock.Desktop.Services.Pipes;
+using OpenShock.Desktop.Views;
 
 namespace OpenShock.Desktop.Platforms.AvaloniaShell;
 

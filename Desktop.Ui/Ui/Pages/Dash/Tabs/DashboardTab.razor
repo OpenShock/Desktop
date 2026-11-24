@@ -155,7 +155,7 @@
     private const string ListMaxHeight = "320px";
 
     private static readonly SemVersion Version = SemVersion.Parse(
-        typeof(SideBar).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+        typeof(DashboardTab).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
         SemVersionStyles.Strict);
 
     private IReadOnlyList<IOpenShockHub> OwnedHubs => Api.Hubs.Value;

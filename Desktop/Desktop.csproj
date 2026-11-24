@@ -27,6 +27,7 @@
         <ResourceLanguages>en</ResourceLanguages>
         <SatelliteResourceLanguages>en-US;en</SatelliteResourceLanguages>
         <IsPackable>false</IsPackable>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     </PropertyGroup>
 
     <!-- Avalonia shell. The Blazor UI is served by Blazor Server on loopback and shown in a NativeWebView. -->
@@ -36,6 +37,12 @@
         <PackageReference Include="Avalonia.Themes.Fluent" />
         <PackageReference Include="Avalonia.Fonts.Inter" />
         <PackageReference Include="Avalonia.Controls.WebView" />
+        <PackageReference Include="CommunityToolkit.Mvvm" />
+        <PackageReference Include="Svg.Controls.Skia.Avalonia" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <AvaloniaResource Include="Assets/**" />
     </ItemGroup>
 
     <ItemGroup>

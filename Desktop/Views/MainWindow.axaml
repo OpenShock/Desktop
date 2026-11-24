@@ -1,0 +1,27 @@
+<!--
+  The app window: the startup splash until the app is up, then the native sidebar next to the page area.
+  Pages still come from the Blazor UI, shown in a NativeWebView that the code-behind puts into PageHost; ported pages
+  will replace it one at a time.
+-->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenShock.Desktop.ViewModels"
+        xmlns:v="using:OpenShock.Desktop.Views"
+        x:Class="OpenShock.Desktop.Views.MainWindow"
+        x:DataType="vm:ShellViewModel"
+        Title="OpenShock"
+        Width="1280" Height="800" MinWidth="1000" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid RowDefinitions="1,*">
+        <Border Grid.Row="0" Background="{DynamicResource DividerBrush}" />
+
+        <Grid Grid.Row="1" ColumnDefinitions="250,1,*" IsVisible="{Binding IsStarted}">
+            <v:SidebarView Grid.Column="0" DataContext="{Binding Sidebar}" />
+            <Border Grid.Column="1" Background="{DynamicResource DividerBrush}" />
+            <Panel Grid.Column="2" x:Name="PageHost" />
+        </Grid>
+
+        <v:StartupView Grid.Row="1" DataContext="{Binding Startup}" IsVisible="{Binding !IsStarted}" />
+    </Grid>
+</Window>
