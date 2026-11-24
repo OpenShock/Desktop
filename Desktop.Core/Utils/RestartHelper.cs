@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using OpenShock.Desktop.Services;
 
 namespace OpenShock.Desktop.Utils;
 
@@ -10,13 +11,13 @@ public static class RestartHelper
 {
     private static readonly string PowerShellLogFile = Path.Combine(Constants.LogsFolder, "restart.log");
 
-    public static void RestartApp()
+    public static void RestartApp(IDesktopShell shell)
     {
         if (OperatingSystem.IsWindows()) StartWindowsRelauncher();
         else StartUnixRelauncher();
 
         // A normal shutdown, so the helper sees us exit once the host has stopped.
-        Platforms.AvaloniaShell.Shell.Quit();
+        shell.Quit();
     }
 
     /// <summary>

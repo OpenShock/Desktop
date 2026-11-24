@@ -12,18 +12,17 @@
 
     <ItemGroup>
         <!--
-            Compile the loader source directly into the test assembly. ProjectReference to
-            Desktop.csproj is impractical: it's an Sdk.Web exe that pulls in
-            Avalonia and MudBlazor. The loader has no
-            internal coupling beyond BCL types, so linking the source is clean.
+            Compile the loader source directly into the test assembly. The loader has no
+            internal coupling beyond BCL types, so linking the source keeps the tests free of
+            Desktop.Core's dependencies (SDKs, SignalR, hosting).
         -->
-        <Compile Include="..\Desktop\ModuleManager\ModuleAssemblyLoadContext.cs"
+        <Compile Include="..\Desktop.Core\ModuleManager\ModuleAssemblyLoadContext.cs"
                  Link="Loader\ModuleAssemblyLoadContext.cs" />
 
         <!-- Same deal for the deep link parser, it only depends on BCL types. -->
-        <Compile Include="..\Desktop\Cli\Uri\UriParser.cs" Link="Cli\UriParser.cs" />
-        <Compile Include="..\Desktop\Cli\Uri\UriParameter.cs" Link="Cli\UriParameter.cs" />
-        <Compile Include="..\Desktop\Cli\Uri\UriParameterType.cs" Link="Cli\UriParameterType.cs" />
+        <Compile Include="..\Desktop.Core\Cli\Uri\UriParser.cs" Link="Cli\UriParser.cs" />
+        <Compile Include="..\Desktop.Core\Cli\Uri\UriParameter.cs" Link="Cli\UriParameter.cs" />
+        <Compile Include="..\Desktop.Core\Cli\Uri\UriParameterType.cs" Link="Cli\UriParameterType.cs" />
     </ItemGroup>
 
     <ItemGroup>

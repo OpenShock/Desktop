@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      Everything OpenShock Desktop does that is not UI: backend and hub connections, live control, config,
+      module loading, updates. Headless mode runs on this alone.
+    -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <AssemblyName>OpenShock.Desktop.Core</AssemblyName>
+        <RootNamespace>OpenShock.Desktop</RootNamespace>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Hosting, DI, logging and the memory cache, from the same shared framework the app runs on. -->
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Microsoft.Extensions.DependencyInjection" />
+        <Using Include="Microsoft.Extensions.Hosting" />
+        <Using Include="Microsoft.Extensions.Logging" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CommandLineParser" />
+        <PackageReference Include="dnlib" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+        <PackageReference Include="OneOf" />
+        <PackageReference Include="OpenShock.Internal.Common" />
+        <PackageReference Include="OpenShock.SDK.CSharp" />
+        <PackageReference Include="OpenShock.SDK.CSharp.Hub" />
+        <PackageReference Include="OpenShock.SDK.CSharp.Live" />
+        <PackageReference Include="Semver" />
+        <PackageReference Include="Serilog" />
+        <PackageReference Include="Serilog.Extensions.Hosting" />
+        <PackageReference Include="Serilog.Extensions.Logging" />
+        <PackageReference Include="Serilog.Sinks.Console" />
+        <PackageReference Include="Serilog.Sinks.Debug" />
+        <PackageReference Include="Serilog.Sinks.File" />
+        <PackageReference Include="System.Reactive" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ModuleBase\ModuleBase.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="OpenShock.Desktop" />
+        <InternalsVisibleTo Include="OpenShock.Desktop.Ui" />
+    </ItemGroup>
+
+</Project>

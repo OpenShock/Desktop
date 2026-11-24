@@ -59,6 +59,7 @@ public sealed class BlazorServerHost : IAsyncDisposable
         builder.Services.AddOpenShockDesktopServices();
         builder.Services.AddCommonBlazorServices();
         builder.Services.AddSingleton<ITrayService, AvaloniaTrayService>();
+        builder.Services.AddSingleton<IDesktopShell, AvaloniaDesktopShell>();
 
         // In a build output (not a publish) _framework and _content only exist as static web assets.
         StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);
@@ -73,7 +74,10 @@ public sealed class BlazorServerHost : IAsyncDisposable
         App.UseAntiforgery();
         // _framework/blazor.web.js is only served by the static asset endpoints, UseStaticFiles never sees it.
         App.MapStaticAssets();
-        App.MapRazorComponents<ServerHostPage>().AddInteractiveServerRenderMode();
+        // The host page lives here, the routable pages in Desktop.Ui.
+        App.MapRazorComponents<ServerHostPage>()
+            .AddAdditionalAssemblies(typeof(Main).Assembly)
+            .AddInteractiveServerRenderMode();
     }
 
     public async Task StartAsync()

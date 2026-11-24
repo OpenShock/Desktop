@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using OpenShock.SDK.CSharp.Utils;
 
-namespace OpenShock.Desktop.Ui.Utils;
+namespace OpenShock.Desktop.Utils;
 
 public static class UserAgentUtil
 {

@@ -232,8 +232,14 @@
 
     #endregion
 
-    private void OpenOpenShock() => UiUtils.OpenUrl("https://openshock.org", Snackbar);
-    private void OpenGithub() => UiUtils.OpenUrl("https://github.com/OpenShock/Desktop", Snackbar);
+    private void OpenOpenShock() => OpenUrl("https://openshock.org");
+    private void OpenGithub() => OpenUrl("https://github.com/OpenShock/Desktop");
+
+    private void OpenUrl(string url)
+    {
+        UiUtils.OpenUrl(url);
+        Snackbar.Add("Opened URL in browser", Severity.Info);
+    }
     private void GoToModuleManager() => NavigationManager.NavigateTo("/dash/modules?OpenAvailableModules=true");
     private void GoToModuleManagerInstalled() => NavigationManager.NavigateTo("/dash/modules");
 

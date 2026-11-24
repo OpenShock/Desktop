@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using MudBlazor;
 
 namespace OpenShock.Desktop.Utils;
 
@@ -25,9 +24,9 @@ public static class UiUtils
         return $"{input[..max].Trim()}...";
     }
     
-    public static void OpenUrl(string url, ISnackbar? snackbar = null)
+    /// <summary>Opens <paramref name="url"/> in the user's default browser.</summary>
+    public static void OpenUrl(string url)
     {
-        snackbar?.Add("Opened URL in browser", Severity.Info);
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 }

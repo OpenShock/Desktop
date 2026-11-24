@@ -3,8 +3,8 @@
 # Checks or syncs the host dependency list in the module packaging targets file
 # against the full (direct + transitive) dependency tree of the host app.
 #
-# Uses a temporary project with the same PackageReferences as Desktop.csproj and
-# ModuleBase.csproj (with versions resolved from Directory.Packages.props), then
+# Uses a temporary project with the same PackageReferences as Desktop, Desktop.Core,
+# Desktop.Ui and ModuleBase (with versions resolved from Directory.Packages.props), then
 # runs `dotnet list package --include-transitive` to resolve the complete
 # dependency graph.
 #
@@ -23,12 +23,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 DESKTOP_CSPROJ="$REPO_ROOT/Desktop/Desktop.csproj"
+CORE_CSPROJ="$REPO_ROOT/Desktop.Core/Desktop.Core.csproj"
+UI_CSPROJ="$REPO_ROOT/Desktop.Ui/Desktop.Ui.csproj"
 BUILD_PROPS="$REPO_ROOT/Directory.Build.props"
 PACKAGES_PROPS="$REPO_ROOT/Directory.Packages.props"
 TARGETS_FILE="$REPO_ROOT/ModuleBase/build/OpenShock.Desktop.ModuleBase.targets"
 MODULEBASE_CSPROJ="$REPO_ROOT/ModuleBase/ModuleBase.csproj"
 
-for f in "$DESKTOP_CSPROJ" "$BUILD_PROPS" "$PACKAGES_PROPS" "$TARGETS_FILE" "$MODULEBASE_CSPROJ"; do
+for f in "$DESKTOP_CSPROJ" "$CORE_CSPROJ" "$UI_CSPROJ" "$BUILD_PROPS" "$PACKAGES_PROPS" "$TARGETS_FILE" "$MODULEBASE_CSPROJ"; do
   if [[ ! -f "$f" ]]; then
     echo "ERROR: File not found: $f" >&2
     exit 1
@@ -95,6 +97,8 @@ collect_refs() {
 }
 
 collect_refs "$DESKTOP_CSPROJ"
+collect_refs "$CORE_CSPROJ"
+collect_refs "$UI_CSPROJ"
 collect_refs "$MODULEBASE_CSPROJ"
 
 # Create a temporary project to resolve transitive dependencies, so the result

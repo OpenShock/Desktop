@@ -5,7 +5,6 @@ using System.Text.Json;
 using OneOf;
 using OneOf.Types;
 using OpenShock.Desktop.ModuleBase.Utils;
-using OpenShock.Desktop.Ui.Utils;
 using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Updatables;
 using Serilog;

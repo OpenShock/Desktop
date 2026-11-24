@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+    <!--
+      The Blazor UI: pages, components, the module component activator and the theme. Hosted by the app, which
+      serves it over loopback (see Desktop/Platforms/AvaloniaShell/BlazorServerHost.cs).
+      Static files (css, images, fonts) stay in the app's wwwroot so they keep their root-relative paths.
+    -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <AssemblyName>OpenShock.Desktop.Ui</AssemblyName>
+        <RootNamespace>OpenShock.Desktop</RootNamespace>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Microsoft.Extensions.DependencyInjection" />
+        <Using Include="Microsoft.Extensions.Logging" />
+        <Using Include="System.Net.Http.Json" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MudBlazor" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Desktop.Core\Desktop.Core.csproj" />
+    </ItemGroup>
+
+</Project>

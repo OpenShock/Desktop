@@ -37,7 +37,7 @@
 
     protected override void OnInitialized()
     {
-        UiLogSink.NotificationAction = MsgNoty;
+        UiLogSink.ErrorNotification = message => MsgNoty(message, Severity.Error);
     }
 
 }

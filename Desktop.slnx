@@ -1,5 +1,7 @@
 <Solution>
   <Project Path="Desktop/Desktop.csproj" />
+  <Project Path="Desktop.Core/Desktop.Core.csproj" />
+  <Project Path="Desktop.Ui/Desktop.Ui.csproj" />
   <Project Path="ExampleModule/ExampleModule.csproj" />
   <Project Path="ModuleBase/ModuleBase.csproj" />
   <Project Path="Desktop.ModuleManager.Tests/Desktop.ModuleManager.Tests.csproj" />

@@ -1,5 +1,4 @@
-﻿using MudBlazor;
-using Serilog;
+﻿using Serilog;
 using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
@@ -10,7 +9,10 @@ namespace OpenShock.Desktop.Logging;
 public class UiLogSink : ILogEventSink
 {
     private readonly MessageTemplateTextFormatter _messageProvider;
-    public static Action<string, Severity>? NotificationAction { get; set; }
+    /// <summary>
+    /// Shows an error to the user. Set by the UI, which decides how (a snackbar, today).
+    /// </summary>
+    public static Action<string>? ErrorNotification { get; set; }
 
     public UiLogSink()
     {
@@ -25,7 +27,7 @@ public class UiLogSink : ILogEventSink
         var logMessage = textWriter.ToString();
         if (string.IsNullOrEmpty(logMessage)) return;
         if (logMessage.StartsWith("[Microsoft.AspNetCore.Http.Connections.Client.Internal.LoggingHttpMessageHandler] "))
-            NotificationAction?.Invoke(logMessage[82..], Severity.Error);
+            ErrorNotification?.Invoke(logMessage[82..]);
 
         var sourceContextString = string.Empty;
 

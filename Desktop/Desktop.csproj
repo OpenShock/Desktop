@@ -39,24 +39,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- Compiles Styles/*.scss into wwwroot/css. -->
         <PackageReference Include="AspNetCore.SassCompiler" />
-        <PackageReference Include="CommandLineParser" />
-        <PackageReference Include="dnlib" />
-        <PackageReference Include="MudBlazor" />
-        <PackageReference Include="OneOf" />
-        <PackageReference Include="Semver" />
-        <PackageReference Include="Serilog" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
-        <PackageReference Include="Serilog.Extensions.Hosting" />
-        <PackageReference Include="Serilog.Extensions.Logging" />
-        <PackageReference Include="Serilog.Sinks.Console" />
-        <PackageReference Include="Serilog.Sinks.Debug" />
-        <PackageReference Include="OpenShock.Internal.Common" />
-        <PackageReference Include="OpenShock.SDK.CSharp" />
-        <PackageReference Include="OpenShock.SDK.CSharp.Hub" />
-        <PackageReference Include="OpenShock.SDK.CSharp.Live" />
-        <PackageReference Include="Serilog.Sinks.File" />
-        <PackageReference Include="System.Reactive" />
     </ItemGroup>
 
     <ItemGroup>
@@ -66,7 +50,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ModuleBase\ModuleBase.csproj" />
+      <!-- Brings Desktop.Core (and ModuleBase) with it. -->
+      <ProjectReference Include="..\Desktop.Ui\Desktop.Ui.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,6 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Components;
-using MudBlazor.Services;
 using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Cli.Uri;
 using OpenShock.Desktop.Config;
@@ -8,7 +6,6 @@ using OpenShock.Desktop.Logging;
 using OpenShock.Desktop.ModuleManager.Repository;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Services.Pipes;
-using OpenShock.Desktop.Ui.Utils;
 using OpenShock.Desktop.Utils;
 using OpenShock.SDK.CSharp.Hub;
 using Serilog;
@@ -95,15 +92,6 @@ public static class Bootstrap
         // }
 
         services.AddSingleton<StartupService>();
-
-        services.AddScoped<IComponentActivator, OpenShockModuleComponentActivator>();
-    }
-
-    public static void AddCommonBlazorServices(this IServiceCollection services)
-    {
-        services.AddMudServices();
-
-        services.AddSingleton<ThemeDefinition>();
     }
 
     public static void StartOpenShockDesktopServices(this IServiceProvider services, bool headless)
