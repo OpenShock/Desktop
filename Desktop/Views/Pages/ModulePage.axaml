@@ -1,0 +1,42 @@
+<!--
+  A module's native page, with the same 24px around it that Blazor module pages get. The page fills the area and
+  scrolls itself if it needs to. In its place, a notice when the page cannot be shown.
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels.Pages"
+             xmlns:t="using:OpenShock.Desktop.Theming"
+             xmlns:c="using:OpenShock.Desktop.Controls"
+             x:Class="OpenShock.Desktop.Views.Pages.ModulePage"
+             x:DataType="vm:ModulePageViewModel">
+
+    <Panel>
+        <ContentControl Margin="24" Content="{Binding View}"
+                        IsVisible="{Binding View, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+        <ScrollViewer Classes="page" IsVisible="{Binding Notice, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel Classes="page narrow">
+                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource ErrorBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="20">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <t:IconView Data="{x:Static t:MaterialIcons.ErrorOutline}"
+                                        Foreground="{DynamicResource ErrorBrush}" />
+                            <TextBlock Classes="h6" Text="{Binding Notice.Title}" VerticalAlignment="Center"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <TextBlock Classes="body2" Text="{Binding Notice.Message}" TextWrapping="Wrap" />
+                        <Expander Header="Details" HorizontalAlignment="Stretch"
+                                  IsVisible="{Binding Notice.HasDetails, FallbackValue=False}">
+                            <SelectableTextBlock Text="{Binding Notice.Details}" TextWrapping="Wrap" FontSize="12"
+                                                 FontFamily="Cascadia Code, Consolas, Menlo, monospace" />
+                        </Expander>
+                        <Button Classes="outlined small" Content="Open again" HorizontalAlignment="Left"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Refresh}"
+                                IsVisible="{Binding CanRetry}" Command="{Binding RetryCommand}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Panel>
+</UserControl>

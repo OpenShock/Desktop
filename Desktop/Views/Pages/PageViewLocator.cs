@@ -18,6 +18,7 @@ public sealed class PageViewLocator : IDataTemplate
         LogsPageViewModel => new LogsPage(),
         DebugPageViewModel => new DebugPage(),
         LoginPageViewModel => new LoginPage(),
+        ModulePageViewModel => new ModulePage(),
         _ => new TextBlock { Text = $"No view for {param?.GetType().Name}" }
     };
 }

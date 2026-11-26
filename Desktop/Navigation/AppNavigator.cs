@@ -52,6 +52,12 @@ public sealed partial class AppNavigator : ObservableObject, IDisposable
             return;
         }
 
+        Navigate(route, fromWebView: false);
+    }
+
+    /// <param name="fromWebView">The webview is already at <paramref name="route"/>, so it is not told to go there.</param>
+    private void Navigate(string route, bool fromWebView)
+    {
         var path = Routes.PathOf(route);
         if (path == "/")
         {
@@ -61,17 +67,14 @@ public sealed partial class AppNavigator : ObservableObject, IDisposable
 
         if (route == _currentRoute) return;
 
-        PageViewModel? page = null;
-        if (!Routes.IsModulePage(path))
+        // Null means the webview: a Blazor module page. Anything else without a page falls back to the dashboard.
+        var page = CreatePage(route);
+        if (page is null && !Routes.IsModulePage(path))
         {
+            _logger.LogWarning("No page for {Route}, showing the dashboard", route);
+            route = Routes.Dashboard;
+            path = route;
             page = CreatePage(route);
-            if (page is null)
-            {
-                _logger.LogWarning("No page for {Route}, showing the dashboard", route);
-                route = Routes.Dashboard;
-                path = route;
-                page = CreatePage(route);
-            }
         }
 
         // The route first: the window reads it when the webview flips on below, to load the webview at it.
@@ -80,7 +83,7 @@ public sealed partial class AppNavigator : ObservableObject, IDisposable
 
         ShowPage(page);
         IsWebViewActive = page is null;
-        if (page is null) _bridge.Navigate(route);
+        if (page is null && !fromWebView) _bridge.Navigate(route);
 
         Navigated?.Invoke(path);
     }
@@ -106,24 +109,15 @@ public sealed partial class AppNavigator : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// The webview moved on its own: a link in a module page, or a module calling NavigationManager. Module pages
-    /// are followed; a built-in route is handed to the native page.
+    /// The webview moved on its own: a link in a module page, or a module calling NavigationManager. A Blazor page is
+    /// followed; a built-in route or a native module page is handed to the native side.
     /// </summary>
     private void OnWebViewLocationChanged(string path) => Dispatcher.UIThread.Post(() =>
     {
-        if (!IsWebViewActive) return;
-
-        if (Routes.IsModulePage(path))
-        {
-            if (path == CurrentPath) return;
-            _currentRoute = path;
-            CurrentPath = path;
-            Navigated?.Invoke(path);
-            return;
-        }
-
         // "/" is where the webview starts out before the first navigation reaches it, not a request for a page.
-        if (path != "/") Navigate(path);
+        if (!IsWebViewActive || path == "/" || path == CurrentPath) return;
+
+        Navigate(path, fromWebView: true);
     });
 
     public void Dispose()

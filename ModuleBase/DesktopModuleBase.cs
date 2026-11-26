@@ -32,7 +32,8 @@ public abstract class DesktopModuleBase
     public abstract IReadOnlyCollection<NavigationItem> NavigationComponents { get; }
 
     /// <summary>
-    /// Alternative to <see cref="NavigationComponents"/> for modules that have a single main component.
+    /// Alternative to <see cref="NavigationComponents"/> for modules that have a single main component: an Avalonia
+    /// control (native) or a Blazor component (legacy), as for <see cref="NavigationItem.ComponentType"/>.
     /// </summary>
     public virtual Type? RootComponent { get; } = null;
 
@@ -65,7 +66,8 @@ public abstract class DesktopModuleBase
 
     /// <summary>
     /// Module service provider.
-    /// You can use the <see cref="ModuleInjectAttribute"/> to resolve services that are registered for this module within blazor components.
+    /// You can use the <see cref="ModuleInjectAttribute"/> to resolve services that are registered for this module within
+    /// pages, Blazor and native alike. Native pages can also take them as constructor parameters.
     ///
     /// <example>
     /// <code>

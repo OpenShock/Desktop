@@ -45,6 +45,20 @@ public class ExampleDesktopModule : DesktopModuleBase
             Name = "Broken Page",
             ComponentType = typeof(BrokenComponent),
             Icon = IconOneOf.FromSvg(Icons.Material.Filled.ExtensionOff)
+        },
+        // A native (Avalonia) page: any Avalonia Control works as the ComponentType. Its icon is an Avalonia asset.
+        new NavigationItem
+        {
+            Name = "Native Page",
+            ComponentType = typeof(NativePage),
+            Icon = IconOneOf.FromPath("avares://OpenShock.Desktop.Modules.ExampleModule/Icon.svg")
+        },
+        // The same failure as Broken Page, on a native page.
+        new NavigationItem
+        {
+            Name = "Broken Native Page",
+            ComponentType = typeof(BrokenNativePage),
+            Icon = IconOneOf.FromSvg(Icons.Material.Filled.ExtensionOff)
         }
     ];
 

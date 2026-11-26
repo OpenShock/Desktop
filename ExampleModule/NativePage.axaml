@@ -1,0 +1,42 @@
+<!--
+  A native (Avalonia) module page. It uses the app's look through its resource keys (SurfaceBrush, PrimaryBrush, ...)
+  and style classes (h6, body2, secondary, Button.filled, ...), which every page in the app shares.
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:OpenShock.Desktop.Modules.ExampleModule"
+             x:Class="OpenShock.Desktop.Modules.ExampleModule.NativePage"
+             x:DataType="local:NativePage">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" MaxWidth="780">
+            <StackPanel>
+                <TextBlock Classes="h6" Text="Native page" />
+                <TextBlock Classes="body2 secondary" TextWrapping="Wrap"
+                           Text="An Avalonia page from a module, drawn by the app itself rather than in the webview." />
+            </StackPanel>
+
+            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="12">
+                    <TextBlock Classes="body2" Text="{Binding Greeting}" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="filled" Content="Count" Click="OnCount" />
+                        <TextBlock x:Name="CountText" Text="Clicked 0 times" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource PrimaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="12">
+                    <TextBlock Classes="body2" TextWrapping="Wrap"
+                               Text="An exception from a module page closes that page instead of the app." />
+                    <Button Classes="outlined" Content="Throw" HorizontalAlignment="Left" Click="OnThrow" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

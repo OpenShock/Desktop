@@ -57,11 +57,17 @@ else
     {
         _loadedModule = string.IsNullOrWhiteSpace(Module) ? null : ModuleManager.Modules.GetValueOrDefault(Module);
 
-        // Both come from the snapshot taken at load time, never from the module itself.
-        _componentType = string.IsNullOrWhiteSpace(Component)
-            ? _loadedModule?.Ui.RootComponent
-            : _loadedModule?.Ui.NavigationItems
-                .FirstOrDefault(x => x.Name.Equals(Component, StringComparison.InvariantCultureIgnoreCase))
-                ?.ComponentType;
+        // Both come from the snapshot taken at load time, never from the module itself. Native (Avalonia) pages are
+        // shown by the app itself and never get here; should one anyway, it is not ours to render.
+        if (string.IsNullOrWhiteSpace(Component))
+        {
+            _componentType = _loadedModule?.Ui is { RootKind: ModulePageKind.Blazor } ui ? ui.RootComponent : null;
+        }
+        else
+        {
+            var entry = _loadedModule?.Ui.NavigationItems
+                .FirstOrDefault(x => x.Name.Equals(Component, StringComparison.InvariantCultureIgnoreCase));
+            _componentType = entry is { Kind: ModulePageKind.Blazor } ? entry.ComponentType : null;
+        }
     }
 }

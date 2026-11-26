@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Microsoft.AspNetCore.Components;
 using OpenShock.Desktop.ModuleBase;
 using OpenShock.Desktop.ModuleBase.Navigation;
 
@@ -23,12 +22,16 @@ public sealed class ModuleUiSurface
     {
         Icon = null,
         RootComponent = null,
+        RootKind = ModulePageKind.Blazor,
         NavigationItems = []
     };
 
     public required IconOneOf? Icon { get; init; }
 
+    /// <summary>A Blazor component or an Avalonia control, see <see cref="RootKind"/>.</summary>
     public required Type? RootComponent { get; init; }
+
+    public required ModulePageKind RootKind { get; init; }
 
     public required ImmutableArray<ModuleNavigationEntry> NavigationItems { get; init; }
 
@@ -37,10 +40,13 @@ public sealed class ModuleUiSurface
     /// </summary>
     public static ModuleUiSurface Capture(DesktopModuleBase module, string moduleId, ILogger logger)
     {
+        var root = CaptureRootComponent(module, moduleId, logger);
+
         return new ModuleUiSurface
         {
             Icon = CaptureIcon(module, moduleId, logger),
-            RootComponent = CaptureRootComponent(module, moduleId, logger),
+            RootComponent = root?.Type,
+            RootKind = root?.Kind ?? ModulePageKind.Blazor,
             NavigationItems = CaptureNavigationItems(module, moduleId, logger)
         };
     }
@@ -58,7 +64,8 @@ public sealed class ModuleUiSurface
         }
     }
 
-    private static Type? CaptureRootComponent(DesktopModuleBase module, string moduleId, ILogger logger)
+    private static (Type Type, ModulePageKind Kind)? CaptureRootComponent(DesktopModuleBase module, string moduleId,
+        ILogger logger)
     {
         Type? rootComponent;
 
@@ -74,14 +81,15 @@ public sealed class ModuleUiSurface
 
         if (rootComponent is null) return null;
 
-        if (!IsComponent(rootComponent))
+        if (ModulePageTypes.Classify(rootComponent) is not { } kind)
         {
-            logger.LogError("Module {ModuleId} declares root component {Type}, which is not a blazor component",
+            logger.LogError(
+                "Module {ModuleId} declares root component {Type}, which is neither a blazor component nor an Avalonia control",
                 moduleId, rootComponent.FullName);
             return null;
         }
 
-        return rootComponent;
+        return (rootComponent, kind);
     }
 
     private static ImmutableArray<ModuleNavigationEntry> CaptureNavigationItems(DesktopModuleBase module,
@@ -118,10 +126,11 @@ public sealed class ModuleUiSurface
                 continue;
             }
 
-            if (navigationComponent.ComponentType is null || !IsComponent(navigationComponent.ComponentType))
+            if (navigationComponent.ComponentType is null ||
+                ModulePageTypes.Classify(navigationComponent.ComponentType) is not { } kind)
             {
                 logger.LogError(
-                    "Navigation component {Name} of module {ModuleId} points at {Type}, which is not a blazor component, skipping it",
+                    "Navigation component {Name} of module {ModuleId} points at {Type}, which is neither a blazor component nor an Avalonia control, skipping it",
                     navigationComponent.Name, moduleId, navigationComponent.ComponentType?.FullName ?? "null");
                 continue;
             }
@@ -135,17 +144,15 @@ public sealed class ModuleUiSurface
             }
 
             entries.Add(new ModuleNavigationEntry(navigationComponent.Name, navigationComponent.ComponentType,
-                navigationComponent.Icon));
+                navigationComponent.Icon, kind));
         }
 
         return entries.ToImmutable();
     }
-
-    private static bool IsComponent(Type type) =>
-        typeof(IComponent).IsAssignableFrom(type) && type is { IsAbstract: false, IsInterface: false };
 }
 
 /// <summary>
 /// A validated <see cref="NavigationItem"/>.
 /// </summary>
-public sealed record ModuleNavigationEntry(string Name, Type ComponentType, IconOneOf? Icon);
+/// <param name="ComponentType">A Blazor component or an Avalonia control, see <paramref name="Kind"/>.</param>
+public sealed record ModuleNavigationEntry(string Name, Type ComponentType, IconOneOf? Icon, ModulePageKind Kind);

@@ -23,6 +23,13 @@
         <Compile Include="..\Desktop.Core\Cli\Uri\UriParser.cs" Link="Cli\UriParser.cs" />
         <Compile Include="..\Desktop.Core\Cli\Uri\UriParameter.cs" Link="Cli\UriParameter.cs" />
         <Compile Include="..\Desktop.Core\Cli\Uri\UriParameterType.cs" Link="Cli\UriParameterType.cs" />
+
+        <!-- Module page classification. Needs IComponent, hence the ASP.NET Core framework below. -->
+        <Compile Include="..\Desktop.Core\ModuleManager\ModulePageTypes.cs" Link="ModuleManager\ModulePageTypes.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
     <ItemGroup>

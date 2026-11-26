@@ -13,6 +13,7 @@
         <RootNamespace>OpenShock.Desktop.Modules.ExampleModule</RootNamespace>
         <Configurations>Debug;Release</Configurations>
         <Platforms>AnyCPU</Platforms>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     </PropertyGroup>
 
     <ItemGroup>
@@ -28,6 +29,13 @@
       <PackageReference Include="MudBlazor" />
       <PackageReference Include="OneOf" />
       <PackageReference Include="Newtonsoft.Json" />
+      <!-- Native pages. Compiled against Avalonia but never shipped: the app provides it. -->
+      <PackageReference Include="Avalonia" ExcludeAssets="runtime" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Also as an Avalonia asset, for the native page's sidebar icon (avares://). -->
+      <AvaloniaResource Include="Icon.svg" />
     </ItemGroup>
 
     <!-- Import module packaging targets (provided automatically via NuGet, manual import needed for ProjectReference) -->

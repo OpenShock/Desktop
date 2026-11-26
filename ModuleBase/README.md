@@ -28,9 +28,60 @@ public class ExampleDesktopModule : DesktopModuleBase
 }
 ```
 
- 
-
 Or see the example module on how to use it.
+
+## Pages
+
+A module shows its pages through `NavigationComponents` (one sidebar entry per page) or `RootComponent` (a single
+page). A page type can be either of these, and you can mix them per page:
+
+- **An Avalonia control** (native, recommended for new modules). Any non-abstract `Avalonia.Controls.Control`, for
+  example a `UserControl` with XAML. The app draws it itself.
+- **A Blazor component** (legacy). Any `IComponent`, as before. The app shows it in a webview, so existing modules
+  keep working unchanged.
+
+### Native (Avalonia) pages
+
+Reference Avalonia so it is compiled against but never shipped. The app provides it, and your module uses the app's
+copy:
+
+```xml
+<PackageReference Include="Avalonia" Version="12.2.0" ExcludeAssets="runtime" PrivateAssets="all" />
+```
+
+Then point a navigation item at your control:
+
+```csharp
+new NavigationItem
+{
+    Name = "Settings",
+    ComponentType = typeof(SettingsPage), // a UserControl
+    Icon = IconOneOf.FromPath("avares://My.Module/Assets/Icon.svg")
+}
+```
+
+How the app builds and hosts the page:
+
+- **Services.** Constructor parameters are resolved from your `ModuleServiceProvider` first, then from the app's
+  services (`ILogger<T>` comes from there). Properties marked `[ModuleInject]` are then filled from your
+  `ModuleServiceProvider`, the same way as for Blazor pages. They are set *after* the constructor runs, so read them
+  in `OnLoaded` or later, not in the constructor. If there are several constructors, mark the one to use with
+  `[ActivatorUtilitiesConstructor]`.
+- **Lifetime.** A new instance is created each time the page is opened. When the user leaves it, it is removed, and
+  disposed if it implements `IDisposable`.
+- **Layout.** The page gets the whole page area with a 24px margin. It is not wrapped in a scroll viewer, so add a
+  `ScrollViewer` yourself if your content can be taller than the window.
+- **Errors.** If the page throws while being created, or an exception from your code reaches the UI thread unhandled,
+  the app closes that page and shows the error with an "Open again" button. The rest of the app keeps running.
+- **Look.** Your XAML can use the app's resources and style classes, so the page matches the rest of the app:
+  - Brushes, used with `DynamicResource` so they follow the theme: `BackgroundBrush`, `SurfaceBrush`, `PrimaryBrush`,
+    `TextPrimaryBrush`, `TextSecondaryBrush`, `DividerBrush`, `HoverBrush`, `SuccessBrush`, `InfoBrush`,
+    `WarningBrush`, `ErrorBrush`.
+  - Text classes: `h5`, `h6`, `subtitle2`, `body2`, `caption`, `secondary`.
+  - Button classes: `filled`, `outlined`, `text`, `small`, and `primary` / `success` / `warning` / `info` as colours.
+  - Switch: `CheckBox` with class `switch`.
+- **Icons.** Navigation icons can be `avares://` paths to SVGs or images in your module (as `AvaloniaResource`), next
+  to the embedded resource paths and SVG strings that already work.
 
 ## Module Packaging (`.module.zip`)
 

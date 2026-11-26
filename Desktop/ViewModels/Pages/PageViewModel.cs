@@ -1,3 +1,4 @@
+using OpenShock.Desktop.Modules;
 using OpenShock.Desktop.Navigation;
 using OpenShock.Desktop.Ui;
 
@@ -22,16 +23,19 @@ public sealed class PageContext
     private readonly AppNavigator _navigator;
     private readonly Notifier _notifier;
 
-    public PageContext(IServiceProvider services, AppNavigator navigator, Notifier notifier, IDialogHost dialogs)
+    public PageContext(IServiceProvider services, AppNavigator navigator, Notifier notifier, IDialogHost dialogs,
+        ModuleExceptionGuard moduleGuard)
     {
         Services = services;
         _navigator = navigator;
         _notifier = notifier;
         Dialogs = dialogs;
+        ModuleGuard = moduleGuard;
     }
 
     public IServiceProvider Services { get; }
     public IDialogHost Dialogs { get; }
+    public ModuleExceptionGuard ModuleGuard { get; }
 
     public void Navigate(string route) => _navigator.Navigate(route);
 

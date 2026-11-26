@@ -1,5 +1,6 @@
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Svg.Skia;
 using OpenShock.Desktop.ModuleBase;
 
@@ -14,7 +15,8 @@ public sealed record ModuleIcon(Geometry? Geometry, IImage? Image)
 
     /// <summary>
     /// Resolves an <see cref="IconOneOf"/>: an SVG fragment (usually a MudBlazor icon string) becomes a geometry,
-    /// a path is looked up among the module's embedded resources, as the Blazor UI serves them.
+    /// a path is looked up among the module's embedded resources, as the Blazor UI serves them, or loaded as an
+    /// Avalonia asset when it is an <c>avares://</c> URI (for modules with native pages).
     /// </summary>
     public static ModuleIcon Load(IconOneOf? icon, ModuleFileProvider files, ILogger logger)
     {
@@ -23,7 +25,9 @@ public sealed record ModuleIcon(Geometry? Geometry, IImage? Image)
         try
         {
             return icon.Match(
-                path => LoadResource(path, files),
+                path => path.StartsWith("avares://", StringComparison.OrdinalIgnoreCase)
+                    ? LoadAsset(new Uri(path))
+                    : LoadResource(path, files),
                 svg => FromGeometry(MaterialIcons.FromSvg(svg)));
         }
         catch (Exception e)
@@ -39,12 +43,19 @@ public sealed record ModuleIcon(Geometry? Geometry, IImage? Image)
         if (!file.Exists) return None;
 
         using var stream = file.CreateReadStream();
-        if (path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
-        {
-            var source = SvgSource.LoadFromStream(stream);
-            return new ModuleIcon(null, new SvgImage { Source = source });
-        }
-
-        return new ModuleIcon(null, new Bitmap(stream));
+        return FromStream(stream, path);
     }
+
+    private static ModuleIcon LoadAsset(Uri uri)
+    {
+        if (!AssetLoader.Exists(uri)) return None;
+
+        using var stream = AssetLoader.Open(uri);
+        return FromStream(stream, uri.AbsolutePath);
+    }
+
+    private static ModuleIcon FromStream(Stream stream, string path) =>
+        path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+            ? new ModuleIcon(null, new SvgImage { Source = SvgSource.LoadFromStream(stream) })
+            : new ModuleIcon(null, new Bitmap(stream));
 }
