@@ -37,7 +37,7 @@ public static class Shell
                 return Task.CompletedTask;
             });
 
-        _mainWindow.Load();
+        _mainWindow.OnHostReady();
     }
 
     public static void ShowMainWindow() => Dispatcher.UIThread.Post(() =>

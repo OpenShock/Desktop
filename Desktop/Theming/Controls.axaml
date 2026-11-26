@@ -1,0 +1,487 @@
+<!--
+  The controls the pages are built from, each matching the MudBlazor component the Blazor page used: buttons, cards,
+  rows, switches, selects, text fields, chips, tabs, alerts and snackbars. Colours come from OpenShockTheme.axaml.
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:t="using:OpenShock.Desktop.Theming"
+        xmlns:c="using:OpenShock.Desktop.Controls">
+
+    <!-- ===== Page layout ===== -->
+
+    <!-- The scrolling page area, pa-6 like the Blazor DashLayout. -->
+    <Style Selector="ScrollViewer.page">
+        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+    </Style>
+    <Style Selector="StackPanel.page">
+        <Setter Property="Margin" Value="24" />
+        <Setter Property="Spacing" Value="16" />
+    </Style>
+    <!-- PageContainer.NarrowWidth: a reading column for settings and forms. -->
+    <Style Selector="StackPanel.page.narrow">
+        <Setter Property="MaxWidth" Value="780" />
+    </Style>
+
+    <!-- ===== Buttons (MudButton) =====
+         .text      Variant.Text, default colour; add .primary for Color.Primary
+         .outlined  Variant.Outlined; add .primary / .success / .warning / .info / .tertiary for the colour
+         .filled    Variant.Filled, primary
+         .small     Size.Small
+         c:ButtonAssist.Icon is the StartIcon. Text is upper cased, as MudBlazor does. -->
+
+    <Style Selector="Button.text, Button.outlined, Button.filled">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="CornerRadius" Value="{StaticResource DefaultRadius}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_Border" Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        <t:IconView Name="PART_Icon" Width="18" Height="18" VerticalAlignment="Center"
+                                    Data="{TemplateBinding c:ButtonAssist.Icon}"
+                                    IsVisible="{TemplateBinding c:ButtonAssist.Icon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <ContentPresenter Name="PART_ContentPresenter" VerticalAlignment="Center"
+                                          Content="{TemplateBinding Content, Converter={x:Static t:Converters.Upper}}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}" />
+                    </StackPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.text TextBlock, Button.outlined TextBlock, Button.filled TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="LetterSpacing" Value="0.4" />
+    </Style>
+    <Style Selector="Button.small">
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="MinHeight" Value="30" />
+    </Style>
+    <Style Selector="Button.text.small">
+        <Setter Property="Padding" Value="5,4" />
+    </Style>
+    <Style Selector="Button.small TextBlock">
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.small /template/ t|IconView#PART_Icon">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+    </Style>
+
+    <Style Selector="Button.text:pointerover">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.text.primary">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.text.primary:pointerover">
+        <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.outlined">
+        <Setter Property="Padding" Value="15,5" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.outlined.small">
+        <Setter Property="Padding" Value="9,3" />
+    </Style>
+    <Style Selector="Button.outlined:pointerover">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.outlined.primary">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.outlined.success">
+        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+    </Style>
+    <Style Selector="Button.outlined.warning">
+        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}" />
+    </Style>
+    <Style Selector="Button.outlined.info">
+        <Setter Property="Foreground" Value="{DynamicResource InfoBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource InfoBrush}" />
+    </Style>
+    <Style Selector="Button.outlined.tertiary">
+        <Setter Property="Foreground" Value="{DynamicResource TertiaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TertiaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.filled">
+        <Setter Property="Padding" Value="16,6" />
+        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.filled.small">
+        <Setter Property="Padding" Value="10,4" />
+    </Style>
+    <Style Selector="Button.filled:pointerover">
+        <Setter Property="Background" Value="{DynamicResource PrimaryDarkenBrush}" />
+    </Style>
+
+    <Style Selector="Button.text:disabled, Button.outlined:disabled">
+        <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}" />
+    </Style>
+    <Style Selector="Button.outlined:disabled">
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}" />
+    </Style>
+    <Style Selector="Button.filled:disabled">
+        <Setter Property="Background" Value="{DynamicResource DividerBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}" />
+    </Style>
+
+    <!-- ===== SectionCard (MudPaper outlined, rounded-lg, tinted header) ===== -->
+
+    <Style Selector="c|SectionCard">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                        ClipToBounds="True">
+                    <DockPanel>
+                        <Border Name="PART_Header" DockPanel.Dock="Top" Background="{DynamicResource HoverBrush}"
+                                Padding="16,0" MinHeight="56">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
+                                <t:IconView Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"
+                                            Foreground="{DynamicResource PrimaryBrush}" Data="{TemplateBinding Icon}"
+                                            IsVisible="{TemplateBinding Icon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                <ContentPresenter Grid.Column="1" Classes="card-title" VerticalAlignment="Center"
+                                                  Content="{TemplateBinding Header, Converter={x:Static t:Converters.Upper}}" />
+                                <ContentPresenter Grid.Column="2" Margin="16,0,0,0" VerticalAlignment="Center"
+                                                  Content="{TemplateBinding HeaderContent}" />
+                                <t:IconView Grid.Column="3" Classes="chevron" Width="20" Height="20" Margin="8,0,0,0"
+                                            Classes.expanded="{TemplateBinding IsExpanded}"
+                                            Data="{x:Static t:MaterialIcons.ExpandMore}"
+                                            IsVisible="{TemplateBinding IsCollapsible}" />
+                            </Grid>
+                        </Border>
+                        <DockPanel IsVisible="{TemplateBinding IsExpanded}">
+                            <Separator DockPanel.Dock="Top" />
+                            <ScrollViewer MaxHeight="{TemplateBinding MaxContentHeight}"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="{TemplateBinding ContentScroll}">
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  Padding="{TemplateBinding ContentPadding}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <!-- Typo.overline, made bold as SectionCard.TitleStyle does. -->
+    <Style Selector="c|SectionCard /template/ ContentPresenter.card-title TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="LetterSpacing" Value="1" />
+    </Style>
+    <Style Selector="c|SectionCard[IsCollapsible=True] /template/ Border#PART_Header">
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <!-- ===== LabeledRow ===== -->
+
+    <Style Selector="c|LabeledRow">
+        <Setter Property="Padding" Value="0,12" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="*,Auto" Margin="{TemplateBinding Padding}" Background="Transparent">
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Classes="body2" Text="{TemplateBinding Label}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption secondary" Text="{TemplateBinding Description}" TextWrapping="Wrap"
+                                   IsVisible="{TemplateBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                    <ContentPresenter Grid.Column="1" VerticalAlignment="Center"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- ===== Switch (MudSwitch) ===== -->
+
+    <Style Selector="CheckBox.switch">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel Width="44" Height="28" Background="Transparent">
+                    <Border Name="PART_Track" Width="34" Height="14" CornerRadius="7"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" Background="#4DFFFFFF">
+                        <Border.Transitions>
+                            <Transitions>
+                                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                            </Transitions>
+                        </Border.Transitions>
+                    </Border>
+                    <Border Name="PART_Thumb" Width="20" Height="20" CornerRadius="10" Margin="2,0"
+                            HorizontalAlignment="Left" VerticalAlignment="Center" Background="#FFE0E0E0"
+                            BoxShadow="0 1 3 0 #80000000">
+                        <Border.Transitions>
+                            <Transitions>
+                                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+                                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                            </Transitions>
+                        </Border.Transitions>
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="CheckBox.switch /template/ Border#PART_Thumb">
+        <Setter Property="RenderTransform" Value="translateX(0px)" />
+    </Style>
+    <Style Selector="CheckBox.switch:checked /template/ Border#PART_Thumb">
+        <Setter Property="RenderTransform" Value="translateX(20px)" />
+        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <Style Selector="CheckBox.switch:checked /template/ Border#PART_Track">
+        <Setter Property="Background" Value="#80E14A6D" />
+    </Style>
+    <Style Selector="CheckBox.switch:disabled">
+        <Setter Property="Opacity" Value="0.4" />
+    </Style>
+
+    <!-- ===== Checkbox (MudCheckBox, dense) ===== -->
+
+    <Style Selector="CheckBox.mud">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Width="34" Height="34" CornerRadius="17" Background="{TemplateBinding Background}">
+                    <t:IconView Name="PART_Box" Width="22" Height="22" Data="{x:Static t:MaterialIcons.CheckBoxOutlineBlank}"
+                                Foreground="{DynamicResource TextSecondaryBrush}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="CheckBox.mud:pointerover">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="CheckBox.mud:checked /template/ t|IconView#PART_Box">
+        <Setter Property="Data" Value="{x:Static t:MaterialIcons.CheckBox}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+
+    <!-- ===== Select and text field (MudSelect / MudTextField, outlined) ===== -->
+
+    <Style Selector="ComboBox.outlined">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource InputLineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource DefaultRadius}" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="ComboBox.outlined:pointerover /template/ Border#Background">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="ComboBoxItem">
+        <Setter Property="FontFamily" Value="{StaticResource PoppinsFont}" />
+    </Style>
+
+    <Style Selector="TextBox.outlined">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource InputLineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource DefaultRadius}" />
+        <Setter Property="Padding" Value="12,9" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBox.outlined:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBox.outlined:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="TextBox.outlined.error /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}" />
+    </Style>
+    <Style Selector="TextBox.outlined:focus">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- ===== Chip (MudChip, small) ===== -->
+
+    <Style Selector="Border.chip">
+        <Setter Property="Background" Value="#1FFFFFFF" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="9,0" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.chip TextBlock">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.chip t|IconView">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Margin" Value="0,0,4,0" />
+    </Style>
+    <!-- Variant.Text: the colour on a faint tint of itself. -->
+    <Style Selector="Border.chip.error">
+        <Setter Property="Background" Value="#1FF64E62" />
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource ErrorBrush}" />
+    </Style>
+    <Style Selector="Border.chip.info">
+        <Setter Property="Background" Value="#1F3299FF" />
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource InfoBrush}" />
+    </Style>
+
+    <!-- A chip list that wraps rather than running off the card. -->
+    <Style Selector="ItemsControl.chips">
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <WrapPanel ItemSpacing="4" LineSpacing="4" />
+            </ItemsPanelTemplate>
+        </Setter>
+    </Style>
+
+    <!-- ===== Segmented toggle (MudToggleGroup) ===== -->
+
+    <Style Selector="RadioButton.segment">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" Padding="12,6">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Content="{TemplateBinding Content, Converter={x:Static t:Converters.Upper}}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="RadioButton.segment TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+    <Style Selector="RadioButton.segment:pointerover">
+        <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="RadioButton.segment:checked">
+        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <!-- ===== Tabs (MudTabs, equal width) ===== -->
+
+    <Style Selector="RadioButton.tab">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="0,0,0,2" MinHeight="48" Padding="12,0">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Content="{TemplateBinding Content}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="RadioButton.tab TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="LetterSpacing" Value="0.4" />
+    </Style>
+    <Style Selector="RadioButton.tab:pointerover">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="RadioButton.tab:checked">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <!-- The count next to a tab title (MudTabPanel BadgeData). -->
+    <Style Selector="Border.badge">
+        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="MinWidth" Value="20" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Padding" Value="5,0" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Margin" Value="4,-8,0,0" />
+    </Style>
+    <Style Selector="Border.badge TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ===== Alert (MudAlert, outlined info) ===== -->
+
+    <Style Selector="Border.alert-info">
+        <Setter Property="BorderBrush" Value="{DynamicResource InfoBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource InfoBrush}" />
+    </Style>
+
+    <!-- ===== Snackbar (MudSnackbar, filled) ===== -->
+
+    <Style Selector="Border.toast">
+        <Setter Property="CornerRadius" Value="{StaticResource DefaultRadius}" />
+        <Setter Property="Padding" Value="16,6,8,6" />
+        <Setter Property="MinWidth" Value="288" />
+        <Setter Property="MaxWidth" Value="480" />
+        <Setter Property="BoxShadow" Value="0 3 5 -1 #33000000, 0 6 10 0 #24000000" />
+        <Setter Property="TextElement.Foreground" Value="White" />
+    </Style>
+
+    <!-- ===== Table rows (MudTable, dense, hover) ===== -->
+
+    <Style Selector="Grid.table-head">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+        <Setter Property="MinHeight" Value="36" />
+    </Style>
+    <Style Selector="Grid.table-head TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Grid.table-row">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="MinHeight" Value="40" />
+    </Style>
+    <Style Selector="Grid.table-row:pointerover">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Grid.table-row TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+</Styles>

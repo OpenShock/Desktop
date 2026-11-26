@@ -1,0 +1,237 @@
+<!-- Installing, updating and removing modules. A port of the Blazor ModuleManagerTab and ModuleManagerItem. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels.Pages"
+             xmlns:t="using:OpenShock.Desktop.Theming"
+             xmlns:c="using:OpenShock.Desktop.Controls"
+             x:Class="OpenShock.Desktop.Views.Pages.ModulesPage"
+             x:DataType="vm:ModulesPageViewModel">
+
+    <UserControl.DataTemplates>
+        <!-- Empty state: why the list is empty and what to do next. -->
+        <DataTemplate DataType="vm:ModulesEmptyState">
+            <StackPanel Margin="32" Spacing="8" HorizontalAlignment="Center">
+                <Arc Classes="spinner" Width="40" Height="40" IsVisible="{Binding IsLoading}" HorizontalAlignment="Center">
+                    <Arc.RenderTransform>
+                        <RotateTransform />
+                    </Arc.RenderTransform>
+                </Arc>
+                <t:IconView Data="{x:Static t:MaterialIcons.Inventory2}" Width="36" Height="36"
+                            Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding IsNotLoading}" />
+                <TextBlock Text="{Binding Message}" HorizontalAlignment="Center" />
+                <TextBlock Classes="body2 secondary" Text="{Binding Hint}" HorizontalAlignment="Center"
+                           IsVisible="{Binding HasHint}" />
+                <Button Classes="outlined small" Content="{Binding ActionText}" HorizontalAlignment="Center"
+                        Margin="0,8,0,0" IsVisible="{Binding HasAction}"
+                        Command="{Binding $parent[UserControl].((vm:ModulesPageViewModel)DataContext).OpenSettingsCommand}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <UserControl.Styles>
+        <!-- The module card (MudPaper outlined), lit up on hover. -->
+        <Style Selector="Border.module">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="MinHeight" Value="118" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.module:pointerover">
+            <Setter Property="BoxShadow" Value="0 0 10 0 #637C7C7C" />
+        </Style>
+
+        <!-- The split button: the action, and a menu with versions and removal. -->
+        <Style Selector="Button.group">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center"
+                                          HorizontalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.group TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="LetterSpacing" Value="0.4" />
+        </Style>
+        <Style Selector="Button.group:pointerover">
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+        </Style>
+        <Style Selector="Button.group:disabled">
+            <Setter Property="Opacity" Value="0.5" />
+        </Style>
+        <!-- The generated version items. Reflection bindings: a container briefly has its parent's DataContext
+             before its own, and a compiled binding that fails there leaves a command item disabled for good. -->
+        <Style Selector="MenuItem.versions > MenuItem">
+            <Setter Property="Header" Value="{ReflectionBinding Text}" />
+            <Setter Property="Command" Value="{ReflectionBinding Install}" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer Classes="page">
+        <StackPanel Classes="page">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+                    <Button Classes="text small" IsEnabled="False" IsVisible="{Binding IsFetching}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Arc Classes="spinner" Width="16" Height="16" StrokeThickness="2">
+                                <Arc.RenderTransform>
+                                    <RotateTransform />
+                                </Arc.RenderTransform>
+                            </Arc>
+                            <TextBlock Text="REFRESH" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="text small" Content="Refresh" IsVisible="{Binding !IsFetching}"
+                            c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Refresh}"
+                            Command="{Binding RefreshRepositoriesCommand}" />
+                    <Button Classes="text small" Content="Open AppData" Command="{Binding OpenAppDataCommand}"
+                            c:ButtonAssist.Icon="{x:Static t:MaterialIcons.FolderOpen}" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Classes="h6" Text="Modules" />
+                    <TextBlock Classes="body2 secondary" Text="Integrations that add features to the app, like VRChat support." />
+                </StackPanel>
+            </DockPanel>
+
+            <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="8"
+                    Background="{DynamicResource SurfaceBrush}" ClipToBounds="True">
+                <DockPanel>
+                    <!-- Tabs, equal width; Unknown Source only when there is something in it. -->
+                    <UniformGrid DockPanel.Dock="Top" Rows="1">
+                        <RadioButton Classes="tab" GroupName="modules-tab" IsChecked="{Binding IsInstalledTab}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <t:IconView Data="{x:Static t:MaterialIcons.CheckCircle}" Width="20" Height="20" />
+                                <TextBlock Text="INSTALLED" VerticalAlignment="Center" />
+                                <Border Classes="badge">
+                                    <TextBlock Text="{Binding Installed.Count}" />
+                                </Border>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Classes="tab" GroupName="modules-tab" IsChecked="{Binding IsUnknownTab}"
+                                     IsVisible="{Binding HasUnknown}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <t:IconView Data="{x:Static t:MaterialIcons.QuestionMark}" Width="20" Height="20" />
+                                <TextBlock Text="UNKNOWN SOURCE" VerticalAlignment="Center" />
+                                <Border Classes="badge">
+                                    <TextBlock Text="{Binding Unknown.Count}" />
+                                </Border>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Classes="tab" GroupName="modules-tab" IsChecked="{Binding IsAvailableTab}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <t:IconView Data="{x:Static t:MaterialIcons.Apps}" Width="20" Height="20" />
+                                <TextBlock Text="AVAILABLE" VerticalAlignment="Center" />
+                                <Border Classes="badge">
+                                    <TextBlock Text="{Binding Available.Count}" />
+                                </Border>
+                            </StackPanel>
+                        </RadioButton>
+                    </UniformGrid>
+
+                    <Panel Margin="12">
+                        <ContentControl Content="{Binding EmptyState}" />
+
+                        <ItemsControl ItemsSource="{Binding CurrentItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="12" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:ModuleItemViewModel">
+                                    <Border Classes="module">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Panel Width="48" Height="48" Margin="0,0,16,0" VerticalAlignment="Top">
+                                                <Image Source="{Binding IconImage}" Stretch="Uniform" />
+                                                <t:IconView Data="{Binding IconGeometry}" Width="48" Height="48" />
+                                            </Panel>
+
+                                            <StackPanel Grid.Column="1" Spacing="4">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Classes="h6" Text="{Binding Name}" />
+                                                    <!-- The one place a broken module can actually be fixed, so say so here. -->
+                                                    <Border Classes="chip error" IsVisible="{Binding IsFailed}"
+                                                            ToolTip.Tip="{Binding Failure}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <t:IconView Data="{x:Static t:MaterialIcons.ErrorOutline}" />
+                                                            <TextBlock Text="failed" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Classes="body2 secondary" Text="{Binding Description}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="2" Margin="16,0,0,0" Spacing="8">
+                                                <Border BorderBrush="{Binding ActionBrush}" BorderThickness="1"
+                                                        CornerRadius="{StaticResource DefaultRadius}"
+                                                        TextElement.Foreground="{Binding ActionBrush}"
+                                                        HorizontalAlignment="Right" ClipToBounds="True">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Button Classes="group" Padding="15,5" MinHeight="34" Foreground="{Binding ActionBrush}"
+                                                                IsEnabled="{Binding IsActionEnabled}"
+                                                                Command="{Binding ActionCommand}">
+                                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                <t:IconView Data="{Binding ActionIcon}" Width="18" Height="18" />
+                                                                <TextBlock Text="{Binding ActionText, Converter={x:Static t:Converters.Upper}}"
+                                                                           VerticalAlignment="Center" />
+                                                            </StackPanel>
+                                                        </Button>
+                                                        <Border Width="1" Background="{Binding ActionBrush}" />
+                                                        <Button Classes="group" Padding="2,5" MinHeight="34" Foreground="{Binding ActionBrush}">
+                                                            <t:IconView Data="{x:Static t:MaterialIcons.ArrowDropDown}" />
+                                                            <Button.Flyout>
+                                                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                                    <MenuItem Classes="versions" Header="Versions"
+                                                                              ItemsSource="{Binding Versions}"
+                                                                              IsVisible="{Binding HasVersions}">
+                                                                        <MenuItem.Icon>
+                                                                            <t:IconView Data="{x:Static t:MaterialIcons.FormatListNumbered}" />
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                    <MenuItem Header="Remove" Command="{Binding RemoveCommand}"
+                                                                              IsVisible="{Binding CanRemove}">
+                                                                        <MenuItem.Icon>
+                                                                            <t:IconView Data="{x:Static t:MaterialIcons.RemoveFromQueue}" />
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                </MenuFlyout>
+                                                            </Button.Flyout>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right"
+                                                            IsVisible="{Binding IsInstalled}"
+                                                            ToolTip.Tip="{Binding InstalledVersionFull}" Background="Transparent">
+                                                    <TextBlock Classes="body2" Text="Installed:" VerticalAlignment="Center" />
+                                                    <Border Classes="chip">
+                                                        <TextBlock Text="{Binding InstalledVersion}" />
+                                                    </Border>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Panel>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

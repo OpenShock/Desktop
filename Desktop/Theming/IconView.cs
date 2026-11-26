@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
+using Avalonia.Rendering;
 
 namespace OpenShock.Desktop.Theming;
 
@@ -10,7 +11,7 @@ namespace OpenShock.Desktop.Theming;
 /// filled with the current foreground. Unlike PathIcon it does not stretch the path to its own bounds, so a small
 /// glyph (a dot) stays small.
 /// </summary>
-public sealed class IconView : Control
+public sealed class IconView : Control, ICustomHitTest
 {
     public static readonly StyledProperty<Geometry?> DataProperty =
         AvaloniaProperty.Register<IconView, Geometry?>(nameof(Data));
@@ -36,6 +37,9 @@ public sealed class IconView : Control
         get => GetValue(ForegroundProperty);
         set => SetValue(ForegroundProperty, value);
     }
+
+    /// <summary>The whole box, not just the glyph's pixels, so a tooltip on an icon shows anywhere on it.</summary>
+    public bool HitTest(Point point) => new Rect(Bounds.Size).Contains(point);
 
     public override void Render(DrawingContext context)
     {

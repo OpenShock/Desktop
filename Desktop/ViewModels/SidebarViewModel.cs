@@ -8,6 +8,7 @@ using OpenShock.Desktop.Backend;
 using OpenShock.Desktop.Models;
 using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.ModuleManager;
+using OpenShock.Desktop.Navigation;
 using OpenShock.Desktop.Services;
 using OpenShock.Desktop.Theming;
 using OpenShock.Desktop.Ui;
@@ -22,13 +23,11 @@ namespace OpenShock.Desktop.ViewModels;
 /// </summary>
 public sealed partial class SidebarViewModel : ViewModelBase
 {
-    public const string DashboardRoute = "/dash/dashboard";
-    public const string ShockersRoute = "/dash/shockers";
-    public const string ModulesRoute = "/dash/modules";
-    public const string SettingsRoute = "/dash/settings";
-    public const string LogsRoute = "/dash/logs";
-    public const string DebugRoute = "/dash/debug";
-    public const string LoginRoute = "/dash/login";
+    public const string DashboardRoute = Routes.Dashboard;
+    public const string ShockersRoute = Routes.Shockers;
+    public const string ModulesRoute = Routes.Modules;
+    public const string SettingsRoute = Routes.Settings;
+    public const string LogsRoute = Routes.Logs;
 
     private readonly ModuleManager.ModuleManager _moduleManager;
     private readonly AuthService _authService;
@@ -37,11 +36,14 @@ public sealed partial class SidebarViewModel : ViewModelBase
     private readonly LiveControlManager _liveControlManager;
     private readonly Updater _updater;
     private readonly ModuleFileProvider _moduleFiles;
-    private readonly WebUiBridge _bridge;
+    private readonly AppNavigator _navigator;
+    private readonly Notifier _notifier;
     private readonly ILogger<SidebarViewModel> _logger;
 
-    public SidebarViewModel(IServiceProvider services)
+    public SidebarViewModel(IServiceProvider services, AppNavigator navigator, Notifier notifier)
     {
+        _navigator = navigator;
+        _notifier = notifier;
         _moduleManager = services.GetRequiredService<ModuleManager.ModuleManager>();
         _authService = services.GetRequiredService<AuthService>();
         _api = services.GetRequiredService<OpenShockApi>();
@@ -49,7 +51,6 @@ public sealed partial class SidebarViewModel : ViewModelBase
         _liveControlManager = services.GetRequiredService<LiveControlManager>();
         _updater = services.GetRequiredService<Updater>();
         _moduleFiles = services.GetRequiredService<ModuleFileProvider>();
-        _bridge = services.GetRequiredService<WebUiBridge>();
         _logger = services.GetRequiredService<ILogger<SidebarViewModel>>();
 
         MainItems =
@@ -68,7 +69,7 @@ public sealed partial class SidebarViewModel : ViewModelBase
 
         RebuildModuleItems();
         Refresh();
-        UpdateActive(_bridge.CurrentPath);
+        UpdateActive(_navigator.CurrentPath);
 
         var statusHandler = services.GetRequiredService<StatusHandler>();
         Track(statusHandler.OnWebsocketStatusChanged.SubscribeAsync(() => OnUiAsync(Refresh)));
@@ -84,7 +85,7 @@ public sealed partial class SidebarViewModel : ViewModelBase
             Refresh();
         })));
 
-        _bridge.LocationChanged += OnLocationChanged;
+        _navigator.Navigated += UpdateActive;
     }
 
     // ===== Navigation =====
@@ -97,17 +98,15 @@ public sealed partial class SidebarViewModel : ViewModelBase
     [ObservableProperty] public partial bool IsLogsActive { get; set; }
 
     [RelayCommand]
-    private void Navigate(string route) => _bridge.Navigate(route);
-
-    private void OnLocationChanged(string path) => OnUi(() => UpdateActive(path));
+    private void Navigate(string route) => _navigator.Navigate(route);
 
     private void UpdateActive(string path)
     {
         foreach (var item in MainItems) item.UpdateActive(path);
         foreach (var item in ModuleItems) item.UpdateActive(path);
 
-        IsSettingsActive = NavItemViewModel.Matches(path, SettingsRoute);
-        IsLogsActive = NavItemViewModel.Matches(path, LogsRoute);
+        IsSettingsActive = Routes.Matches(path, SettingsRoute);
+        IsLogsActive = Routes.Matches(path, LogsRoute);
     }
 
     private void RebuildModuleItems()
@@ -130,7 +129,7 @@ public sealed partial class SidebarViewModel : ViewModelBase
         }
 
         HasModules = ModuleItems.Count > 0;
-        UpdateActive(_bridge.CurrentPath);
+        UpdateActive(_navigator.CurrentPath);
     }
 
     /// <summary>Everything here comes from <see cref="LoadedModule.Ui"/>, validated at load time.</summary>
@@ -151,8 +150,7 @@ public sealed partial class SidebarViewModel : ViewModelBase
         return new NavItemViewModel(module.Name, null, icon, Navigate, children: children);
     }
 
-    private static string ModuleRoute(string moduleId, string? page = null) =>
-        page is null ? $"/dash/module/{moduleId}" : $"/dash/module/{moduleId}/{Uri.EscapeDataString(page)}";
+    private static string ModuleRoute(string moduleId, string? page = null) => Routes.Module(moduleId, page);
 
     // ===== Status =====
 
@@ -211,7 +209,7 @@ public sealed partial class SidebarViewModel : ViewModelBase
     private Task HandleAuthStateChanged(AuthStateType state) => OnUiAsync(() =>
     {
         if (state == AuthStateType.FailedAuth && _authService.FailureMessage is { } failureMessage)
-            _bridge.Notify(failureMessage, UiNotificationSeverity.Error);
+            _notifier.Show(failureMessage, UiNotificationSeverity.Error);
 
         Refresh();
     });
@@ -239,10 +237,10 @@ public sealed partial class SidebarViewModel : ViewModelBase
                 UpdateDialogRequested?.Invoke();
                 break;
             case Updater.UpdateCheckResult.UpToDate:
-                _bridge.Notify($"You are running the latest version ({Constants.Version})", UiNotificationSeverity.Success);
+                _notifier.Show($"You are running the latest version ({Constants.Version})", UiNotificationSeverity.Success);
                 break;
             case Updater.UpdateCheckResult.Failed:
-                _bridge.Notify("Could not check for updates, please try again later", UiNotificationSeverity.Warning);
+                _notifier.Show("Could not check for updates, please try again later", UiNotificationSeverity.Warning);
                 break;
         }
     }
@@ -254,14 +252,14 @@ public sealed partial class SidebarViewModel : ViewModelBase
     private async Task Logout()
     {
         await _authService.Logout();
-        _bridge.Navigate("/");
+        _navigator.Navigate(Routes.Dashboard);
     }
 
     [RelayCommand]
-    private void Login() => _bridge.Navigate(LoginRoute);
+    private void Login() => _navigator.Navigate(Routes.Login);
 
     [RelayCommand]
-    private void OpenDebug() => _bridge.Navigate(DebugRoute);
+    private void OpenDebug() => _navigator.Navigate(Routes.Debug);
 
     // ===== Refresh =====
 
@@ -312,7 +310,7 @@ public sealed partial class SidebarViewModel : ViewModelBase
 
     public override ValueTask DisposeAsync()
     {
-        _bridge.LocationChanged -= OnLocationChanged;
+        _navigator.Navigated -= UpdateActive;
         return base.DisposeAsync();
     }
 }

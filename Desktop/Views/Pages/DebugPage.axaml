@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels.Pages"
+             xmlns:t="using:OpenShock.Desktop.Theming"
+             xmlns:c="using:OpenShock.Desktop.Controls"
+             x:Class="OpenShock.Desktop.Views.Pages.DebugPage"
+             x:DataType="vm:DebugPageViewModel">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="Chip" x:DataType="x:String">
+            <Border Classes="chip">
+                <TextBlock Text="{Binding}" />
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer Classes="page">
+        <StackPanel Classes="page narrow">
+            <StackPanel>
+                <TextBlock Classes="h6" Text="Debug" />
+                <TextBlock Classes="body2 secondary" Text="Internal state and diagnostics, worth including in a bug report." />
+            </StackPanel>
+
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Info}" Header="Information">
+                <StackPanel>
+                    <c:LabeledRow Label="Version">
+                        <Border Classes="chip">
+                            <TextBlock Text="{Binding Version}" />
+                        </Border>
+                    </c:LabeledRow>
+                    <Separator />
+                    <c:LabeledRow Label="Runtime">
+                        <Border Classes="chip">
+                            <TextBlock Text="{Binding Runtime}" />
+                        </Border>
+                    </c:LabeledRow>
+                </StackPanel>
+            </c:SectionCard>
+
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Key}" Header="Token">
+                <StackPanel Margin="0,12" Spacing="4">
+                    <TextBlock Classes="body2" Text="Permissions" />
+                    <TextBlock Classes="caption secondary" Text="What this app's API token is allowed to do." />
+                    <TextBlock Classes="caption secondary" Text="{Binding TokenPermissionsEmpty}"
+                               IsVisible="{Binding TokenPermissionsEmpty, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <ItemsControl Classes="chips" ItemsSource="{Binding TokenPermissions}" ItemTemplate="{StaticResource Chip}" />
+                </StackPanel>
+            </c:SectionCard>
+
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Extension}" Header="Modules">
+                <StackPanel Margin="0,12" Spacing="4">
+                    <TextBlock Classes="body2" Text="Required permissions" />
+                    <TextBlock Classes="caption secondary" Text="Everything the installed modules ask for, combined." />
+                    <TextBlock Classes="caption secondary" Text="{Binding RequiredPermissionsEmpty}"
+                               IsVisible="{Binding RequiredPermissionsEmpty, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <ItemsControl Classes="chips" ItemsSource="{Binding RequiredPermissions}" ItemTemplate="{StaticResource Chip}" />
+                </StackPanel>
+            </c:SectionCard>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

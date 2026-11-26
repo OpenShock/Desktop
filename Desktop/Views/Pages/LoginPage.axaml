@@ -1,0 +1,80 @@
+<!-- Logging in to OpenShock. A port of the Blazor LoginPage and LoginPart. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels.Pages"
+             xmlns:t="using:OpenShock.Desktop.Theming"
+             xmlns:svg="using:Avalonia.Svg.Skia"
+             x:Class="OpenShock.Desktop.Views.Pages.LoginPage"
+             x:DataType="vm:LoginPageViewModel">
+
+    <ScrollViewer Classes="page">
+        <Border Margin="24,54,24,24" MaxWidth="552" VerticalAlignment="Top" Padding="20"
+                Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="1" CornerRadius="8">
+            <StackPanel Spacing="20">
+                <!-- Shrinks to fit rather than running out of the card. -->
+                <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="16">
+                        <svg:Svg Path="avares://OpenShock.Desktop/Assets/Images/Icon.svg" Width="75" Height="75" />
+                        <TextBlock Text="OpenShock" FontSize="72" VerticalAlignment="Center" Margin="0,0,0,8" />
+                    </StackPanel>
+                </Viewbox>
+
+                <Button Classes="filled" HorizontalAlignment="Stretch" Height="100" Command="{Binding LoginWithBrowserCommand}">
+                    <Panel>
+                        <TextBlock Text="LOGIN WITH OPENSHOCK" FontSize="32" IsVisible="{Binding !IsOpeningBrowser}" />
+                        <Arc Classes="spinner" Width="40" Height="40" Stroke="White" IsVisible="{Binding IsOpeningBrowser}">
+                            <Arc.RenderTransform>
+                                <RotateTransform />
+                            </Arc.RenderTransform>
+                        </Arc>
+                    </Panel>
+                </Button>
+
+                <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                    <StackPanel Spacing="16">
+                        <Button Classes="text" HorizontalAlignment="Center" Command="{Binding ToggleAdvancedCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="ADVANCED SETTINGS" VerticalAlignment="Center" />
+                                <t:IconView Classes="chevron" Classes.expanded="{Binding IsAdvancedOpen}" Width="18" Height="18"
+                                            Data="{x:Static t:MaterialIcons.ExpandMore}" />
+                            </StackPanel>
+                        </Button>
+
+                        <StackPanel Spacing="16" IsVisible="{Binding IsAdvancedOpen}">
+                            <StackPanel Spacing="12" IsVisible="{Binding !IsEditingCustomServer}">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption secondary" Text="Server" />
+                                    <ComboBox Classes="outlined" HorizontalAlignment="Stretch" ItemsSource="{Binding Servers}"
+                                              SelectedItem="{Binding SelectedServer}" />
+                                </StackPanel>
+                                <Button Classes="text primary" Content="Use custom server" HorizontalAlignment="Left"
+                                        Command="{Binding EditCustomServerCommand}" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="12" IsVisible="{Binding IsEditingCustomServer}">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption secondary" Text="Custom Server" />
+                                    <TextBox Classes="outlined" Classes.error="{Binding !IsCustomServerValid}"
+                                             PlaceholderText="https://api.example.com/" Text="{Binding CustomServer}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Classes="filled" Content="Back" Command="{Binding CancelCustomServerCommand}" />
+                                    <Button Classes="filled" Content="Save" Command="{Binding SaveCustomServerCommand}"
+                                            IsEnabled="{Binding IsCustomServerValid}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="caption secondary" Text="API Token" />
+                                <TextBox Classes="outlined" Text="{Binding Token}" PasswordChar="•" RevealPassword="False" />
+                            </StackPanel>
+                            <Button Classes="text primary" Content="Continue with Token" HorizontalAlignment="Left"
+                                    Command="{Binding ContinueWithTokenCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

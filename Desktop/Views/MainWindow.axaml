@@ -1,12 +1,15 @@
 <!--
-  The app window: the startup splash until the app is up, then the native sidebar next to the page area.
-  Pages still come from the Blazor UI, shown in a NativeWebView that the code-behind puts into PageHost; ported pages
-  will replace it one at a time.
+  The app window: the startup splash until the app is up, then the native sidebar next to the page area. Built-in pages
+  are native views; module pages are the Blazor UI in a NativeWebView, which the code-behind creates in PageHost the
+  first time one is opened.
 -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:OpenShock.Desktop.ViewModels"
+        xmlns:nav="using:OpenShock.Desktop.Navigation"
         xmlns:v="using:OpenShock.Desktop.Views"
+        xmlns:p="using:OpenShock.Desktop.Views.Pages"
+        xmlns:t="using:OpenShock.Desktop.Theming"
         x:Class="OpenShock.Desktop.Views.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="OpenShock"
@@ -19,7 +22,40 @@
         <Grid Grid.Row="1" ColumnDefinitions="250,1,*" IsVisible="{Binding IsStarted}">
             <v:SidebarView Grid.Column="0" DataContext="{Binding Sidebar}" />
             <Border Grid.Column="1" Background="{DynamicResource DividerBrush}" />
-            <Panel Grid.Column="2" x:Name="PageHost" />
+
+            <Panel Grid.Column="2" x:Name="PageHost">
+                <ContentControl Content="{Binding Navigator.CurrentPage}" IsVisible="{Binding !Navigator.IsWebViewActive}">
+                    <ContentControl.DataTemplates>
+                        <p:PageViewLocator />
+                    </ContentControl.DataTemplates>
+                </ContentControl>
+
+                <!-- Snackbars, top right like MudBlazor's. Only over native pages: over the webview they would be
+                     hidden, so the Notifier sends those to the Blazor UI instead. -->
+                <ItemsControl ItemsSource="{Binding Notifier.Toasts}" IsVisible="{Binding !Navigator.IsWebViewActive}"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="24">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="nav:ToastViewModel">
+                            <Border Classes="toast" Background="{Binding Background}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <t:IconView Data="{Binding Icon}" Width="22" Height="22" Margin="0,0,12,0" />
+                                    <TextBlock Grid.Column="1" Classes="body2" Text="{Binding Message}" TextWrapping="Wrap"
+                                               VerticalAlignment="Center" />
+                                    <Button Grid.Column="2" Classes="icon" Padding="6" Margin="8,0,0,0"
+                                            Foreground="White" Command="{Binding DismissCommand}">
+                                        <t:IconView Data="{x:Static t:MaterialIcons.Close}" Width="18" Height="18" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Panel>
         </Grid>
 
         <v:StartupView Grid.Row="1" DataContext="{Binding Startup}" IsVisible="{Binding !IsStarted}" />

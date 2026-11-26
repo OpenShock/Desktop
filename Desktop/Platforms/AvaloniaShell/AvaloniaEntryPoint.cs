@@ -9,6 +9,7 @@ using Avalonia.Themes.Fluent;
 using OpenShock.Desktop.Cli;
 using OpenShock.Desktop.Cli.Uri;
 using OpenShock.Desktop.Config;
+using OpenShock.Desktop.Theming;
 using OpenShock.Desktop.Utils;
 using Serilog;
 
@@ -129,12 +130,7 @@ public sealed class ShellApplication : Application
         });
         RequestedThemeVariant = ThemeVariant.Dark;
 
-        // Midnight is the dark theme with near-black background and surface, as in the Blazor ThemeDefinition.
-        if (_host.Services.GetRequiredService<ConfigManager>().Config.App.Theme == Theme.Midnight)
-        {
-            Resources["BackgroundBrush"] = new SolidColorBrush(Color.Parse("#020202"));
-            Resources["SurfaceBrush"] = new SolidColorBrush(Color.Parse("#050505"));
-        }
+        ThemeApplier.Apply(_host.Services.GetRequiredService<ConfigManager>().Config.App.Theme);
     }
 
     public override async void OnFrameworkInitializationCompleted()

@@ -1,0 +1,218 @@
+<!-- The landing page. A port of the Blazor DashboardTab. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels.Pages"
+             xmlns:t="using:OpenShock.Desktop.Theming"
+             xmlns:c="using:OpenShock.Desktop.Controls"
+             x:Class="OpenShock.Desktop.Views.Pages.DashboardPage"
+             x:DataType="vm:DashboardPageViewModel">
+
+    <UserControl.Styles>
+        <!-- The status beacon: a dot with a halo of its own colour, which breathes while the backend settles. -->
+        <Style Selector="Ellipse.halo">
+            <Setter Property="Opacity" Value="0.25" />
+        </Style>
+        <Style Selector="Panel.pulsing Ellipse.halo">
+            <Style.Animations>
+                <Animation Duration="0:0:1.6" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.35" />
+                        <Setter Property="ScaleTransform.ScaleX" Value="0.75" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="0.75" />
+                    </KeyFrame>
+                    <KeyFrame Cue="50%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="ScaleTransform.ScaleX" Value="1.25" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="1.25" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.35" />
+                        <Setter Property="ScaleTransform.ScaleX" Value="0.75" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="0.75" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.discord TextBlock.grey">
+            <Setter Property="Foreground" Value="#B5BAC1" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer Classes="page">
+        <StackPanel Classes="page narrow">
+
+            <!-- The page title is the answer to the question you opened the app to ask. -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Panel Width="20" Height="20" Margin="0,0,16,0" VerticalAlignment="Center"
+                       Classes.pulsing="{Binding IsSettling}">
+                    <Ellipse Classes="halo" Fill="{Binding BeaconBrush}">
+                        <Ellipse.RenderTransform>
+                            <ScaleTransform />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Ellipse Width="12" Height="12" Fill="{Binding BeaconBrush}" />
+                </Panel>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Classes="h5" Text="{Binding Headline}" />
+                    <TextBlock Classes="body2 secondary" Text="{Binding Detail}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="filled small" Content="Login" IsVisible="{Binding ShowLogin}"
+                        c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Login}" Command="{Binding LoginCommand}" />
+            </Grid>
+
+            <Border Classes="alert-info" IsVisible="{Binding ShowShockOscNotice}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <t:IconView Data="{x:Static t:MaterialIcons.Info}" Width="22" Height="22" Margin="0,0,12,0" />
+                    <WrapPanel Grid.Column="1" VerticalAlignment="Center" ItemSpacing="16" LineSpacing="4">
+                        <TextBlock Classes="body2" VerticalAlignment="Center"
+                                   Text="Control your shockers from VRChat by installing ShockOSC." />
+                        <Button Classes="filled small" Content="Install ShockOSC"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Download}"
+                                Command="{Binding BrowseModulesCommand}" />
+                    </WrapPanel>
+                    <Button Grid.Column="2" Classes="icon" Padding="6" VerticalAlignment="Center"
+                            Command="{Binding DismissShockOscNoticeCommand}" ToolTip.Tip="Dismiss">
+                        <t:IconView Data="{x:Static t:MaterialIcons.Close}" Width="20" Height="20" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Hubs -->
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Router}" Header="Hubs" MaxContentHeight="320">
+                <c:SectionCard.HeaderContent>
+                    <TextBlock Classes="caption secondary" Text="{Binding HubCountLabel}" />
+                </c:SectionCard.HeaderContent>
+                <StackPanel>
+                    <c:LabeledRow Label="No hubs yet" Description="Add a hub on openshock.app and it shows up here."
+                                  IsVisible="{Binding HasNoHubs}">
+                        <Button Classes="outlined small" Content="Open OpenShock"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.OpenInNew}"
+                                Command="{Binding OpenOpenShockCommand}" />
+                    </c:LabeledRow>
+                    <ItemsControl ItemsSource="{Binding Hubs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:HubStatusRow">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,8">
+                                    <t:IconView Data="{x:Static t:MaterialIcons.Circle}" Foreground="{Binding DotBrush}"
+                                                Width="20" Height="20" Margin="0,0,12,0"
+                                                ToolTip.Tip="{Binding Gateway}" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body2" Text="{Binding Name}" />
+                                        <TextBlock Classes="caption secondary" Text="{Binding SharedByText}"
+                                                   IsVisible="{Binding IsShared}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Classes="caption secondary" Text="{Binding ShockerLabel}"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="3" Classes="caption secondary" Text="{Binding StateLabel}"
+                                               MinWidth="74" TextAlignment="Right" VerticalAlignment="Center" />
+                                    <!-- Fixed width, so a latency going from 9ms to 112ms does not shove the row. -->
+                                    <TextBlock Grid.Column="4" Classes="caption secondary" Text="{Binding LatencyText}"
+                                               MinWidth="52" TextAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </c:SectionCard>
+
+            <!-- Modules -->
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Extension}" Header="Modules" MaxContentHeight="320">
+                <c:SectionCard.HeaderContent>
+                    <Button Classes="text small" Content="Manage" Command="{Binding ManageModulesCommand}"
+                            c:ButtonAssist.Icon="{x:Static t:MaterialIcons.ViewModule}" />
+                </c:SectionCard.HeaderContent>
+                <StackPanel>
+                    <c:LabeledRow Label="No modules installed" Description="Modules add integrations, like VRChat support."
+                                  IsVisible="{Binding HasNoModules}">
+                        <Button Classes="outlined small" Content="Browse modules"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Add}"
+                                Command="{Binding BrowseModulesCommand}" />
+                    </c:LabeledRow>
+                    <ItemsControl ItemsSource="{Binding Modules}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:DashboardModuleRow">
+                                <c:LabeledRow Label="{Binding Name}" Description="{Binding VersionText}">
+                                    <Panel>
+                                        <Border Classes="chip error" IsVisible="{Binding IsFailed}"
+                                                ToolTip.Tip="{Binding Failure}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <t:IconView Data="{x:Static t:MaterialIcons.ErrorOutline}" />
+                                                <TextBlock Text="failed" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Classes="chip info" IsVisible="{Binding HasUpdate}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <t:IconView Data="{x:Static t:MaterialIcons.Update}" />
+                                                <TextBlock Text="{Binding UpdateText}" />
+                                            </StackPanel>
+                                        </Border>
+                                        <TextBlock Classes="caption secondary" Text="up to date"
+                                                   IsVisible="{Binding IsUpToDate}" />
+                                    </Panel>
+                                </c:LabeledRow>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </c:SectionCard>
+
+            <!-- About -->
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Info}" Header="About">
+                <StackPanel>
+                    <c:LabeledRow Label="OpenShock Desktop" Description="{Binding VersionText}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Button Classes="text small" Content="GitHub" Command="{Binding OpenGithubCommand}"
+                                    c:ButtonAssist.Icon="{x:Static t:MaterialIcons.GitHub}" />
+                            <Button Classes="text small" Content="OpenShock" Command="{Binding OpenOpenShockCommand}"
+                                    c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Bolt}" />
+                        </StackPanel>
+                    </c:LabeledRow>
+                    <Separator />
+                    <c:LabeledRow Label="Discord" Description="Support, and the people who build this.">
+                        <!-- The Discord invite embed, as Discord draws it. -->
+                        <Border Classes="discord" DataContext="{Binding Discord}" Width="432" Height="174"
+                                CornerRadius="8" Background="#1E2233" ClipToBounds="True">
+                            <Panel>
+                                <TextBlock Classes="body2" Text="Failed to load invite" Margin="16"
+                                           IsVisible="{Binding IsFailed}" />
+                                <DockPanel IsVisible="{Binding !IsFailed}">
+                                    <Border DockPanel.Dock="Top" Height="64" Background="#2B3046">
+                                        <Image Source="{Binding Splash}" Stretch="UniformToFill" />
+                                    </Border>
+                                    <StackPanel Margin="16,14,16,16" Spacing="12">
+                                        <TextBlock Classes="grey" FontSize="12" FontWeight="Bold"
+                                                   Text="{Binding Blurb}" TextTrimming="CharacterEllipsis" />
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Ellipse Width="50" Height="50" Margin="0,0,16,0" Fill="#2B3046" />
+                                            <Ellipse Width="50" Height="50" Margin="0,0,16,0">
+                                                <Ellipse.Fill>
+                                                    <ImageBrush Source="{Binding Icon}" Stretch="UniformToFill" />
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock FontSize="16" Foreground="White" Text="{Binding GuildName}" />
+                                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <Ellipse Width="8" Height="8" Fill="#23A55A" />
+                                                        <TextBlock Classes="body2 grey" Text="{Binding OnlineText}" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <Ellipse Width="8" Height="8" Fill="#80848E" />
+                                                        <TextBlock Classes="body2 grey" Text="{Binding MembersText}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Classes="filled" Content="Join" Height="44"
+                                                    Padding="22,0" IsEnabled="{Binding IsLoaded}"
+                                                    Command="{Binding JoinCommand}" />
+                                        </Grid>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Panel>
+                        </Border>
+                    </c:LabeledRow>
+                </StackPanel>
+            </c:SectionCard>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

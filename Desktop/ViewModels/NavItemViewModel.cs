@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OpenShock.Desktop.Navigation;
 using OpenShock.Desktop.Theming;
 
 namespace OpenShock.Desktop.ViewModels;
@@ -52,21 +53,11 @@ public sealed partial class NavItemViewModel : ObservableObject
 
     public void UpdateActive(string currentPath)
     {
-        IsActive = Route is not null && Matches(currentPath, Route, ExactMatch);
+        IsActive = Route is not null && Routes.Matches(currentPath, Route, ExactMatch);
 
         foreach (var child in Children) child.UpdateActive(currentPath);
 
         // Open the group whose page we are on, the way MudNavGroup does when you land on one of its links.
         if (Children.Any(c => c.IsActive)) IsExpanded = true;
-    }
-
-    /// <summary>Whether <paramref name="currentPath"/> is <paramref name="route"/> or below it, on segment boundaries.</summary>
-    public static bool Matches(string currentPath, string route, bool exact = false)
-    {
-        var current = Uri.UnescapeDataString(currentPath).Trim('/');
-        var target = Uri.UnescapeDataString(route).Trim('/');
-
-        return current.Equals(target, StringComparison.OrdinalIgnoreCase) ||
-               (!exact && current.StartsWith(target + "/", StringComparison.OrdinalIgnoreCase));
     }
 }

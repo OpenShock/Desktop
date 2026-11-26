@@ -1,0 +1,224 @@
+<!-- How the app starts, how it looks, and where it gets modules from. A port of the Blazor AppSettingsTab. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels.Pages"
+             xmlns:t="using:OpenShock.Desktop.Theming"
+             xmlns:c="using:OpenShock.Desktop.Controls"
+             x:Class="OpenShock.Desktop.Views.Pages.SettingsPage"
+             x:DataType="vm:SettingsPageViewModel">
+
+    <UserControl.DataTemplates>
+        <!-- A repository row: URL, fetch status, remove. -->
+        <DataTemplate DataType="vm:RepositoryRow">
+            <StackPanel>
+                <Grid Classes="table-row" ColumnDefinitions="*,Auto,Auto" Margin="0">
+                    <SelectableTextBlock FontSize="14" Margin="16,0,8,0" VerticalAlignment="Center"
+                                         Text="{Binding Url}" TextTrimming="CharacterEllipsis" />
+
+                    <Panel Grid.Column="1" Width="36" Height="36" ToolTip.Tip="{Binding StatusText}"
+                           Background="Transparent">
+                        <t:IconView Data="{x:Static t:MaterialIcons.Adjust}" Foreground="{Binding StatusBrush}"
+                                    IsVisible="{Binding ShowStatusIcon}" />
+                        <Arc Classes="spinner" Width="20" Height="20" StrokeThickness="2.5"
+                             IsVisible="{Binding IsLoading}">
+                            <Arc.RenderTransform>
+                                <RotateTransform />
+                            </Arc.RenderTransform>
+                        </Arc>
+                        <!-- A failed fetch explains itself on click. -->
+                        <Button Classes="icon" Padding="6" IsVisible="{Binding IsFailed}">
+                            <t:IconView Data="{x:Static t:MaterialIcons.Adjust}" Foreground="{Binding StatusBrush}" />
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedRight">
+                                    <ScrollViewer MaxHeight="500" Width="560">
+                                        <StackPanel Margin="16" Spacing="8">
+                                            <TextBlock Classes="subtitle2" Text="Fetching this repository failed" />
+                                            <TextBlock Classes="body2" Text="{Binding ErrorStatus}"
+                                                       IsVisible="{Binding ErrorStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                            <TextBlock Classes="body2 secondary" Text="No error information available"
+                                                       IsVisible="{Binding HasNoErrorDetails}" />
+                                            <Expander Header="Response"
+                                                      IsVisible="{Binding ErrorResponse, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <SelectableTextBlock Text="{Binding ErrorResponse}" TextWrapping="Wrap"
+                                                                     FontSize="12" />
+                                            </Expander>
+                                            <Expander Header="Exception"
+                                                      IsVisible="{Binding ErrorException, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <SelectableTextBlock Text="{Binding ErrorException}" TextWrapping="Wrap"
+                                                                     FontSize="12"
+                                                                     FontFamily="Cascadia Code, Consolas, Menlo, monospace" />
+                                            </Expander>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                    </Panel>
+
+                    <Button Grid.Column="2" Classes="icon" Padding="6" Margin="0,0,8,0" IsEnabled="{Binding !IsBuiltIn}"
+                            Command="{Binding RemoveCommand}" ToolTip.Tip="{Binding RemoveTooltip}"
+                            ToolTip.ShowOnDisabled="True">
+                        <t:IconView Data="{x:Static t:MaterialIcons.RemoveCircleOutline}" Width="20" Height="20" />
+                    </Button>
+                </Grid>
+                <Separator />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <UserControl.Styles>
+        <Style Selector="Button.icon:disabled t|IconView">
+            <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}" />
+        </Style>
+        <Style Selector="Border.group-head">
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+            <Setter Property="Padding" Value="16,8" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer Classes="page">
+        <StackPanel Classes="page narrow">
+            <StackPanel>
+                <TextBlock Classes="h6" Text="Settings" />
+                <TextBlock Classes="body2 secondary" Text="How the app starts, how it looks, and where it gets modules from." />
+            </StackPanel>
+
+            <!-- Application -->
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.DesktopWindows}" Header="Application">
+                <c:SectionCard.HeaderContent>
+                    <Panel>
+                        <Button Classes="text small" IsEnabled="False" IsVisible="{Binding IsCheckingForUpdate}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Arc Classes="spinner" Width="16" Height="16" StrokeThickness="2">
+                                    <Arc.RenderTransform>
+                                        <RotateTransform />
+                                    </Arc.RenderTransform>
+                                </Arc>
+                                <TextBlock Text="CHECKING" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="filled small" Content="Update available" IsVisible="{Binding IsUpdateAvailable}"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Update}"
+                                Command="{Binding OpenUpdateDialogCommand}" />
+                        <Button Classes="text small" Content="Check for update" IsVisible="{Binding CanCheckForUpdate}"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Refresh}"
+                                Command="{Binding CheckForUpdateCommand}" />
+                    </Panel>
+                </c:SectionCard.HeaderContent>
+                <StackPanel>
+                    <c:LabeledRow Label="Update channel"
+                                  Description="Pre-release ships new features earlier, at the cost of stability.">
+                        <ComboBox Classes="outlined" Width="180" ItemsSource="{Binding UpdateChannels}"
+                                  SelectedItem="{Binding UpdateChannel}" IsEnabled="{Binding !IsCheckingForUpdate}" />
+                    </c:LabeledRow>
+                    <Separator />
+                    <c:LabeledRow Label="Minimize on launch" Description="Start into the tray instead of opening the window.">
+                        <CheckBox Classes="switch" IsChecked="{Binding MinimizeOnLaunch}" />
+                    </c:LabeledRow>
+                    <Separator />
+                    <c:LabeledRow Label="Close to tray" Description="Keep running in the background when the window is closed.">
+                        <CheckBox Classes="switch" IsChecked="{Binding CloseToTray}" />
+                    </c:LabeledRow>
+                    <StackPanel IsVisible="{Binding IsWindows}">
+                        <Separator />
+                        <c:LabeledRow Label="Start with Windows" Description="Launch the app when you sign in.">
+                            <CheckBox Classes="switch" IsChecked="{Binding StartWithWindows}" />
+                        </c:LabeledRow>
+                        <Separator />
+                        <c:LabeledRow Label="Start with VRChat"
+                                      Description="Requires VRCX, with the App Launcher enabled in its advanced settings.">
+                            <CheckBox Classes="switch" IsChecked="{Binding StartWithVrChat}" />
+                        </c:LabeledRow>
+                    </StackPanel>
+                </StackPanel>
+            </c:SectionCard>
+
+            <!-- Appearance -->
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Palette}" Header="Appearance">
+                <c:LabeledRow Label="Theme" Description="Colour palette used across the whole app.">
+                    <Border BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1"
+                            CornerRadius="{StaticResource DefaultRadius}" ClipToBounds="True" Width="220">
+                        <Grid ColumnDefinitions="*,1,*">
+                            <RadioButton Classes="segment" Content="Dark" GroupName="theme"
+                                         IsChecked="{Binding !IsMidnight}" />
+                            <Border Grid.Column="1" Background="{DynamicResource PrimaryBrush}" />
+                            <RadioButton Grid.Column="2" Classes="segment" Content="Midnight" GroupName="theme"
+                                         IsChecked="{Binding IsMidnight}" />
+                        </Grid>
+                    </Border>
+                </c:LabeledRow>
+            </c:SectionCard>
+
+            <!-- Modules -->
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Extension}" Header="Modules">
+                <c:LabeledRow Label="Auto update" Description="Install available module updates on startup.">
+                    <CheckBox Classes="switch" IsChecked="{Binding AutoUpdateModules}" />
+                </c:LabeledRow>
+            </c:SectionCard>
+
+            <!-- Module repositories -->
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Storage}" Header="Module repositories" ContentPadding="0">
+                <c:SectionCard.HeaderContent>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Button Classes="text small" IsEnabled="False" IsVisible="{Binding IsFetching}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Arc Classes="spinner" Width="16" Height="16" StrokeThickness="2">
+                                    <Arc.RenderTransform>
+                                        <RotateTransform />
+                                    </Arc.RenderTransform>
+                                </Arc>
+                                <TextBlock Text="REFRESH" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="text small" Content="Refresh" IsVisible="{Binding !IsFetching}"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Refresh}" Command="{Binding RefreshCommand}" />
+                        <Button Classes="text small" Content="Add" c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Add}"
+                                Command="{Binding OpenAddCommand}" />
+                    </StackPanel>
+                </c:SectionCard.HeaderContent>
+                <StackPanel>
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="16,12" IsVisible="{Binding IsAddOpen}">
+                        <TextBox Classes="outlined" PlaceholderText="Repository URL" Text="{Binding NewUrl}">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding AddRepositoryCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Grid.Column="1" Classes="outlined" Content="Add" Margin="8,0,0,0"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Add}" Command="{Binding AddRepositoryCommand}" />
+                        <Button Grid.Column="2" Classes="text" Content="Cancel" Margin="8,0,0,0"
+                                c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Close}" Command="{Binding CancelAddCommand}" />
+                    </Grid>
+                    <Separator IsVisible="{Binding IsAddOpen}" />
+
+                    <Grid Classes="table-head" ColumnDefinitions="*">
+                        <TextBlock Margin="16,0" FontWeight="Bold" Text="URL" />
+                    </Grid>
+                    <Separator />
+
+                    <Border Classes="group-head">
+                        <TextBlock Classes="body2" FontWeight="Medium" Text="Built-In Repositories" />
+                    </Border>
+                    <Separator />
+                    <ItemsControl ItemsSource="{Binding BuiltInRepositories}" />
+
+                    <StackPanel IsVisible="{Binding HasCustomRepositories}">
+                        <Border Classes="group-head">
+                            <TextBlock Classes="body2" FontWeight="Medium" Text="Custom Repositories" />
+                        </Border>
+                        <Separator />
+                        <ItemsControl ItemsSource="{Binding CustomRepositories}" />
+                    </StackPanel>
+                    <Panel Height="12" />
+                </StackPanel>
+            </c:SectionCard>
+
+            <!-- Advanced -->
+            <c:SectionCard Icon="{x:Static t:MaterialIcons.Tune}" Header="Advanced" IsCollapsible="True" IsExpanded="False">
+                <c:LabeledRow Label="Debug" Description="Internal state and diagnostics, useful for bug reports.">
+                    <Button Classes="outlined" Content="Open" c:ButtonAssist.Icon="{x:Static t:MaterialIcons.BugReport}"
+                            Command="{Binding OpenDebugCommand}" />
+                </c:LabeledRow>
+            </c:SectionCard>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -15,6 +15,9 @@ public static class ThemeBrushes
     public static IBrush Error => Get("ErrorBrush");
     public static IBrush Dark => Get("DarkBrush");
     public static IBrush TextPrimary => Get("TextPrimaryBrush");
+    public static IBrush TextSecondary => Get("TextSecondaryBrush");
+    public static IBrush TextDisabled => Get("TextDisabledBrush");
+    public static IBrush Tertiary => Get("TertiaryBrush");
 
     private static IBrush Get(string key) =>
         Application.Current?.TryFindResource(key, ThemeVariant.Dark, out var value) == true && value is IBrush brush

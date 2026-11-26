@@ -1,0 +1,152 @@
+<!-- The log console: a terminal-like list with level filters. A port of the Blazor LogsTab. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels.Pages"
+             x:Class="OpenShock.Desktop.Views.Pages.LogsPage"
+             x:DataType="vm:LogsPageViewModel">
+
+    <UserControl.Resources>
+        <FontFamily x:Key="MonoFont">Cascadia Code, Consolas, Menlo, monospace</FontFamily>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- Toolbar buttons: small bordered terminal buttons. -->
+        <Style Selector="Button.term">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.term TextBlock">
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+        <Style Selector="Button.term:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="Button.term.off">
+            <Setter Property="Opacity" Value="0.35" />
+        </Style>
+        <Style Selector="Button.term.off TextBlock">
+            <Setter Property="TextDecorations" Value="Strikethrough" />
+        </Style>
+        <Style Selector="Button.term.fatal.on">
+            <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}" />
+        </Style>
+
+        <!-- A log line: the whole row toggles the details. -->
+        <Style Selector="Button.log-line">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalContentAlignment="Stretch" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.log-line:pointerover, Button.log-line.expanded">
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+        </Style>
+        <Style Selector="Button.log-line TextBlock">
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="LineHeight" Value="19" />
+        </Style>
+    </UserControl.Styles>
+
+    <DockPanel Margin="24">
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="1,1,1,0" CornerRadius="4,4,0,0" Padding="8,6" TextElement.FontFamily="{StaticResource MonoFont}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                    <Button Classes="term" Content="{Binding AutoScrollText}" Command="{Binding ToggleAutoScrollCommand}" />
+                    <Button Classes="term" Content="clear" Command="{Binding ClearCommand}" />
+                    <Button Classes="term" Content="open logs folder" Command="{Binding OpenLogsFolderCommand}" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Levels}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="4" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:LevelFilter">
+                            <Button Classes="term" Classes.on="{Binding IsEnabled}" Classes.off="{Binding !IsEnabled}"
+                                    Classes.fatal="{Binding IsFatal}" Command="{Binding ToggleCommand}">
+                                <Panel>
+                                    <TextBlock Text="{Binding Tag}" Foreground="{Binding Brush}" IsVisible="{Binding !IsFatal}" />
+                                    <TextBlock Text="{Binding Tag}" Foreground="White" IsVisible="{Binding IsFatal}" />
+                                </Panel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <!-- Console -->
+        <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="1" CornerRadius="0,0,4,4" Padding="0,6" TextElement.FontFamily="{StaticResource MonoFont}">
+            <ScrollViewer x:Name="Console" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Lines}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:LogLineViewModel">
+                            <StackPanel>
+                                <Button Classes="log-line" Classes.expanded="{Binding IsExpanded}"
+                                        Command="{Binding ToggleCommand}">
+                                    <Grid ColumnDefinitions="Auto,Auto,Auto,*">
+                                        <TextBlock Text="{Binding Time}" Foreground="{DynamicResource TextDisabledBrush}"
+                                                   Margin="0,0,10,0" />
+                                        <Border Grid.Column="1" Width="30" Margin="0,0,8,0" CornerRadius="2"
+                                                Background="{DynamicResource ErrorBrush}" IsVisible="{Binding IsFatal}" />
+                                        <TextBlock Grid.Column="1" Width="30" Margin="0,0,8,0" FontWeight="SemiBold"
+                                                   Text="{Binding Tag}" Foreground="{Binding LevelBrush}"
+                                                   IsVisible="{Binding !IsFatal}" />
+                                        <TextBlock Grid.Column="1" Width="30" Margin="2,0,8,0" FontWeight="SemiBold"
+                                                   Text="{Binding Tag}" Foreground="White" IsVisible="{Binding IsFatal}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Source}"
+                                                   Foreground="{DynamicResource SecondaryBrush}" Margin="0,0,10,0" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Message}" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    </Grid>
+                                </Button>
+                                <Border IsVisible="{Binding IsExpanded}" Background="{DynamicResource HoverBrush}"
+                                        BorderBrush="{DynamicResource DividerBrush}" BorderThickness="2,0,0,0"
+                                        Padding="12,6,12,8">
+                                    <SelectableTextBlock Text="{Binding Details}" TextWrapping="Wrap" FontSize="12"
+                                                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </Border>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+    </DockPanel>
+</UserControl>

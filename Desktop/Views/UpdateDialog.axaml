@@ -13,7 +13,7 @@
                     Margin="0,16,0,0" IsVisible="{Binding IsPrompting}">
             <Button Classes="text" Content="DISMISS" Command="{Binding DismissCommand}" />
             <Button Classes="text" Content="SKIP" Command="{Binding SkipCommand}" />
-            <Button Classes="text" Content="UPDATE" Command="{Binding UpdateCommand}" />
+            <Button Classes="text primary" Content="UPDATE" Command="{Binding UpdateCommand}" />
         </StackPanel>
 
         <Panel>

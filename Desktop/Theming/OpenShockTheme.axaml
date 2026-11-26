@@ -26,6 +26,10 @@
             <SolidColorBrush x:Key="TextDisabledBrush" Color="#33FFFFFF" />
             <SolidColorBrush x:Key="DividerBrush" Color="#1EFFFFFF" />
             <SolidColorBrush x:Key="HoverBrush" Color="#0FFFFFFF" />
+            <!-- lines-inputs: the border of an outlined field. -->
+            <SolidColorBrush x:Key="InputLineBrush" Color="#4DFFFFFF" />
+            <!-- MudBlazor's dark secondary (Colors.Green.Accent4), used for log sources. -->
+            <SolidColorBrush x:Key="SecondaryBrush" Color="#00C853" />
 
             <SolidColorBrush x:Key="SuccessBrush" Color="#0BBA83" />
             <SolidColorBrush x:Key="InfoBrush" Color="#3299FF" />
@@ -42,14 +46,13 @@
 
     <Style Selector="Window">
         <Setter Property="FontFamily" Value="{StaticResource PoppinsFont}" />
+        <Setter Property="FontSize" Value="16" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Background" Value="{DynamicResource BackgroundBrush}" />
     </Style>
 
-    <!-- MudBlazor typography: body1 16px, body2 14px, caption 12px, subtitle2 14px/500, h6 20px/500 -->
-    <Style Selector="TextBlock">
-        <Setter Property="FontSize" Value="16" />
-    </Style>
+    <!-- MudBlazor typography: body1 16px (the window default, inherited), body2 14px, caption 12px,
+         subtitle2 14px/500, h6 20px/500 -->
     <Style Selector="TextBlock.body2">
         <Setter Property="FontSize" Value="14" />
     </Style>
@@ -163,37 +166,6 @@
         <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
     </Style>
 
-    <!-- ===== Text button (MudButton, text variant, primary) ===== -->
-
-    <Style Selector="Button.text">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="8,6" />
-        <Setter Property="CornerRadius" Value="{StaticResource DefaultRadius}" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontWeight" Value="Medium" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Template">
-            <ControlTemplate>
-                <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
-                        Padding="{TemplateBinding Padding}">
-                    <ContentPresenter Content="{TemplateBinding Content}" HorizontalContentAlignment="Center" />
-                </Border>
-            </ControlTemplate>
-        </Setter>
-    </Style>
-    <Style Selector="Button.text:pointerover">
-        <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
-    </Style>
-    <Style Selector="Button.filled">
-        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
-        <Setter Property="Foreground" Value="White" />
-    </Style>
-    <Style Selector="Button.filled:pointerover">
-        <Setter Property="Background" Value="{DynamicResource PrimaryDarkenBrush}" />
-    </Style>
-
     <!-- ===== Sidebar status rows ===== -->
 
     <Style Selector="Button.status-row">
@@ -270,4 +242,5 @@
         </Style.Animations>
     </Style>
 
+    <StyleInclude Source="avares://OpenShock.Desktop/Theming/Controls.axaml" />
 </Styles>

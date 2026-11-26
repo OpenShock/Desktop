@@ -1,0 +1,140 @@
+<!-- The user's shockers and the ones shared with them. A port of the Blazor ShockersTab. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenShock.Desktop.ViewModels.Pages"
+             xmlns:t="using:OpenShock.Desktop.Theming"
+             xmlns:c="using:OpenShock.Desktop.Controls"
+             x:Class="OpenShock.Desktop.Views.Pages.ShockersPage"
+             x:DataType="vm:ShockersPageViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Grid.table-head > TextBlock, Grid.table-row > :is(Control)">
+            <Setter Property="Margin" Value="12,0" />
+        </Style>
+        <Style Selector="TextBlock.guid">
+            <Setter Property="FontFamily" Value="Cascadia Code, Consolas, Menlo, monospace" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Opacity" Value="0.7" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.DataTemplates>
+        <!-- A row, own or shared: the status column shows the pause toggle or the shared permissions. -->
+        <DataTemplate DataType="vm:ShockerRowViewModel">
+            <StackPanel>
+                <Grid Classes="table-row" ColumnDefinitions="92,120,*,*">
+                    <CheckBox Classes="mud" IsChecked="{Binding IsEnabled}" Margin="6,0" />
+
+                    <Panel Grid.Column="1" HorizontalAlignment="Left">
+                        <ItemsControl ItemsSource="{Binding Permissions}" IsVisible="{Binding IsShared}"
+                                      VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:PermissionIcon">
+                                    <t:IconView Data="{Binding Icon}" Foreground="{Binding Brush}" Width="20" Height="20"
+                                                ToolTip.Tip="{Binding Tooltip}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Classes="icon" Padding="5" IsVisible="{Binding ShowPauseToggle}"
+                                Command="{Binding TogglePauseCommand}" ToolTip.Tip="{Binding PauseTooltip}">
+                            <t:IconView Data="{Binding PauseIcon}" Width="20" Height="20" />
+                        </Button>
+                        <Arc Classes="spinner" Width="20" Height="20" Margin="5" IsVisible="{Binding IsChanging}"
+                             Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2.5">
+                            <Arc.RenderTransform>
+                                <RotateTransform />
+                            </Arc.RenderTransform>
+                        </Arc>
+                    </Panel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                        <t:IconView Data="{x:Static t:MaterialIcons.Pause}" Foreground="{DynamicResource WarningBrush}"
+                                    Width="20" Height="20" IsVisible="{Binding ShowPausedIcon}"
+                                    ToolTip.Tip="Shocker Paused" />
+                    </StackPanel>
+
+                    <SelectableTextBlock Grid.Column="3" Classes="guid" Text="{Binding Id}" VerticalAlignment="Center" />
+                </Grid>
+                <Separator />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <DockPanel Margin="24">
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <Button DockPanel.Dock="Right" Classes="filled small" VerticalAlignment="Top"
+                    c:ButtonAssist.Icon="{x:Static t:MaterialIcons.Send}" Content="Test Shockers (Vibrate 10% 1s)"
+                    Command="{Binding TestShockersCommand}" />
+            <StackPanel>
+                <TextBlock Classes="h6" Text="Shockers" />
+                <TextBlock Classes="body2 secondary" Text="{Binding Description}" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- The tables fill the page rather than the page scrolling; with shared shockers they split it. A uniform
+             grid leaves a hidden card out. -->
+        <UniformGrid Columns="1">
+        <c:SectionCard Icon="{x:Static t:MaterialIcons.Bolt}" Header="Your shockers"
+                       ContentPadding="0" ContentScroll="Disabled">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top">
+                    <Grid Classes="table-head" ColumnDefinitions="92,120,*,*">
+                        <TextBlock Text="Enabled" />
+                        <TextBlock Grid.Column="1" Text="Status" />
+                        <TextBlock Grid.Column="2" Text="Name" />
+                        <TextBlock Grid.Column="3" Text="Guid" />
+                    </Grid>
+                    <Separator />
+                </StackPanel>
+                <Panel>
+                    <TextBlock Classes="body2 secondary" Margin="16" Text="No shockers on your account yet."
+                               IsVisible="{Binding HasNoShockers}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding OwnShockers}" />
+                    </ScrollViewer>
+                </Panel>
+            </DockPanel>
+        </c:SectionCard>
+
+        <c:SectionCard Icon="{x:Static t:MaterialIcons.Group}" Header="Shared with you" Margin="0,16,0,0"
+                       ContentPadding="0" ContentScroll="Disabled" IsVisible="{Binding HasSharedShockers}">
+            <c:SectionCard.HeaderContent>
+                <TextBlock Classes="caption secondary"
+                           Text="Disabled by default – enable a shocker to let modules control it" />
+            </c:SectionCard.HeaderContent>
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top">
+                    <Grid Classes="table-head" ColumnDefinitions="92,120,*,*">
+                        <TextBlock Text="Enabled" />
+                        <TextBlock Grid.Column="1" Text="Permissions" />
+                        <TextBlock Grid.Column="2" Text="Name" />
+                        <TextBlock Grid.Column="3" Text="Guid" />
+                    </Grid>
+                    <Separator />
+                </StackPanel>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding SharedGroups}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:SharedShockerGroup">
+                                <StackPanel>
+                                    <Border Background="{DynamicResource HoverBrush}" Padding="12,8">
+                                        <TextBlock Classes="body2" FontWeight="SemiBold" Text="{Binding Title}" />
+                                    </Border>
+                                    <Separator />
+                                    <ItemsControl ItemsSource="{Binding Shockers}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </c:SectionCard>
+        </UniformGrid>
+    </DockPanel>
+</UserControl>
